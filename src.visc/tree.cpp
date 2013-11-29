@@ -1,44 +1,63 @@
 #include <TTree.h>
 #include "tree.h"
+#include "ParticlePDG2.h"
 #include "gen.h"
+#include "particle.h"
 
 MyTree::MyTree(char *name)
 {
   tree = new TTree(name,name);
-  tree->Branch("npart",&gen::npart[0],"npart/I");
+  X  = new Float_t [gen::NPartBuf] ;
+  Y  = new Float_t [gen::NPartBuf] ;
+  Z  = new Float_t [gen::NPartBuf] ;
+  T  = new Float_t [gen::NPartBuf] ;
+  Px = new Float_t [gen::NPartBuf] ;
+  Py = new Float_t [gen::NPartBuf] ;
+  Pz = new Float_t [gen::NPartBuf] ;
+  E  = new Float_t [gen::NPartBuf] ;
+  Id   = new Int_t [gen::NPartBuf] ;
+  MId  = new Int_t [gen::NPartBuf] ;
+  Chrg= new Short_t [gen::NPartBuf] ; // particle's electric charge
+  Bar = new Short_t [gen::NPartBuf] ; // baryon charge
+  Strg= new Short_t [gen::NPartBuf] ; // strangeness
+
+  tree->Branch("npart",&nfill,"npart/I");
 //  treefin->Branch("nev",&nev,"nev/I");
-  tree->Branch("x",&gen::X[0][0],"x[npart]/F");
-  tree->Branch("y",&gen::Y[0][0],"y[npart]/F");
-  tree->Branch("z",&gen::Z[0][0],"z[npart]/F");
-  tree->Branch("t",&gen::T[0][0],"t[npart]/F");
-  tree->Branch("px",&gen::Px[0][0],"px[npart]/F");
-  tree->Branch("py",&gen::Py[0][0],"py[npart]/F");
-  tree->Branch("pz",&gen::Pz[0][0],"pz[npart]/F");
-  tree->Branch("E",&gen::E[0][0],"E[npart]/F");
-  tree->Branch("acc",&gen::Acc[0][0],"acc[npart]/I");
-  tree->Branch("id",&gen::Id[0][0],"id[npart]/I");
-  tree->Branch("mid",&gen::MId[0][0],"mid[npart]/I");
+  tree->Branch("x",&X[0],"x[npart]/F");
+  tree->Branch("y",&Y[0],"y[npart]/F");
+  tree->Branch("z",&Z[0],"z[npart]/F");
+  tree->Branch("t",&T[0],"t[npart]/F");
+  tree->Branch("px",&Px[0],"px[npart]/F");
+  tree->Branch("py",&Py[0],"py[npart]/F");
+  tree->Branch("pz",&Pz[0],"pz[npart]/F");
+  tree->Branch("E",&E[0],"E[npart]/F");
+  tree->Branch("id",&Id[0],"id[npart]/I");
+  tree->Branch("mid",&MId[0],"mid[npart]/I");
+  tree->Branch("ele",&Chrg[0],"ele[npart]/S");
+  tree->Branch("bar",&Bar[0],"bar[npart]/S");
+  tree->Branch("str",&Strg[0],"str[npart]/S");
 }
 
 
-void MyTree::setEventAddr(int iev)
+void MyTree::fill(int iev)
 {
-  tree->SetBranchAddress("npart",&gen::npart[iev]);
-  tree->SetBranchAddress("x",&gen::X[iev][0]);
-  tree->SetBranchAddress("y",&gen::Y[iev][0]);
-  tree->SetBranchAddress("z",&gen::Z[iev][0]);
-  tree->SetBranchAddress("t",&gen::T[iev][0]);
-  tree->SetBranchAddress("px",&gen::Px[iev][0]);
-  tree->SetBranchAddress("py",&gen::Py[iev][0]);
-  tree->SetBranchAddress("pz",&gen::Pz[iev][0]);
-  tree->SetBranchAddress("E",&gen::E[iev][0]);
-  tree->SetBranchAddress("acc",&gen::Acc[iev][0]);
-  tree->SetBranchAddress("id",&gen::Id[iev][0]);
-  tree->SetBranchAddress("mid",&gen::MId[iev][0]);
-}
-
-
-void MyTree::fill()
-{
+  nfill = 0 ;
+ for(int ipart=0; ipart<gen::npart[iev]; ipart++)
+ if(gen::pList[iev][ipart]->def!=0){
+   X[nfill] = gen::pList[iev][ipart]->x ;
+   Y[nfill] = gen::pList[iev][ipart]->y ;
+   Z[nfill] = gen::pList[iev][ipart]->z ;
+   T[nfill] = gen::pList[iev][ipart]->t ;
+  Px[nfill] = gen::pList[iev][ipart]->px ;
+  Py[nfill] = gen::pList[iev][ipart]->py ;
+  Pz[nfill] = gen::pList[iev][ipart]->pz ;
+   E[nfill] = gen::pList[iev][ipart]->e ;
+  Id[nfill] = gen::pList[iev][ipart]->def->GetPDG() ;
+ MId[nfill] = gen::pList[iev][ipart]->mid ;
+Chrg[nfill] = (Char_t)(gen::pList[iev][ipart]->def->GetElectricCharge()) ;
+ Bar[nfill] = (Char_t)(gen::pList[iev][ipart]->def->GetBaryonNumber()) ;
+Strg[nfill] = (Char_t)(gen::pList[iev][ipart]->def->GetStrangeness()) ;
+   nfill++ ;
+ }
  tree->Fill() ;
 }

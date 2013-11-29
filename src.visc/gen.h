@@ -1,14 +1,15 @@
 class TRandom3 ;
 class DatabasePDG2;
+class Particle ;
 
 namespace gen{
+//typedef std::vector<Particle*> ParticleList ; // TODO in far future
 // data
 extern DatabasePDG2 *database ;
 extern TRandom3 *rnd ;
-extern float **Px, **Py, **Pz, **E, **X, **Y, **Z, **T ; // particle arrays
-extern int **Acc, **Id, **MId ;
-extern char **Charge ;
+extern Particle ***pList ; // particle arrays
 extern int *npart ;
+const int NPartBuf = 10000; // dimension of particle buffer for each event
 
 // functions
 void load(char *filename, int N) ;

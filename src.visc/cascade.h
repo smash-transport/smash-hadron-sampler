@@ -1,3 +1,4 @@
+class Particle ;
 
 extern"C" {
  int geteposcode_(int *code);
@@ -10,7 +11,7 @@ extern"C" {
  void cxxfinal_(int* index, int* id, float* x, float* y, float* z, float* t, float* px, float* py, float* pz, float* E, float* mass);
 }
 
-void decay(int pid, double mom[4], int& nprod, int ppid [], double pmom [][4], int pchrg []) ;
+void decay(Particle *in, int& nprod, Particle** &out) ;
 
 namespace gen{
 void urqmd(int ievent) ;

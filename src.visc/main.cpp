@@ -94,20 +94,20 @@ if(bEventGeneration){ // ---- generate events
  gen::generate() ; // one call for NEVENTS
 
  for(int iev=0; iev<NEVENTS; iev++){
- treeIni->setEventAddr(iev) ;
- treeIni->fill() ;
+ treeIni->fill(iev) ;
  gen::urqmd(iev) ;
- treeFin->setEventAddr(iev) ;
- treeFin->fill() ;
+ treeFin->fill(iev) ;
  } // end events loop
  outputFile->Write() ;
  outputFile->Close() ;
-}else{ // ---- calculate fMax
+}else{ // ---- calculate fMax: obsolete
+ cout<<"fMax mode is obsolete. Exiting\n" ;
+ return 0 ;
 char sbuffer [255] ;
  sprintf(sbuffer,"mkdir -p %s",sMultDir) ;
  system(sbuffer) ;
  sprintf(sbuffer, "%s/%i.mult", sMultDir, prefix) ; // here prefix=id of particle
- gen::calcDFMax(prefix, sbuffer) ;
+// gen::calcDFMax(prefix, sbuffer) ;
 }
 
  cout << "event generation done\n" ;
