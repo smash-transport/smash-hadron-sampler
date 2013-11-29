@@ -1,0 +1,407 @@
+#include <TRandom3.h>
+#include <iostream>
+
+#include "cascade.h"
+#include "gen.h"
+#include "UKUtility.h"
+#include "DatabasePDG2.h"
+#include "params.h"
+
+using namespace std ;
+
+void cxxninit_(int *np)
+{
+ *np = gen::npart ;
+}
+
+
+void cxxinit_(int* index, int* id1, float* x1, float* y1, float* z1, float* t1, float* px1, float* py1, float* pz1, float* E1, float* mass1)
+{
+// std::cout << "Particle initialized!\n" ;
+ *id1 = gen::Id[*index-1] ;
+ *x1  = gen::X[*index-1] ;
+ *y1  = gen::Y[*index-1] ;
+ *z1  = gen::Z[*index-1] ;
+ *t1  = gen::T[*index-1] ;
+ *px1 = gen::Px[*index-1] ;
+ *py1 = gen::Py[*index-1] ;
+ *pz1 = gen::Pz[*index-1] ;
+ *E1  = gen::E[*index-1] ;
+ *mass1 = sqrt((*E1)*(*E1)-(*px1)*(*px1)-(*py1)*(*py1)-(*pz1)*(*pz1)) ;
+ return ;
+}
+
+
+void cxxnfinal_(int *np)
+{
+ gen::npart = *np ;
+//! std::cout << "cxx : created " << *np << " final particles\n" ;
+}
+
+
+void cxxfinal_(int* index, int* id1, float* x1, float* y1, float* z1, float* t1, float* px1, float* py1, float* pz1, float* E1, float* mass1)
+{
+ gen::Id[*index-1] = *id1 ;
+ gen::MId[*index-1] = 0 ;
+ gen::X[*index-1] = *x1 ;
+ gen::Y[*index-1] = *y1 ;
+ gen::Z[*index-1] = *z1 ;
+ gen::T[*index-1] = *t1 ;
+ gen::Px[*index-1] = *px1 ;
+ gen::Py[*index-1] = *py1 ;
+ gen::Pz[*index-1] = *pz1 ;
+ gen::E[*index-1] = *E1 ;
+//cout << "FPART: " << setw(14) << *px1 << setw(14) << *py1 << setw(14) << *pz1 << endl ;
+}
+
+namespace gen{
+
+using params::rescatter ;
+extern DatabasePDG2 *database ;
+
+
+// here we involve UrQMD
+void urqmd(int ievent)
+{
+ if(rescatter) // involve UrQMD
+ urqmdmain_() ;
+ // no rescattering - just pass particle arrays ass they are
+//===== decay of unstable resonances ========
+for(int iiter=0; iiter<3; iiter++){
+
+ for(int i=0; i<npart; i++){
+ ParticlePDG2* part = database->GetPDGParticle(Id[i]) ;
+ if(part==0) { /*cout << "unknown particle: " << id[i] << endl ;*/ continue ; }
+ if(part->GetWidth()>0. && !isStable(Id[i])){
+  X[i] = X[i]  + Px[i]/E[i]*(400. - T[i]) ;
+  Y[i] = Y[i]  + Py[i]/E[i]*(400. - T[i]) ;
+  Z[i] = Z[i]  + Pz[i]/E[i]*(400. - T[i]) ;
+  T[i] = 400. ;
+  double mom [4] = {Px[i],Py[i],Pz[i],E[i]} ;
+#ifdef DEBUG2
+  cout << "------ unstable particle decay " << Id[i] << endl ;
+  cout << setw(14) << "px" << setw(14) << "py" << setw(14) << "pz" << setw(14) << "E" << setw(14) << "m" << endl ;
+  cout << setw(14) << mom[0] << setw(14) << mom[1] << setw(14) << mom[2] << setw(14) << mom[3] << setw(14) << mom[4] << endl ;
+#endif
+  int nprod, ppid [4] ;
+  double pmom [3][4] ;
+  decay(Id[i], mom, nprod, ppid, pmom) ;
+#ifdef DEBUG2
+  cout << "decay into : " ; for(int iprod=0; iprod<nprod; iprod++) cout << "  " << ppid[iprod] ;
+  cout << endl ;
+  for(int iprod=0; iprod<nprod; iprod++)
+   cout << setw(14) << pmom[iprod][0] << setw(14) << pmom[iprod][1] << setw(14) << pmom[iprod][2] << setw(14) << pmom[iprod][3] << setw(14) << pmom[iprod][4] << endl ;
+#endif
+ //------------------ adding particles to list: some dirty magic
+  MId[i] = Id[i] ;
+  Px[i] = pmom[0][0]; Py[i] = pmom[0][1]; Pz[i] = pmom[0][2]; E[i] = pmom[0][3]; Id[i] = ppid[0] ;
+  for(int iprod=1; iprod<nprod; iprod++){
+   Px[npart+iprod-1] = pmom[iprod][0]; Py[npart+iprod-1] = pmom[iprod][1]; Pz[npart+iprod-1] = pmom[iprod][2]; 
+   E[npart+iprod-1] = pmom[iprod][3]; Id[npart+iprod-1] = ppid[iprod];
+   MId[npart+iprod-1] = MId[i] ;
+   X[npart+iprod-1] = X[i] ; Y[npart+iprod-1] = Y[i] ; Z[npart+iprod-1] = Z[i] ; T[npart+iprod-1] = T[i] ;
+  }
+  npart += nprod-1 ;
+//--------------------------------------------
+  } // decay procedure
+ }
+ 
+ } // decay iteration
+}
+
+} // end namespace gen
+
+//##########  resonance decay kinematics from FASTMC ###################
+
+double BreitWigner(double mean, double gamma, TRandom* random)
+{
+//  Return a number distributed following a BreitWigner function with mean and gamma
+
+   double rval, displ;
+   rval = 2*random->Rndm() - 1;
+   displ = 0.5*gamma*TMath::Tan(rval*TMath::PiOver2());
+   return (mean+displ);
+}
+
+
+void decay(int pid, double mom[4], int& nprod, int ppid [], double pmom [][4]) {
+  DatabasePDG2 *database = gen::database ;
+  TRandom3 *random3 = gen::rnd ;
+  ParticlePDG2 *pDef = database->GetPDGParticle(pid);
+  Int_t nDecayChannel = pDef->GetNDecayChannels();
+  
+  Double_t fullBranching = pDef->GetFullBranching(); // Only 3 or less body decays
+  
+  nprod = 0 ;
+  if(fullBranching < 0.0000001)
+    return;
+  
+  Double_t initialMass0 = pDef->GetMass();
+  //Breit Wigner distributon for masses
+M1:  Double_t initialMass = BreitWigner(initialMass0,pDef->GetWidth(), random3); 
+	//if(initialMass>2.*initialMass0) initialMass = 2.*initialMass0 ;
+	if(initialMass>2.*initialMass0) goto M1 ;
+
+  //ml: BW for Xi*(1530) 
+  //if(abs(pDef->GetPDG())==3314||abs(pDef->GetPDG())==3324){ 
+ // std::cout<<pDef->GetPDG()<<" mi   "<<initialMass0<<" w "<<pDef->GetWidth()<<" mbw "<<initialMass<<std::endl;
+  initialMass0=initialMass;
+  //}
+
+  Int_t nAllowedChannels = database->GetNAllowedChannels(pDef, initialMass0);
+  if(pDef->GetWidth()>0 && nDecayChannel==0) {
+//    cout << "Error in HadronDecayer::Decay() : Particle " << pDef->GetPDG() << " has finite width (" << pDef->GetWidth()
+//	 << ") but NO decay channels specified in the database. Check it out!!" << endl;
+   initialMass0 = pDef->GetMass();
+   goto M1;
+//test    exit(0);
+  }
+  if(nAllowedChannels==0) {
+//    cout << "Error in HadronDecayer::Decay() : Particle " << pDef->GetPDG() << " has " << nDecayChannel
+//	 << " decay channels but NONE of them is allowed!!" << endl;
+   initialMass0 = pDef->GetMass();
+   goto M1;
+//    exit(0);
+  }
+
+
+  // we need to choose an allowed decay channel
+  Double_t randValue = random3->Rndm() * fullBranching;
+  Int_t chosenChannel = 1000;
+  Bool_t found = kFALSE;
+  Int_t iterations = 0;
+  while(!found) {
+    if(iterations > 100) {
+      cout << "Warning in HadronDecayer::Decay() : More than 100 iterations to choose a decay channel. Check it out !!" << endl;
+    }
+    for(Int_t nChannel = 0; nChannel < nDecayChannel; ++nChannel) {
+      randValue -= pDef->GetDecayChannel(nChannel)->GetBranching();
+      if(randValue <= 0. && database->IsChannelAllowed(pDef->GetDecayChannel(nChannel), initialMass0)) {
+	chosenChannel = nChannel;
+	found = kTRUE;
+	break;
+      }
+    }
+    iterations++;
+  }
+
+  DecayChannel *dc = pDef->GetDecayChannel(chosenChannel);
+  
+  Int_t nSec = dc->GetNDaughters();
+
+//  Particle parent1(database->GetPDGParticle(parent.Encoding()));
+  Double_t E1=TMath::Sqrt(mom[0]*mom[0]+mom[1]*mom[1]+mom[2]*mom[2]+initialMass0*initialMass0);
+  TLorentzVector parentMom(mom[0],mom[1],mom[2],E1); 
+  
+//take into account BW
+ // TVector3 velocity(parent.Mom().BoostVector());
+  TVector3 velocity(parentMom.BoostVector());
+  
+
+  //decay is allowed:
+  if(nSec == 1) {
+    nprod = 1 ;
+    ppid[0] = dc->GetDaughterPDG(0) ;
+    pmom[0][0] = parentMom.Px() ;
+    pmom[0][1] = parentMom.Py() ;
+    pmom[0][2] = parentMom.Pz() ;
+    pmom[0][3] = parentMom.E() ;
+    return;
+    //store information about mother
+  } 
+  else if(nSec == 2) {
+    //two body decay
+    nprod = 2 ;
+    ppid[0] = dc->GetDaughterPDG(0) ;
+    ppid[1] = dc->GetDaughterPDG(1) ;
+    double p1mass = database->GetPDGParticle(ppid[0])->GetMass() ;
+    double p2mass = database->GetPDGParticle(ppid[1])->GetMass() ;
+    TLorentzVector p1mom, p2mom ;
+    MomAntiMom(p1mom, p1mass, p2mom, p2mass, initialMass0);
+    
+ //   if(abs(parent.Encoding())==3314||abs(parent.Encoding())==3324){
+//    std::cout<<"CMS--- 2 decay --- "<< parent.Encoding()<<" "<<initialMass0<<std::endl;
+//    std::cout<<"CMS deltas"<<p1.Mom().X()+p2.Mom().X()<<" "<<p1.Mom().Y()+p2.Mom().Y()<<" "<<
+//    p1.Mom().Z()+p2.Mom().Z()<<std::endl;}
+
+    // boost to Lab system
+    p1mom.Boost(velocity);
+    p2mom.Boost(velocity);
+    
+    pmom[0][0] = p1mom.Px() ;
+    pmom[0][1] = p1mom.Py() ;
+    pmom[0][2] = p1mom.Pz() ;
+    pmom[0][3] = p1mom.E() ;
+    pmom[1][0] = p2mom.Px() ;
+    pmom[1][1] = p2mom.Py() ;
+    pmom[1][2] = p2mom.Pz() ;
+    pmom[1][3] = p2mom.E() ;
+
+    double delta = TMath::Sqrt(
+    (parentMom.X()-p1mom.X()-p2mom.X())*(parentMom.X()-p1mom.X()-p2mom.X())+
+    (parentMom.Y()-p1mom.Y()-p2mom.Y())*(parentMom.Y()-p1mom.Y()-p2mom.Y())+
+    (parentMom.Z()-p1mom.Z()-p2mom.Z())*(parentMom.Z()-p1mom.Z()-p2mom.Z())+
+    (parentMom.E()-p1mom.E()-p2mom.E())*(parentMom.E()-p1mom.E()-p2mom.E()));
+
+
+    if(delta>0.001){
+//    if(abs(parent.Encoding())==3314||abs(parent.Encoding())==3324){
+    std::cout<<"after boost--- 2 decay --- "<< delta<<" "<<pid<<" "<<initialMass0<<std::endl;
+//    std::cout<<" after boost deltas"<<parent.Mom().X()-p1.Mom().X()-p2.Mom().X()<<" "<<parent.Mom().Y()-p1.Mom().Y()-p2.Mom().Y()<<" "<<
+//    parent.Mom().Z()-p1.Mom().Z()-p2.Mom().Z()<<std::endl;}
+
+   
+/*
+    std::cout<<"  "<< parent.Encoding()<<" "<<parent.Mom().X()<<" "<<parent.Mom().Y()<<" "
+    <<parent.Mom().Z()<<std::endl;
+
+    std::cout<<"  "<< p1.Encoding()<<" "<<p1.Mom().X()<<" "<<p1.Mom().Y()<<" "
+    <<p1.Mom().Z()<<std::endl;
+
+    std::cout<<"  "<< p2.Encoding()<<" "<<p2.Mom().X()<<" "<<p2.Mom().Y()<<" "
+    <<p2.Mom().Z()<<std::endl;
+*/
+
+   initialMass0 = pDef->GetMass();
+   goto M1;
+
+     }
+
+
+
+    return;       
+  } 
+  
+  else if(nSec == 3) {
+    // three body decay
+    nprod = 3 ;
+    ppid[0] = dc->GetDaughterPDG(0);
+    ppid[1] = dc->GetDaughterPDG(1);
+    ppid[2] = dc->GetDaughterPDG(2);
+    // calculate daughter Pabs momentum
+    Double_t pAbs1 = 0., pAbs2 = 0., pAbs3 = 0., sumPabs = 0., maxPabs = 0.;
+    Double_t mass1 = database->GetPDGParticle(ppid[0])->GetMass(), 
+    mass2 = database->GetPDGParticle(ppid[1])->GetMass(), 
+    mass3 = database->GetPDGParticle(ppid[2])->GetMass();
+    TLorentzVector mom1, mom2, mom3; 
+    Double_t deltaMass = initialMass0 - mass1 - mass2 - mass3;
+    do {
+      Double_t rd1 = random3->Rndm();
+      Double_t rd2 = random3->Rndm();
+      
+      if (rd2 > rd1)
+	std::swap(rd1, rd2);
+      // 1
+      Double_t e = rd2*deltaMass;
+      pAbs1 = TMath::Sqrt(e*e + 2*e*mass1);
+      sumPabs = pAbs1;
+      maxPabs = sumPabs;
+      // 2
+      e = (1-rd1)*deltaMass;
+      pAbs2 = TMath::Sqrt(e*e + 2*e*mass2);
+      
+      if(pAbs2 > maxPabs)
+	maxPabs = pAbs2;
+      
+      sumPabs += pAbs2;
+      // 3
+      e = (rd1-rd2)*deltaMass;
+      pAbs3 = TMath::Sqrt(e*e + 2*e*mass3);
+      
+      if (pAbs3 > maxPabs)
+	maxPabs =  pAbs3;
+      sumPabs  +=  pAbs3;
+    } while(maxPabs > sumPabs - maxPabs);
+    
+    // isotropic sample first particle 3-momentum
+    Double_t cosTheta = 2 * (random3->Rndm()) - 1;
+    Double_t sinTheta = TMath::Sqrt(1 - cosTheta*cosTheta);
+    Double_t phi      = TMath::TwoPi()*(random3->Rndm());
+    Double_t sinPhi   = TMath::Sin(phi);
+    Double_t cosPhi   = TMath::Cos(phi);
+    
+    mom1.SetPxPyPzE(sinTheta * cosPhi, sinTheta * sinPhi, cosTheta, 0);
+    mom1 *= pAbs1;
+    // sample rest particle 3-momentum
+    Double_t cosThetaN = (pAbs2 * pAbs2 - pAbs3 * pAbs3 - pAbs1 * pAbs1)
+      / (2 * pAbs1 * pAbs3);
+    Double_t sinThetaN = TMath::Sqrt(1 - cosThetaN * cosThetaN);
+    Double_t phiN      = TMath::TwoPi() * (random3->Rndm());
+    Double_t sinPhiN   = TMath::Sin(phiN);
+    Double_t cosPhiN   = TMath::Cos(phiN);
+    
+    mom3.SetPxPyPzE(sinThetaN * cosPhiN * cosTheta * cosPhi - sinThetaN * sinPhiN * sinPhi + cosThetaN * sinTheta * cosPhi,
+		    sinThetaN * cosPhiN * cosTheta * sinPhi + sinThetaN * sinPhiN * cosPhi + cosThetaN * sinTheta * sinPhi,
+		    -sinThetaN * cosPhiN * sinTheta + cosThetaN * cosTheta,
+		    0.);
+    
+    mom3 *= pAbs3*mom3.P();
+    mom2 = mom1;
+    mom2 += mom3;
+    mom2 *= -1.;
+    // calculate energy
+    mom1.SetE(TMath::Sqrt(mom1.P() * mom1.P() + mass1 * mass1));
+    mom2.SetE(TMath::Sqrt(mom2.P() * mom2.P() + mass2 * mass2));
+    mom3.SetE(TMath::Sqrt(mom3.P() * mom3.P() + mass3 * mass3));
+    // boost to Lab system
+    mom1.Boost(velocity);
+    mom2.Boost(velocity);
+    mom3.Boost(velocity);
+    
+    
+//test energy conservation
+
+    double delta =TMath::Sqrt(
+    (parentMom.X()-mom1.X()-mom2.X()-mom3.X())*
+    (parentMom.X()-mom1.X()-mom2.X()-mom3.X())
+   +
+    (parentMom.Y()-mom1.Y()-mom2.Y()-mom3.Y())
+    *(parentMom.Y()-mom1.Y()-mom2.Y()-mom3.Y())
+   +
+    (parentMom.Z()-mom1.Z()-mom2.Z()-mom3.Z())*
+    (parentMom.Z()-mom1.Z()-mom2.Z()-mom3.Z())
+    +
+    (parentMom.E()-mom1.E()-mom2.E()-mom3.E())*
+    (parentMom.E()-mom1.E()-mom2.E()-mom3.E())); 
+
+    if(delta>1.E-2){
+    std::cout<<"bad decay--- 3 decay --- "<< delta<<" "<<pid<<" "<<initialMass0<<std::endl;
+
+/*
+    std::cout<<"  "<< parent.Encoding()<<" "<<parent.Mom().X()<<" "<<parent.Mom().Y()<<" "
+    <<parent.Mom().Z()<<std::endl;
+
+    std::cout<<"  "<< p1.Encoding()<<" "<<p1.Mom().X()<<" "<<p1.Mom().Y()<<" "
+    <<p1.Mom().Z()<<std::endl;
+
+    std::cout<<"  "<< p2.Encoding()<<" "<<p2.Mom().X()<<" "<<p2.Mom().Y()<<" "
+    <<p2.Mom().Z()<<std::endl;
+
+    std::cout<<"  "<< p3.Encoding()<<" "<<p3.Mom().X()<<" "<<p3.Mom().Y()<<" "
+    <<p3.Mom().Z()<<std::endl;
+*/  
+   initialMass0 = pDef->GetMass();
+   goto M1;
+
+    return;
+
+    }
+
+    pmom[0][0] = mom1.Px() ;
+    pmom[0][1] = mom1.Py() ;
+    pmom[0][2] = mom1.Pz() ;
+    pmom[0][3] = mom1.E() ;
+    pmom[1][0] = mom2.Px() ;
+    pmom[1][1] = mom2.Py() ;
+    pmom[1][2] = mom2.Pz() ;
+    pmom[1][3] = mom2.E() ;
+    pmom[2][0] = mom3.Px() ;
+    pmom[2][1] = mom3.Py() ;
+    pmom[2][2] = mom3.Pz() ;
+    pmom[2][3] = mom3.E() ;
+
+
+    return;
+  }
+  	 
+}
