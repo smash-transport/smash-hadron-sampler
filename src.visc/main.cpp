@@ -16,6 +16,7 @@
 #include <fstream>
 #include <TF1.h>
 #include <sstream>
+#include <TUUID.h>
 
 #include "DatabasePDG2.h"
 #include "gen.h"
@@ -33,6 +34,15 @@ using params::sSurface ;
 using params::NEVENTS ;
 using params::bEventGeneration ;
 
+int ranseed ;
+
+extern "C"{
+  void getranseedcpp_(int *seed)
+  {
+    *seed = ranseed ;
+  }
+}
+
 // ########## MAIN block ##################
 
 int main(int argc, char **argv)
@@ -40,9 +50,13 @@ int main(int argc, char **argv)
   // command-line parameters
   int prefix = readCommandLine(argc, argv) ;
   params::printParameters() ;
-  
+  time_t time0 ;
+  time(&time0) ;
+  ranseed = time0+prefix*16 ;
+
   TRandom3* random3 = new TRandom3();
-	random3->SetSeed();
+	random3->SetSeed(ranseed);
+  cout<<"Random seed = "<<ranseed<<endl ;
   gen::rnd = random3 ;
   
 //========= particle database init
@@ -70,17 +84,20 @@ if(bEventGeneration){ // ---- generate events
  sprintf(sbuffer,"mkdir -p %s",sSpectraDir) ;
  system(sbuffer) ;
  sprintf(sbuffer,"%s/all.mult",sMultDir) ;
- gen::loadDFMax(sbuffer,getNlines(sbuffer)) ;
+ //gen::loadDFMax(sbuffer,getNlines(sbuffer)) ;
  sprintf(sbuffer, "%s/%i.root",sSpectraDir,prefix) ;
  TFile *outputFile = new TFile(sbuffer, "RECREATE"); 
  outputFile->cd();
  MyTree *treeIni = new MyTree("treeini") ;
  MyTree *treeFin = new MyTree("treefin") ;
+ 
+ gen::generate() ; // one call for NEVENTS
+
  for(int iev=0; iev<NEVENTS; iev++){
- gen::generate() ;
- if(iev<10) cout<<"event #"<<iev<<" done\n" ;
+ treeIni->setEventAddr(iev) ;
  treeIni->fill() ;
  gen::urqmd(iev) ;
+ treeFin->setEventAddr(iev) ;
  treeFin->fill() ;
  } // end events loop
  outputFile->Write() ;
@@ -92,8 +109,6 @@ char sbuffer [255] ;
  sprintf(sbuffer, "%s/%i.mult", sMultDir, prefix) ; // here prefix=id of particle
  gen::calcDFMax(prefix, sbuffer) ;
 }
- 
-
 
  cout << "event generation done\n" ;
  time(&end); float diff2 = difftime(end, start);

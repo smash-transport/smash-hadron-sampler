@@ -7,26 +7,28 @@
 #include "DatabasePDG2.h"
 #include "params.h"
 
+int ievcasc ; // event #
+
 using namespace std ;
 
 void cxxninit_(int *np)
 {
- *np = gen::npart ;
+ *np = gen::npart[ievcasc] ;
 }
 
 
 void cxxinit_(int* index, int* id1, float* x1, float* y1, float* z1, float* t1, float* px1, float* py1, float* pz1, float* E1, float* mass1)
 {
 // std::cout << "Particle initialized!\n" ;
- *id1 = gen::Id[*index-1] ;
- *x1  = gen::X[*index-1] ;
- *y1  = gen::Y[*index-1] ;
- *z1  = gen::Z[*index-1] ;
- *t1  = gen::T[*index-1] ;
- *px1 = gen::Px[*index-1] ;
- *py1 = gen::Py[*index-1] ;
- *pz1 = gen::Pz[*index-1] ;
- *E1  = gen::E[*index-1] ;
+ *id1 = gen::Id[ievcasc][*index-1] ;
+ *x1  = gen::X[ievcasc][*index-1] ;
+ *y1  = gen::Y[ievcasc][*index-1] ;
+ *z1  = gen::Z[ievcasc][*index-1] ;
+ *t1  = gen::T[ievcasc][*index-1] ;
+ *px1 = gen::Px[ievcasc][*index-1] ;
+ *py1 = gen::Py[ievcasc][*index-1] ;
+ *pz1 = gen::Pz[ievcasc][*index-1] ;
+ *E1  = gen::E[ievcasc][*index-1] ;
  *mass1 = sqrt((*E1)*(*E1)-(*px1)*(*px1)-(*py1)*(*py1)-(*pz1)*(*pz1)) ;
  return ;
 }
@@ -34,23 +36,23 @@ void cxxinit_(int* index, int* id1, float* x1, float* y1, float* z1, float* t1, 
 
 void cxxnfinal_(int *np)
 {
- gen::npart = *np ;
+ gen::npart[ievcasc] = *np ;
 //! std::cout << "cxx : created " << *np << " final particles\n" ;
 }
 
 
 void cxxfinal_(int* index, int* id1, float* x1, float* y1, float* z1, float* t1, float* px1, float* py1, float* pz1, float* E1, float* mass1)
 {
- gen::Id[*index-1] = *id1 ;
- gen::MId[*index-1] = 0 ;
- gen::X[*index-1] = *x1 ;
- gen::Y[*index-1] = *y1 ;
- gen::Z[*index-1] = *z1 ;
- gen::T[*index-1] = *t1 ;
- gen::Px[*index-1] = *px1 ;
- gen::Py[*index-1] = *py1 ;
- gen::Pz[*index-1] = *pz1 ;
- gen::E[*index-1] = *E1 ;
+ gen::Id[ievcasc][*index-1] = *id1 ;
+ gen::MId[ievcasc][*index-1] = 0 ;
+ gen::X[ievcasc][*index-1] = *x1 ;
+ gen::Y[ievcasc][*index-1] = *y1 ;
+ gen::Z[ievcasc][*index-1] = *z1 ;
+ gen::T[ievcasc][*index-1] = *t1 ;
+ gen::Px[ievcasc][*index-1] = *px1 ;
+ gen::Py[ievcasc][*index-1] = *py1 ;
+ gen::Pz[ievcasc][*index-1] = *pz1 ;
+ gen::E[ievcasc][*index-1] = *E1 ;
 //cout << "FPART: " << setw(14) << *px1 << setw(14) << *py1 << setw(14) << *pz1 << endl ;
 }
 
@@ -61,31 +63,32 @@ extern DatabasePDG2 *database ;
 
 
 // here we involve UrQMD
-void urqmd(int ievent)
+void urqmd(int iev)
 {
+ ievcasc = iev ;
  if(rescatter) // involve UrQMD
  urqmdmain_() ;
  // no rescattering - just pass particle arrays ass they are
 //===== decay of unstable resonances ========
 for(int iiter=0; iiter<3; iiter++){
 
- for(int i=0; i<npart; i++){
- ParticlePDG2* part = database->GetPDGParticle(Id[i]) ;
+ for(int i=0; i<npart[iev]; i++){
+ ParticlePDG2* part = database->GetPDGParticle(Id[iev][i]) ;
  if(part==0) { /*cout << "unknown particle: " << id[i] << endl ;*/ continue ; }
- if(part->GetWidth()>0. && !isStable(Id[i])){
-  X[i] = X[i]  + Px[i]/E[i]*(400. - T[i]) ;
-  Y[i] = Y[i]  + Py[i]/E[i]*(400. - T[i]) ;
-  Z[i] = Z[i]  + Pz[i]/E[i]*(400. - T[i]) ;
-  T[i] = 400. ;
-  double mom [4] = {Px[i],Py[i],Pz[i],E[i]} ;
+ if(part->GetWidth()>0. && !isStable(Id[iev][i])){
+  X[iev][i] = X[iev][i]  + Px[iev][i]/E[iev][i]*(400. - T[iev][i]) ;
+  Y[iev][i] = Y[iev][i]  + Py[iev][i]/E[iev][i]*(400. - T[iev][i]) ;
+  Z[iev][i] = Z[iev][i]  + Pz[iev][i]/E[iev][i]*(400. - T[iev][i]) ;
+  T[iev][i] = 400. ;
+  double mom [4] = {Px[iev][i],Py[iev][i],Pz[iev][i],E[iev][i]} ;
 #ifdef DEBUG2
   cout << "------ unstable particle decay " << Id[i] << endl ;
   cout << setw(14) << "px" << setw(14) << "py" << setw(14) << "pz" << setw(14) << "E" << setw(14) << "m" << endl ;
   cout << setw(14) << mom[0] << setw(14) << mom[1] << setw(14) << mom[2] << setw(14) << mom[3] << setw(14) << mom[4] << endl ;
 #endif
-  int nprod, ppid [4] ;
+  int nprod, ppid [4], pchrg [4] ;
   double pmom [3][4] ;
-  decay(Id[i], mom, nprod, ppid, pmom) ;
+  decay(Id[iev][i], mom, nprod, ppid, pmom, pchrg) ;
 #ifdef DEBUG2
   cout << "decay into : " ; for(int iprod=0; iprod<nprod; iprod++) cout << "  " << ppid[iprod] ;
   cout << endl ;
@@ -93,15 +96,18 @@ for(int iiter=0; iiter<3; iiter++){
    cout << setw(14) << pmom[iprod][0] << setw(14) << pmom[iprod][1] << setw(14) << pmom[iprod][2] << setw(14) << pmom[iprod][3] << setw(14) << pmom[iprod][4] << endl ;
 #endif
  //------------------ adding particles to list: some dirty magic
-  MId[i] = Id[i] ;
-  Px[i] = pmom[0][0]; Py[i] = pmom[0][1]; Pz[i] = pmom[0][2]; E[i] = pmom[0][3]; Id[i] = ppid[0] ;
+  MId[iev][i] = Id[iev][i] ;
+  Px[iev][i] = pmom[0][0]; Py[iev][i] = pmom[0][1]; Pz[iev][i] = pmom[0][2]; E[iev][i] = pmom[0][3];
+  Id[iev][i] = ppid[0] ; Charge[iev][i] = pchrg[0] ;
   for(int iprod=1; iprod<nprod; iprod++){
-   Px[npart+iprod-1] = pmom[iprod][0]; Py[npart+iprod-1] = pmom[iprod][1]; Pz[npart+iprod-1] = pmom[iprod][2]; 
-   E[npart+iprod-1] = pmom[iprod][3]; Id[npart+iprod-1] = ppid[iprod];
-   MId[npart+iprod-1] = MId[i] ;
-   X[npart+iprod-1] = X[i] ; Y[npart+iprod-1] = Y[i] ; Z[npart+iprod-1] = Z[i] ; T[npart+iprod-1] = T[i] ;
+   Px[iev][npart[iev]+iprod-1] = pmom[iprod][0]; Py[iev][npart[iev]+iprod-1] = pmom[iprod][1];
+   Pz[iev][npart[iev]+iprod-1] = pmom[iprod][2]; E[iev][npart[iev]+iprod-1] = pmom[iprod][3];
+   Id[iev][npart[iev]+iprod-1] = ppid[iprod]; Charge[iev][npart[iev]+iprod-1] = pchrg[iprod];
+   MId[iev][npart[iev]+iprod-1] = MId[iev][i] ;
+   X[iev][npart[iev]+iprod-1] = X[iev][i] ; Y[iev][npart[iev]+iprod-1] = Y[iev][i] ;
+   Z[iev][npart[iev]+iprod-1] = Z[iev][i] ; T[iev][npart[iev]+iprod-1] = T[iev][i] ;
   }
-  npart += nprod-1 ;
+  npart[iev] += nprod-1 ;
 //--------------------------------------------
   } // decay procedure
  }
@@ -124,7 +130,7 @@ double BreitWigner(double mean, double gamma, TRandom* random)
 }
 
 
-void decay(int pid, double mom[4], int& nprod, int ppid [], double pmom [][4]) {
+void decay(int pid, double mom[4], int& nprod, int ppid [], double pmom [][4], int pchrg []) {
   DatabasePDG2 *database = gen::database ;
   TRandom3 *random3 = gen::rnd ;
   ParticlePDG2 *pDef = database->GetPDGParticle(pid);
@@ -202,6 +208,7 @@ M1:  Double_t initialMass = BreitWigner(initialMass0,pDef->GetWidth(), random3);
   if(nSec == 1) {
     nprod = 1 ;
     ppid[0] = dc->GetDaughterPDG(0) ;
+    pchrg[0] = pDef->GetElectricCharge() ;
     pmom[0][0] = parentMom.Px() ;
     pmom[0][1] = parentMom.Py() ;
     pmom[0][2] = parentMom.Pz() ;
@@ -214,8 +221,12 @@ M1:  Double_t initialMass = BreitWigner(initialMass0,pDef->GetWidth(), random3);
     nprod = 2 ;
     ppid[0] = dc->GetDaughterPDG(0) ;
     ppid[1] = dc->GetDaughterPDG(1) ;
-    double p1mass = database->GetPDGParticle(ppid[0])->GetMass() ;
-    double p2mass = database->GetPDGParticle(ppid[1])->GetMass() ;
+    ParticlePDG2* daughter1 = database->GetPDGParticle(ppid[0]) ;
+    ParticlePDG2* daughter2 = database->GetPDGParticle(ppid[1]) ;
+    double p1mass = daughter1->GetMass() ;
+    double p2mass = daughter2->GetMass() ;
+    pchrg[0] = daughter1->GetElectricCharge() ;
+    pchrg[1] = daughter2->GetElectricCharge() ;
     TLorentzVector p1mom, p2mom ;
     MomAntiMom(p1mom, p1mass, p2mom, p2mass, initialMass0);
     
@@ -280,9 +291,15 @@ M1:  Double_t initialMass = BreitWigner(initialMass0,pDef->GetWidth(), random3);
     ppid[2] = dc->GetDaughterPDG(2);
     // calculate daughter Pabs momentum
     Double_t pAbs1 = 0., pAbs2 = 0., pAbs3 = 0., sumPabs = 0., maxPabs = 0.;
-    Double_t mass1 = database->GetPDGParticle(ppid[0])->GetMass(), 
-    mass2 = database->GetPDGParticle(ppid[1])->GetMass(), 
-    mass3 = database->GetPDGParticle(ppid[2])->GetMass();
+    ParticlePDG2* daughter1 = database->GetPDGParticle(ppid[0]) ;
+    ParticlePDG2* daughter2 = database->GetPDGParticle(ppid[1]) ;
+    ParticlePDG2* daughter3 = database->GetPDGParticle(ppid[2]) ;
+    Double_t mass1 = daughter1->GetMass(), 
+    mass2 = daughter2->GetMass(), 
+    mass3 = daughter3->GetMass();
+    pchrg[0] = daughter1->GetElectricCharge() ;
+    pchrg[1] = daughter2->GetElectricCharge() ;
+    pchrg[2] = daughter3->GetElectricCharge() ;
     TLorentzVector mom1, mom2, mom3; 
     Double_t deltaMass = initialMass0 - mass1 - mass2 - mass3;
     do {

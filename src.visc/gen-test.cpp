@@ -289,9 +289,6 @@ double ffthermal(double *x, double *par)
   return x[0]*x[0]/( exp((sqrt(x[0]*x[0]+mass*mass)-mu)/T) - stat ) ;
 }
 
-//###############################################
-// BEWARE!  fixed T for particle generation !!!
-//###############################################
 int generate()
 {
  const double gmumu [4] = {1., -1., -1., -1.} ;
@@ -299,12 +296,12 @@ int generate()
  TLorentzVector mom ;
  for(int iev=0; iev<params::NEVENTS; iev++) npart[iev] = 0 ;
  int nmaxiter = 0 ;
+ double n_pi = 0.0 ;
 
  for(int iel=0; iel<Nelem; iel++){ // loop over all elements
   // ---> thermal densities, for each surface element
    totalDensity = 0.0 ;
-   //surf[iel].T = 0.1647 ;
-   for(int ip=0; ip<NPART; ip++){
+   for(int ip=328; ip<NPART; ip++){
     double density = 0. ;
     ParticlePDG2 *particle = database->GetPDGParticleByIndex(ip) ;
     const double mass = particle->GetMass() ;
@@ -324,6 +321,7 @@ int generate()
   double rval, dvEff = 0., W ;
   // dvEff = dsigma_mu * u^mu
   dvEff = surf[iel].dsigma[0] ;
+  n_pi += dvEff*totalDensity ;
   for(int ievent=0; ievent<params::NEVENTS; ievent++){
   // ---- number of particles to generate
   int nToGen = 0 ;
@@ -384,8 +382,9 @@ int generate()
   } // events loop
   if(iel%(Nelem/50)==0) cout<<(iel*100)/Nelem<<" percents done, maxiter= "<<nmaxiter<<endl ;
  } // loop over all elements
- return npart[0] ;
  delete fthermal ;
+ cout << "n_pi = "<<n_pi<<endl ;
+ return npart[0] ;
 }
 
 
