@@ -125,19 +125,14 @@ void load(char *filename, int N)
    getline(fin, line) ;
    instream.str(line) ;
    instream.seekg(0) ;
-   if(params::shear){ // read all including viscous terms
+   instream.clear() ; // does not work with gcc 4.1 otherwise
     instream>>surf[n].tau>>surf[n].x>>surf[n].y>>surf[n].eta
       >>surf[n].dsigma[0]>>surf[n].dsigma[1]>>surf[n].dsigma[2]>>surf[n].dsigma[3]
       >>surf[n].u[0]>>surf[n].u[1]>>surf[n].u[2]>>surf[n].u[3]
       >>surf[n].T>>surf[n].mub>>surf[n].muq>>surf[n].mus ;
       for(int i=0; i<10; i++) instream>>surf[n].pi[i] ;
       instream>>surf[n].Pi ;
-   }else{ // read only ideal part
-    instream>>surf[n].tau>>surf[n].x>>surf[n].y>>surf[n].eta
-      >>surf[n].dsigma[0]>>surf[n].dsigma[1]>>surf[n].dsigma[2]>>surf[n].dsigma[3]
-      >>surf[n].u[0]>>surf[n].u[1]>>surf[n].u[2]>>surf[n].u[3]
-      >>surf[n].T>>surf[n].mub>>surf[n].muq>>surf[n].mus>>dV ;
-   }
+
    if(instream.fail()){ cout<<"reading failed at line "<<n<<"; exiting\n" ; exit(1) ; }
    // calculate in the old way
    dvEffOld = surf[n].dsigma[0]*surf[n].u[0]+surf[n].dsigma[1]*surf[n].u[1]+
@@ -179,7 +174,7 @@ void load(char *filename, int N)
    for(int i=0; i<10; i++) surf[n].pi[i] = _pi[i] ;
    } // end pi boost
  }
- if(params::shear) dsigmaMax *= 1.3*2.0 ; // *2.0: jun17. default: *1.5
+ if(params::shear) dsigmaMax *= 2.0 ; // *2.0: jun17. default: *1.5
  else dsigmaMax *= 1.3 ;
 
  cout<<"..done.\n" ;
@@ -270,7 +265,7 @@ int generate()
    W = ( surf[iel].dsigma[0]*mom.E() + surf[iel].dsigma[1]*mom.Px() +
         surf[iel].dsigma[2]*mom.Py() + surf[iel].dsigma[3]*mom.Pz() ) / mom.E() ;
    double WviscFactor = 1.0 ;
-   if(params::shear){ // cut viscous corrections for p>2 GeV
+   if(params::shear){
     const double feq = C_Feq/( exp((sqrt(p*p+mass*mass)-muf)/surf[iel].T) - stat ) ;
     double pipp = 0 ;
     double momArray [4] = {mom[3],mom[0],mom[1],mom[2]} ;
