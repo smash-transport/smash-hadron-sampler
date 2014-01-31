@@ -101,7 +101,7 @@ double totalDensity ; // sum of all thermal densities
 void load(char *filename, int N)
 {
  double dV, vEff=0.0, vEffOld=0.0, dvEff, dvEffOld ;
- int nfail=0 ;
+ int nfail=0, ncut=0 ;
  TLorentzVector dsigma ;
  Nelem = N ;
  surf = new element [Nelem] ;
@@ -132,6 +132,9 @@ void load(char *filename, int N)
       >>surf[n].T>>surf[n].mub>>surf[n].muq>>surf[n].mus ;
       for(int i=0; i<10; i++) instream>>surf[n].pi[i] ;
       instream>>surf[n].Pi ;
+      if(surf[n].muq>0.12){ surf[n].muq=0.12 ; // omit charge ch.pot. for test
+	ncut++ ;
+      }
 
    if(instream.fail()){ cout<<"reading failed at line "<<n<<"; exiting\n" ; exit(1) ; }
    // calculate in the old way
@@ -181,6 +184,7 @@ void load(char *filename, int N)
  cout<<"Veff = "<<vEff<<"  dvMax = "<<dvMax<<endl ;
  cout<<"Veff(old) = "<<vEffOld<<endl ;
  cout<<"failed elements = "<<nfail<<endl ;
+ cout<<"mu_cut elements = "<<ncut<<endl ;
 // ---- prepare some stuff to calculate thermal densities
  NPART=database->GetNParticles() ;
  cout<<"NPART="<<NPART<<endl ;
@@ -213,7 +217,6 @@ int generate()
  for(int iel=0; iel<Nelem; iel++){ // loop over all elements
   // ---> thermal densities, for each surface element
    totalDensity = 0.0 ;
-   //surf[iel].T = 0.1647 ;
    for(int ip=0; ip<NPART; ip++){
     double density = 0. ;
     ParticlePDG2 *particle = database->GetPDGParticleByIndex(ip) ;
@@ -326,7 +329,7 @@ void acceptParticle(int ievent, ParticlePDG2 *ldef, double lx, double ly, double
     npart1++ ;
   }}
   delete resonance ;
-  delete [] daughters ;
+  if(nprod>0) delete [] daughters ;
  }
  if(npart1>NPartBuf){ cout<<"Error. Please increase gen::npartbuf\n"; exit(1);}
 }

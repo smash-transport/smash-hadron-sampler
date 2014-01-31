@@ -50,7 +50,7 @@ void readParams(char* filename)
 	 else if(parName[0]=='!') cout << "CCC " << sline.str() << endl ;
 	 else cout << "UUU " << sline.str() << endl ;
 	}
- deta=0.4 ; dx=dy=0.0 ; // TODO!
+ deta=0.05 ; dx=dy=0.0 ; // TODO!
 }
 
 void printParameters()
