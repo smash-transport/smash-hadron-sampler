@@ -135,6 +135,9 @@ void load(char *filename, int N)
       if(surf[n].muq>0.12){ surf[n].muq=0.12 ; // omit charge ch.pot. for test
 	ncut++ ;
       }
+      if(surf[n].muq<-0.12){ surf[n].muq=-0.12 ; // omit charge ch.pot. for test
+	ncut++ ;
+      }
 
    if(instream.fail()){ cout<<"reading failed at line "<<n<<"; exiting\n" ; exit(1) ; }
    // calculate in the old way
@@ -217,6 +220,7 @@ int generate()
  for(int iel=0; iel<Nelem; iel++){ // loop over all elements
   // ---> thermal densities, for each surface element
    totalDensity = 0.0 ;
+   if(surf[iel].T<=0.) continue ;
    for(int ip=0; ip<NPART; ip++){
     double density = 0. ;
     ParticlePDG2 *particle = database->GetPDGParticleByIndex(ip) ;
@@ -257,6 +261,7 @@ int generate()
    const double stat = int(2.*J) & 1 ? -1. : 1. ;
    const double muf = part->GetBaryonNumber()*surf[iel].mub + part->GetStrangeness()*surf[iel].mus +
                part->GetElectricCharge()*surf[iel].muq ;
+   if(muf>=mass) cout << " ^^ muf = " << muf << "  " << part->GetPDG() << endl ;
    fthermal->SetParameters(surf[iel].T,muf,mass,stat) ;
    //const double dfMax = part->GetFMax() ;
    int niter = 0 ; // number of iterations, for debug purposes
@@ -312,7 +317,11 @@ void acceptParticle(int ievent, ParticlePDG2 *ldef, double lx, double ly, double
  if(geteposcode_(&lid)!=0 && abs(urqmdid)<1000){  // particle known to UrQMD
 // if(true){ // TEST!! for thermal mult's
     pList[ievent][npart1] = new Particle(lx,ly,lz,lt,lpx,lpy,lpz,lE, ldef, 0) ;
-    npart1++ ;
+   npart1++ ;
+   if(isinf(lE) || isnan(lE)){
+     cout << "acceptPart nan: known, coord="<<lx<<" "<<ly<<" "<<lz<<" "<<lt<<endl ;
+     exit(1) ;
+   }
  }else{ // decay particles unknown to UrQMD
 //  cout << "------ unstable particle decay (Cooper-Frye isotherm) " << lid << endl ;
 //  cout << setw(14) << "px" << setw(14) << "py" << setw(14) << "pz" << setw(14) << "E" << endl ;
@@ -326,6 +335,10 @@ void acceptParticle(int ievent, ParticlePDG2 *ldef, double lx, double ly, double
     pdg2id_(&urqmdid, &urqmdiso3, &daughterId) ;
     if(geteposcode_(&daughterId)!=0 && abs(urqmdid)<1000){  // particle known to UrQMD
     pList[ievent][npart1] = daughters[iprod] ;
+    if(isinf(daughters[iprod]->e) || isnan(daughters[iprod]->e)){
+      cout << "acceptPart nan: unknown, mid="<<daughters[iprod]->mid<<endl ;
+      exit(1) ;
+    }
     npart1++ ;
   }}
   delete resonance ;
