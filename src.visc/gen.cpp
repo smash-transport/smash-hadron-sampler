@@ -216,11 +216,12 @@ int generate()
  TLorentzVector mom ;
  for(int iev=0; iev<params::NEVENTS; iev++) npart[iev] = 0 ;
  int nmaxiter = 0 ;
+ int ntherm_fail=0 ;
 
  for(int iel=0; iel<Nelem; iel++){ // loop over all elements
   // ---> thermal densities, for each surface element
    totalDensity = 0.0 ;
-   if(surf[iel].T<=0.) continue ;
+   if(surf[iel].T<=0.){ ntherm_fail++ ; continue ; }
    for(int ip=0; ip<NPART; ip++){
     double density = 0. ;
     ParticlePDG2 *particle = database->GetPDGParticleByIndex(ip) ;
@@ -235,6 +236,7 @@ int generate()
         else cumulantDensity[ip] = density ;
     totalDensity += density ;
    }
+   if(totalDensity<0.  || totalDensity>100.){ ntherm_fail++ ; continue ; }
    //cout<<"thermal densities calculated.\n" ;
    //cout<<cumulantDensity[NPART-1]<<" = "<<totalDensity<<endl ;
  // ---< end thermal densities calc
@@ -302,6 +304,7 @@ int generate()
   } // events loop
   if(iel%(Nelem/50)==0) cout<<(iel*100)/Nelem<<" percents done, maxiter= "<<nmaxiter<<endl ;
  } // loop over all elements
+ cout << "therm_failed elements: " <<ntherm_fail << endl ;
  return npart[0] ;
  delete fthermal ;
 }
