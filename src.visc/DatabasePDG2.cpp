@@ -118,7 +118,7 @@ Bool_t DatabasePDG2::LoadParticles() {
 //       << "       Mass range                                         : (" << fMinimumMass << "; " << fMaximumMass << ")" << endl
 //       << "       Width range                                        : (" << fMinimumWidth << "; " << fMaximumWidth << ")" << endl;
   
-  particleFile.exceptions(ios::failbit);
+//  particleFile.exceptions(ios::failbit);
   while(!particleFile.eof()) {
     try {
       particleFile >> mass >> width >> isospin >> gparity >> spin >> pparity >> cparity >> antiparticle >> pdg >> charge >> status >> name >> recipt ;
@@ -325,7 +325,7 @@ Bool_t DatabasePDG2::LoadDecays() {
   Double_t branching;
   Int_t isCG ;
   
-  decayFile.exceptions(ios::failbit);
+//  decayFile.exceptions(ios::failbit);
   while(!decayFile.eof()) {
     mother_pdg = 0;
     for(Int_t i=0; i<3; i++) daughter_pdg[i] = 0;
