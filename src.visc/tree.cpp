@@ -17,6 +17,9 @@ MyTree::MyTree(char *name)
   E  = new Float_t [gen::NPartBuf] ;
   Id   = new Int_t [gen::NPartBuf] ;
   MId  = new Int_t [gen::NPartBuf] ;
+  LastColl  = new Int_t [gen::NPartBuf] ;
+  NColl  = new Int_t [gen::NPartBuf] ;
+  Origin  = new Int_t [gen::NPartBuf] ;
   Chrg= new Short_t [gen::NPartBuf] ; // particle's electric charge
   Bar = new Short_t [gen::NPartBuf] ; // baryon charge
   Strg= new Short_t [gen::NPartBuf] ; // strangeness
@@ -33,6 +36,9 @@ MyTree::MyTree(char *name)
   tree->Branch("E",&E[0],"E[npart]/F");
   tree->Branch("id",&Id[0],"id[npart]/I");
   tree->Branch("mid",&MId[0],"mid[npart]/I");
+  tree->Branch("lastcoll",&LastColl[0],"lastcoll[npart]/I");
+  tree->Branch("ncoll",&NColl[0],"ncoll[npart]/I");
+  tree->Branch("origin",&Origin[0],"orig[npart]/I");
   tree->Branch("ele",&Chrg[0],"ele[npart]/S");
   tree->Branch("bar",&Bar[0],"bar[npart]/S");
   tree->Branch("str",&Strg[0],"str[npart]/S");
@@ -54,6 +60,9 @@ void MyTree::fill(int iev)
    E[nfill] = gen::pList[iev][ipart]->e ;
   Id[nfill] = gen::pList[iev][ipart]->def->GetPDG() ;
  MId[nfill] = gen::pList[iev][ipart]->mid ;
+ LastColl[nfill] = gen::pList[iev][ipart]->lastcoll ;
+ NColl[nfill] = gen::pList[iev][ipart]->ncoll ;
+ Origin[nfill] = gen::pList[iev][ipart]->origin ;
 Chrg[nfill] = (Char_t)(gen::pList[iev][ipart]->def->GetElectricCharge()) ;
  Bar[nfill] = (Char_t)(gen::pList[iev][ipart]->def->GetBaryonNumber()) ;
 Strg[nfill] = (Char_t)(gen::pList[iev][ipart]->def->GetStrangeness()) ;

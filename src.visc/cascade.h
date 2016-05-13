@@ -8,7 +8,7 @@ extern"C" {
  void cxxinit_(int* index, int* id, float* x, float* y, float* z, float* t, float* px, float* py, float* pz, float* E, float* mass);
  void cxxninit_(int *np) ;
  void cxxnfinal_(int *np) ;
- void cxxfinal_(int* index, int* id, float* x, float* y, float* z, float* t, float* px, float* py, float* pz, float* E, float* mass);
+ void cxxfinal_(int* index, int* id, float* x, float* y, float* z, float* t, float* px, float* py, float* pz, float* E, float* mass, int* ncoll, int* lstcoll, int* istptl);
 }
 
 void decay(Particle *in, int& nprod, Particle** &out) ;

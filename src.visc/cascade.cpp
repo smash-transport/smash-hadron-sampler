@@ -45,7 +45,7 @@ void cxxnfinal_(int *np)
 }
 
 
-void cxxfinal_(int* index, int* id1, float* x1, float* y1, float* z1, float* t1, float* px1, float* py1, float* pz1, float* E1, float* mass1)
+void cxxfinal_(int* index, int* id1, float* x1, float* y1, float* z1, float* t1, float* px1, float* py1, float* pz1, float* E1, float* mass1, int* ncoll, int* lstcoll, int* istptl)
 {
  Particle* p = gen::pList[ievcasc][*index-1] ;
  p->def = gen::database->GetPDGParticle(*id1) ;
@@ -58,6 +58,9 @@ void cxxfinal_(int* index, int* id1, float* x1, float* y1, float* z1, float* t1,
  p->py = *py1 ;
  p->pz = *pz1 ;
  p->e = *E1 ;
+ p->ncoll = *ncoll;
+ p->lastcoll = *lstcoll;
+ p->origin = *istptl;
 //cout << "FPART: " << setw(14) << *px1 << setw(14) << *py1 << setw(14) << *pz1 << endl ;
 }
 
