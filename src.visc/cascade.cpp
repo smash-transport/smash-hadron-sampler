@@ -111,6 +111,7 @@ for(int iiter=0; iiter<3; iiter++){
  }
  
  } // decay iteration
+ if(npart[iev]>NPartBuf){ cout<<"Error. Please increase gen::npartbuf\n"; exit(1);}
 }
 
 } // end namespace gen

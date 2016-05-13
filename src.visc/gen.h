@@ -9,7 +9,7 @@ extern DatabasePDG2 *database ;
 extern TRandom3 *rnd ;
 extern Particle ***pList ; // particle arrays
 extern int *npart ;
-const int NPartBuf = 10000; // dimension of particle buffer for each event
+const int NPartBuf = 15000; // dimension of particle buffer for each event
 
 // functions
 void load(char *filename, int N) ;
