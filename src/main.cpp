@@ -20,7 +20,6 @@
 
 #include "DatabasePDG2.h"
 #include "gen.h"
-#include "cascade.h"
 #include "tree.h"
 #include "params.h"
 
@@ -29,10 +28,8 @@ int getNlines(char *filename) ;
 int readCommandLine(int argc, char** argv) ;
 
 using params::sSpectraDir ;
-using params::sMultDir ;
 using params::sSurface ;
 using params::NEVENTS ;
-using params::bEventGeneration ;
 
 int ranseed ;
 
@@ -79,11 +76,9 @@ int main(int argc, char **argv)
  time(&start);
 
 //============= main task
-if(bEventGeneration){ // ---- generate events
  char sbuffer [255] ;
  sprintf(sbuffer,"mkdir -p %s",sSpectraDir) ;
  system(sbuffer) ;
- sprintf(sbuffer,"%s/all.mult",sMultDir) ;
  //gen::loadDFMax(sbuffer,getNlines(sbuffer)) ;
  sprintf(sbuffer, "%s/%i.root",sSpectraDir,prefix) ;
  TFile *outputFile = new TFile(sbuffer, "RECREATE"); 
@@ -95,20 +90,10 @@ if(bEventGeneration){ // ---- generate events
 
  for(int iev=0; iev<NEVENTS; iev++){
  treeIni->fill(iev) ;
- gen::urqmd(iev) ;
  treeFin->fill(iev) ;
  } // end events loop
  outputFile->Write() ;
  outputFile->Close() ;
-}else{ // ---- calculate fMax: obsolete
- cout<<"fMax mode is obsolete. Exiting\n" ;
- return 0 ;
-char sbuffer [255] ;
- sprintf(sbuffer,"mkdir -p %s",sMultDir) ;
- system(sbuffer) ;
- sprintf(sbuffer, "%s/%i.mult", sMultDir, prefix) ; // here prefix=id of particle
-// gen::calcDFMax(prefix, sbuffer) ;
-}
 
  cout << "event generation done\n" ;
  time(&end); float diff2 = difftime(end, start);
@@ -120,10 +105,8 @@ char sbuffer [255] ;
 int readCommandLine(int argc, char** argv)
 {
 	if(argc==1){cout << "NO PARAMETERS, exit" << endl ; exit(1) ;}
-	bEventGeneration = 0 ;
 	int prefix = 0 ;
 	if(strcmp(argv[1],"events")==0){
-	  bEventGeneration = 1 ;
 	  prefix = atoi(argv[2]) ;
 	  cout << "events mode, prefix = " << prefix << endl ;
 	  params::readParams(argv[3]) ;

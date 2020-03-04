@@ -16,7 +16,6 @@
 
 #include "DatabasePDG2.h"
 #include "gen.h"
-#include "cascade.h"
 #include "params.h"
 #include "particle.h"
 #include "const.h"
@@ -153,7 +152,7 @@ void load(char *filename, int N)
    dsigma.SetXYZT(-surf[n].dsigma[1],-surf[n].dsigma[2],-surf[n].dsigma[3],surf[n].dsigma[0]) ;
    dsigma.Boost(-surf[n].u[1]/surf[n].u[0],-surf[n].u[2]/surf[n].u[0],-surf[n].u[3]/surf[n].u[0]) ;
    // ######################################################################
-   // ###  now and later surf.dsigma are boosted to the fluid rest frame  ##
+   // ###     boost surf.dsigma to the fluid rest frame                   ##
    // ######################################################################
    surf[n].dsigma[0] = dsigma.T() ;
    surf[n].dsigma[1] = -dsigma.X() ;
@@ -189,6 +188,7 @@ void load(char *filename, int N)
  cout<<"failed elements = "<<nfail<<endl ;
  cout<<"mu_cut elements = "<<ncut<<endl ;
 // ---- prepare some stuff to calculate thermal densities
+ // SMASH NPART = total number of hadron states
  NPART=database->GetNParticles() ;
  cout<<"NPART="<<NPART<<endl ;
  cout<<"dsigmaMax="<<dsigmaMax<<endl ;
@@ -224,10 +224,12 @@ int generate()
    if(surf[iel].T<=0.){ ntherm_fail++ ; continue ; }
    for(int ip=0; ip<NPART; ip++){
     double density = 0. ;
+    // SMASH the object containing hadron properties is fetched
     ParticlePDG2 *particle = database->GetPDGParticleByIndex(ip) ;
     const double mass = particle->GetMass() ;
     const double J = particle->GetSpin() ;
     const double stat = int(2.*J) & 1 ? -1. : 1. ;
+    // SMASH quantum charges for the hadron state
     const double muf = particle->GetBaryonNumber()*surf[iel].mub + particle->GetStrangeness()*surf[iel].mus +
                particle->GetElectricCharge()*surf[iel].muq ;
     for(int i=1; i<11; i++)
@@ -247,20 +249,24 @@ int generate()
   // ---- number of particles to generate
   int nToGen = 0 ;
   if(dvEff*totalDensity<0.01){
+   // SMASH random number [0..1]
     double x = rnd->Rndm() ; // throw dice
     if(x<dvEff*totalDensity) nToGen = 1 ;
   }else{
+   // SMASH random number according to Poisson DF
     nToGen = rnd->Poisson(dvEff*totalDensity) ;
   }
    // ---- we generate a particle!
   for(int ip=0; ip<nToGen; ip++){
   int isort = 0 ;
+  // SMASH random number [0..1]
   double xsort = rnd->Rndm()*totalDensity ; // throw dice, particle sort
   while(cumulantDensity[isort]<xsort) isort++ ;
    ParticlePDG2 *part = database->GetPDGParticleByIndex(isort) ;
    const double J = part->GetSpin() ;
    const double mass = part->GetMass() ;
    const double stat = int(2.*J) & 1 ? -1. : 1. ;
+   // SMASH quantum charges for the hadron state
    const double muf = part->GetBaryonNumber()*surf[iel].mub + part->GetStrangeness()*surf[iel].mus +
                part->GetElectricCharge()*surf[iel].muq ;
    if(muf>=mass) cout << " ^^ muf = " << muf << "  " << part->GetPDG() << endl ;
@@ -314,38 +320,11 @@ int generate()
 void acceptParticle(int ievent, ParticlePDG2 *ldef, double lx, double ly, double lz, double lt, double lpx, double lpy, double lpz, double lE)
 {
  int& npart1 = npart[ievent] ;
- int urqmdid, urqmdiso3 ;
- int lid = ldef->GetPDG() ;
- pdg2id_(&urqmdid, &urqmdiso3, &lid) ;
- if(geteposcode_(&lid)!=0 && abs(urqmdid)<1000){  // particle known to UrQMD
-// if(true){ // TEST!! for thermal mult's
-    pList[ievent][npart1] = new Particle(lx,ly,lz,lt,lpx,lpy,lpz,lE, ldef, 0) ;
-   npart1++ ;
-   if(isinf(lE) || isnan(lE)){
-     cout << "acceptPart nan: known, coord="<<lx<<" "<<ly<<" "<<lz<<" "<<lt<<endl ;
-     exit(1) ;
-   }
- }else{ // decay particles unknown to UrQMD
-//  cout << "------ unstable particle decay (Cooper-Frye isotherm) " << lid << endl ;
-//  cout << setw(14) << "px" << setw(14) << "py" << setw(14) << "pz" << setw(14) << "E" << endl ;
-//  cout << setw(14) << mom[0] << setw(14) << mom[1] << setw(14) << mom[2] << setw(14) << mom[3] << endl ;
-  Particle* resonance = new Particle(lx,ly,lz,lt,lpx,lpy,lpz,lE, ldef, 0) ;
-  int nprod ;
-  Particle** daughters ;
-  decay(resonance, nprod, daughters) ;
-  for(int iprod=0; iprod<nprod; iprod++){ // add decay products to UrQMD input
-  int daughterId = daughters[iprod]->def->GetPDG() ;
-    pdg2id_(&urqmdid, &urqmdiso3, &daughterId) ;
-    if(geteposcode_(&daughterId)!=0 && abs(urqmdid)<1000){  // particle known to UrQMD
-    pList[ievent][npart1] = daughters[iprod] ;
-    if(isinf(daughters[iprod]->e) || isnan(daughters[iprod]->e)){
-      cout << "acceptPart nan: unknown, mid="<<daughters[iprod]->mid<<endl ;
-      exit(1) ;
-    }
-    npart1++ ;
-  }}
-  delete resonance ;
-  if(nprod>0) delete [] daughters ;
+ pList[ievent][npart1] = new Particle(lx,ly,lz,lt,lpx,lpy,lpz,lE, ldef, 0) ;
+ npart1++ ;
+ if(isinf(lE) || isnan(lE)){
+   cout << "acceptPart nan: known, coord="<<lx<<" "<<ly<<" "<<lz<<" "<<lt<<endl ;
+   exit(1) ;
  }
  if(npart1>NPartBuf){ cout<<"Error. Please increase gen::npartbuf\n"; exit(1);}
 }

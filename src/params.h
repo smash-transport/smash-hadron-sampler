@@ -1,7 +1,6 @@
 
 namespace params{
-extern char sSurface [255], sSpectraDir [255], sMultDir [255] ;
-extern bool bEventGeneration ;
+extern char sSurface [255], sSpectraDir [255];
 extern bool weakContribution ;
 extern bool rescatter ;
 extern bool shear ;
