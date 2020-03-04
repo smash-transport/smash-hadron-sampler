@@ -24,7 +24,7 @@ TARGET = hadronSampler
 #------------------------------------------------------------------------------
 
 $(TARGET): $(HYDROO)
-		$(LD) $(LDFLAGS) $^ -o $@ $(LIBS) -lgfortran
+		$(LD) $(LDFLAGS) $^ -o $@ $(LIBS)
 		@echo "$@ done"
 
 clean:
