@@ -1,8 +1,6 @@
 #include <TTree.h>
 #include "tree.h"
-#include "ParticlePDG2.h"
 #include "gen.h"
-#include "particle.h"
 
 MyTree::MyTree(const char *name)
 {

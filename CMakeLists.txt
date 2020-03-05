@@ -12,14 +12,9 @@ message(STATUS "CXX_FLAGS = " ${CMAKE_CXX_FLAGS})
 
 # Collect all the cpp files
 set(sampler_src
-        src/DatabasePDG2.cpp
-        src/DecayChannel.cpp
         src/gen.cpp
         src/params.cpp
-        src/particle.cpp
-        src/ParticlePDG2.cpp
         src/tree.cpp
-        src/UKUtility.cpp
         )
 
 # Create object library for the linker which contains pre-compiled cpp files
