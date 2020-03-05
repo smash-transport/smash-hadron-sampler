@@ -74,22 +74,22 @@ int main(int argc, char **argv)
  sprintf(sbuffer, "%s/%i.root",sSpectraDir,prefix) ;
  TFile *outputFile = new TFile(sbuffer, "RECREATE");
  outputFile->cd();
- MyTree *treeIni = new MyTree("treeini") ;
- MyTree *treeFin = new MyTree("treefin") ;
+ MyTree *treeIni = new MyTree(static_cast<const char*>("treeini")) ;
+ MyTree *treeFin = new MyTree(static_cast<const char*>("treefin")) ;
 
  gen::generate() ; // one call for NEVENTS
-//
-//  for(int iev=0; iev<NEVENTS; iev++){
-//  treeIni->fill(iev) ;
-//  treeFin->fill(iev) ;
-//  } // end events loop
-//  outputFile->Write() ;
-//  outputFile->Close() ;
-//
-//  cout << "event generation done\n" ;
-//  time(&end); float diff2 = difftime(end, start);
-//  cout<<"Execution time = "<<diff2<< " [sec]" << endl;
-//  return 0;
+
+ for(int iev=0; iev<NEVENTS; iev++){
+ treeIni->fill(iev) ;
+ treeFin->fill(iev) ;
+ } // end events loop
+ outputFile->Write() ;
+ outputFile->Close() ;
+
+ cout << "event generation done\n" ;
+ time(&end); float diff2 = difftime(end, start);
+ cout<<"Execution time = "<<diff2<< " [sec]" << endl;
+ return 0;
 }
 
 
@@ -102,7 +102,7 @@ int readCommandLine(int argc, char** argv)
 	  cout << "events mode, prefix = " << prefix << endl ;
 	  params::readParams(argv[3]) ;
     }else if(strcmp(argv[1],"fmax")==0){
-	  if((int)argv[2][0]<58){
+	  if(static_cast<int>(argv[2][0]<58)){
 		prefix = atoi(argv[2]) ;
 		cout << "fmax mode, prefix = " << prefix << endl ;
 		params::readParams(argv[3]) ;

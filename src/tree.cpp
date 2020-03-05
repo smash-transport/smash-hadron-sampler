@@ -4,7 +4,7 @@
 #include "gen.h"
 #include "particle.h"
 
-MyTree::MyTree(char *name)
+MyTree::MyTree(const char *name)
 {
   tree = new TTree(name,name);
   X  = new Float_t [gen::NPartBuf] ;
@@ -47,26 +47,26 @@ MyTree::MyTree(char *name)
 
 void MyTree::fill(int iev)
 {
-//   nfill = 0 ;
-//  for(int ipart=0; ipart<gen::npart[iev]; ipart++)
-//  if(gen::pList[iev][ipart]->def!=0){
-//    X[nfill] = gen::pList[iev][ipart]->x ;
-//    Y[nfill] = gen::pList[iev][ipart]->y ;
-//    Z[nfill] = gen::pList[iev][ipart]->z ;
-//    T[nfill] = gen::pList[iev][ipart]->t ;
-//   Px[nfill] = gen::pList[iev][ipart]->px ;
-//   Py[nfill] = gen::pList[iev][ipart]->py ;
-//   Pz[nfill] = gen::pList[iev][ipart]->pz ;
-//    E[nfill] = gen::pList[iev][ipart]->e ;
-//   Id[nfill] = gen::pList[iev][ipart]->def->GetPDG() ;
-//  MId[nfill] = gen::pList[iev][ipart]->mid ;
-//  LastColl[nfill] = gen::pList[iev][ipart]->lastcoll ;
-//  NColl[nfill] = gen::pList[iev][ipart]->ncoll ;
-//  Origin[nfill] = gen::pList[iev][ipart]->origin ;
-// Chrg[nfill] = (Char_t)(gen::pList[iev][ipart]->def->GetElectricCharge()) ;
-//  Bar[nfill] = (Char_t)(gen::pList[iev][ipart]->def->GetBaryonNumber()) ;
-// Strg[nfill] = (Char_t)(gen::pList[iev][ipart]->def->GetStrangeness()) ;
-//    nfill++ ;
-//  }
-//  tree->Fill() ;
+  nfill = 0 ;
+ for(int ipart=0; ipart<gen::npart[iev]; ipart++)
+ if(gen::pList[iev][ipart]->is_hadron()){
+   X[nfill] = gen::pList[iev][ipart]->position().x1() ;
+   Y[nfill] = gen::pList[iev][ipart]->position().x2() ;
+   Z[nfill] = gen::pList[iev][ipart]->position().x3() ;
+   T[nfill] = gen::pList[iev][ipart]->position().x0() ;
+  Px[nfill] = gen::pList[iev][ipart]->momentum().x1() ;
+  Py[nfill] = gen::pList[iev][ipart]->momentum().x2() ;
+  Pz[nfill] = gen::pList[iev][ipart]->momentum().x3() ;
+   E[nfill] = gen::pList[iev][ipart]->momentum().x0() ;
+  Id[nfill] = gen::pList[iev][ipart]->pdgcode().get_decimal() ;
+ MId[nfill] = 0 ;  //Used to be set to 0 in the UrQMD version
+ LastColl[nfill] = 0 ;  //Used to be set to 0 in the UrQMD version
+ NColl[nfill] = 0 ;  //Used to be set to 0 in the UrQMD version
+ Origin[nfill] = 0 ;  //Used to be set to 0 in the UrQMD version
+Chrg[nfill] = static_cast<Char_t>(gen::pList[iev][ipart]->type().charge()) ;
+ Bar[nfill] = static_cast<Char_t>(gen::pList[iev][ipart]->type().baryon_number()) ;
+Strg[nfill] = static_cast<Char_t>(gen::pList[iev][ipart]->type().strangeness()) ;
+   nfill++ ;
+ }
+ tree->Fill() ;
 }

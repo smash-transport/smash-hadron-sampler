@@ -7,6 +7,6 @@ class MyTree{
  Short_t *Chrg, *Bar, *Strg ;
  Int_t nfill ;
 public:
- MyTree(char *name) ;
+ MyTree(const char *name) ;
  void fill(int iev) ;
 } ;
