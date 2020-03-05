@@ -47,26 +47,26 @@ MyTree::MyTree(char *name)
 
 void MyTree::fill(int iev)
 {
-  nfill = 0 ;
- for(int ipart=0; ipart<gen::npart[iev]; ipart++)
- if(gen::pList[iev][ipart]->def!=0){
-   X[nfill] = gen::pList[iev][ipart]->x ;
-   Y[nfill] = gen::pList[iev][ipart]->y ;
-   Z[nfill] = gen::pList[iev][ipart]->z ;
-   T[nfill] = gen::pList[iev][ipart]->t ;
-  Px[nfill] = gen::pList[iev][ipart]->px ;
-  Py[nfill] = gen::pList[iev][ipart]->py ;
-  Pz[nfill] = gen::pList[iev][ipart]->pz ;
-   E[nfill] = gen::pList[iev][ipart]->e ;
-  Id[nfill] = gen::pList[iev][ipart]->def->GetPDG() ;
- MId[nfill] = gen::pList[iev][ipart]->mid ;
- LastColl[nfill] = gen::pList[iev][ipart]->lastcoll ;
- NColl[nfill] = gen::pList[iev][ipart]->ncoll ;
- Origin[nfill] = gen::pList[iev][ipart]->origin ;
-Chrg[nfill] = (Char_t)(gen::pList[iev][ipart]->def->GetElectricCharge()) ;
- Bar[nfill] = (Char_t)(gen::pList[iev][ipart]->def->GetBaryonNumber()) ;
-Strg[nfill] = (Char_t)(gen::pList[iev][ipart]->def->GetStrangeness()) ;
-   nfill++ ;
- }
- tree->Fill() ;
+//   nfill = 0 ;
+//  for(int ipart=0; ipart<gen::npart[iev]; ipart++)
+//  if(gen::pList[iev][ipart]->def!=0){
+//    X[nfill] = gen::pList[iev][ipart]->x ;
+//    Y[nfill] = gen::pList[iev][ipart]->y ;
+//    Z[nfill] = gen::pList[iev][ipart]->z ;
+//    T[nfill] = gen::pList[iev][ipart]->t ;
+//   Px[nfill] = gen::pList[iev][ipart]->px ;
+//   Py[nfill] = gen::pList[iev][ipart]->py ;
+//   Pz[nfill] = gen::pList[iev][ipart]->pz ;
+//    E[nfill] = gen::pList[iev][ipart]->e ;
+//   Id[nfill] = gen::pList[iev][ipart]->def->GetPDG() ;
+//  MId[nfill] = gen::pList[iev][ipart]->mid ;
+//  LastColl[nfill] = gen::pList[iev][ipart]->lastcoll ;
+//  NColl[nfill] = gen::pList[iev][ipart]->ncoll ;
+//  Origin[nfill] = gen::pList[iev][ipart]->origin ;
+// Chrg[nfill] = (Char_t)(gen::pList[iev][ipart]->def->GetElectricCharge()) ;
+//  Bar[nfill] = (Char_t)(gen::pList[iev][ipart]->def->GetBaryonNumber()) ;
+// Strg[nfill] = (Char_t)(gen::pList[iev][ipart]->def->GetStrangeness()) ;
+//    nfill++ ;
+//  }
+//  tree->Fill() ;
 }

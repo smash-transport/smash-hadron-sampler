@@ -14,10 +14,10 @@
 #include <sstream>
 #include <TF1.h>
 
-#include "DatabasePDG2.h"
+// #include "DatabasePDG2.h"
 #include "gen.h"
 #include "params.h"
-#include "particle.h"
+// #include "particle.h"
 #include "const.h"
 
 #include <list>
@@ -80,7 +80,7 @@ double *ntherm, dvMax, dsigmaMax ;
 TRandom3 *rnd ;
 int NPART ;
 //const int NPartBuf = 10000 ;
-Particle ***pList ; // particle arrays
+smash::ParticleData ***pList ; // particle arrays
 
 struct element {
  double tau, x, y, eta ;
@@ -111,9 +111,9 @@ void load(char *filename, int N)
  Nelem = N ;
  surf = new element [Nelem] ;
 
- pList = new Particle** [params::NEVENTS] ;
+ pList = new smash::ParticleData** [params::NEVENTS] ;
  for(int i=0; i<params::NEVENTS; i++){
-   pList[i] = new Particle* [NPartBuf] ;
+   pList[i] = new smash::ParticleData* [NPartBuf] ;
  }
  npart = new int [params::NEVENTS] ;
 
@@ -212,7 +212,7 @@ void load(char *filename, int N)
 }
 
 
-void acceptParticle(int event, ParticlePDG2 *ldef, double lx, double ly, double lz, double lt, double lpx, double lpy, double lpz, double lE) ;
+void acceptParticle(int event, const smash::ParticleTypePtr &ldef, smash::FourVector position, smash::FourVector momentum) ;
 
 
 double ffthermal(double *x, double *par)
@@ -346,8 +346,9 @@ int generate()
    const double vy = surf[iel].u[2]/surf[iel].u[0]*cosh(etaF)/cosh(etaF+etaShift) ;
    const double vz = tanh(etaF+etaShift) ;
    mom.Boost(vx,vy,vz) ;
-   // acceptParticle(ievent,part, surf[iel].x, surf[iel].y, surf[iel].tau*sinh(surf[iel].eta+etaShift),
-   //   surf[iel].tau*cosh(surf[iel].eta+etaShift), mom.Px(), mom.Py(), mom.Pz(), mom.E()) ;
+   smash::FourVector momentum(mom.E(), mom.Px(), mom.Py(), mom.Pz());
+   smash::FourVector position(surf[iel].tau*cosh(surf[iel].eta+etaShift), surf[iel].x, surf[iel].y, surf[iel].tau*sinh(surf[iel].eta+etaShift));
+   acceptParticle(ievent, &part, position, momentum) ;
   } // coordinate accepted
   } // events loop
   if(iel%(Nelem/50)==0) cout<<(iel*100)/Nelem<<" percents done, maxiter= "<<nmaxiter<<endl ;
@@ -359,13 +360,18 @@ int generate()
 
 
 
-void acceptParticle(int ievent, ParticlePDG2 *ldef, double lx, double ly, double lz, double lt, double lpx, double lpy, double lpz, double lE)
+void acceptParticle(int ievent, const smash::ParticleTypePtr &ldef, smash::FourVector position, smash::FourVector momentum)
 {
  int& npart1 = npart[ievent] ;
- pList[ievent][npart1] = new Particle(lx,ly,lz,lt,lpx,lpy,lpz,lE, ldef, 0) ;
+
+ smash::ParticleData new_particle(*ldef);
+ new_particle.set_4momentum(momentum);
+ new_particle.set_4position(position);
+
+ pList[ievent][npart1] = &new_particle;
  npart1++ ;
- if(isinf(lE) || isnan(lE)){
-   cout << "acceptPart nan: known, coord="<<lx<<" "<<ly<<" "<<lz<<" "<<lt<<endl ;
+ if(isinf(momentum.x0()) || isnan(momentum.x0())){
+   cout << "acceptPart nan: known, coord="<< position <<endl ;
    exit(1) ;
  }
  if(npart1>NPartBuf){ cout<<"Error. Please increase gen::npartbuf\n"; exit(1);}

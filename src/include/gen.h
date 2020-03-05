@@ -9,7 +9,7 @@ namespace gen{
 //typedef std::vector<Particle*> ParticleList ; // TODO in far future
 // data
 extern TRandom3 *rnd ;
-extern Particle ***pList ; // particle arrays
+extern smash::ParticleData ***pList ; // particle arrays
 extern int *npart ;
 const int NPartBuf = 15000; // dimension of particle buffer for each event
 
