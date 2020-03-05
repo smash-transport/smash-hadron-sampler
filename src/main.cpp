@@ -1,30 +1,12 @@
-#include <omp.h>
 #include <TFile.h>
-#include <TGraph.h>
-#include <TCanvas.h>
-#include <TMath.h>
-#include <TGraph.h>
-#include <TVector3.h>
-#include <TLorentzVector.h>
 #include <TRandom3.h>
-#include <TH1.h>
-#include <math.h>
-#include <iomanip>
-#include <ctime>
-#include <cstdlib>
-#include <iostream>
-#include <fstream>
-#include <TF1.h>
-#include <sstream>
-#include <TUUID.h>
-
-// #include "DatabasePDG2.h"
-#include "gen.h"
-#include "tree.h"
-#include "params.h"
 
 #include "smash/particles.h"
 #include "smash/setup_particles_decaymodes.h"
+
+#include "gen.h"
+#include "tree.h"
+#include "params.h"
 
 using namespace std ;
 int getNlines(char *filename) ;

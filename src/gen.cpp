@@ -1,31 +1,15 @@
-#include <omp.h>
-#include <TGraph.h>
 #include <TMath.h>
-#include <TGraph.h>
-#include <TVector3.h>
 #include <TLorentzVector.h>
 #include <TRandom3.h>
-#include <cmath>
-#include <iomanip>
-#include <cstdlib>
-#include <cmath>
-#include <iostream>
-#include <fstream>
-#include <sstream>
 #include <TF1.h>
-
-// #include "DatabasePDG2.h"
-#include "gen.h"
-#include "params.h"
-// #include "particle.h"
-#include "const.h"
-
-#include <list>
-#include <string>
-#include <algorithm>
 
 #include "smash/particles.h"
 #include "smash/setup_particles_decaymodes.h"
+
+#include "gen.h"
+#include "params.h"
+#include "const.h"
+
 
 using namespace std ;
 
