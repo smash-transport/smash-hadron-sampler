@@ -235,29 +235,33 @@ int generate()
    const smash::ParticleTypeList& database = smash::ParticleType::list_all();
    int ip = 0;
    for (auto& particle : database) {
-    ip += 1;
-    // Exclude photons and dileptons
+    double density = 0. ;
     if (particle.pdgcode() == photon || particle.pdgcode() == electron ||
         particle.pdgcode() == positron || particle.pdgcode() == muon ||
         particle.pdgcode() == antimuon || particle.pdgcode() == tau ||
-        particle.pdgcode() == antitau) {continue;}
-
-    double density = 0. ;
-    const double mass = particle.mass() ;
-    // By definition, the spin in SMASH is defined as twice the spin of the
-    // multiplet, so that it can be stored as an integer. Hence, it needs to
-    // be multiplied by 1/2
-    const double J = particle.spin() * 0.5 ;
-    const double stat = int(2.*J) & 1 ? -1. : 1. ;
-    // SMASH quantum charges for the hadron state
-    const double muf = particle.baryon_number()*surf[iel].mub + particle.strangeness()*surf[iel].mus +
-               particle.charge()*surf[iel].muq ;
-    for(int i=1; i<11; i++)
-    density += (2.*J+1.)*pow(gevtofm,3)/(2.*pow(TMath::Pi(),2))*mass*mass*surf[iel].T*pow(stat,i+1)*TMath::BesselK(2,i*mass/surf[iel].T)*exp(i*muf/surf[iel].T)/i ;
+        particle.pdgcode() == antitau) {
+      // Photons and dileptons should not be sampled
+      density = 0;
+    } else {
+      const double mass = particle.mass() ;
+      // By definition, the spin in SMASH is defined as twice the spin of the
+      // multiplet, so that it can be stored as an integer. Hence, it needs to
+      // be multiplied by 1/2
+      const double J = particle.spin() * 0.5 ;
+      const double stat = int(2.*J) & 1 ? -1. : 1. ;
+      // SMASH quantum charges for the hadron state
+      const double muf = particle.baryon_number()*surf[iel].mub + particle.strangeness()*surf[iel].mus +
+                 particle.charge()*surf[iel].muq ;
+      for(int i=1; i<11; i++)
+      density += (2.*J+1.)*pow(gevtofm,3)/(2.*pow(TMath::Pi(),2))*mass*mass*surf[iel].T*pow(stat,i+1)*TMath::BesselK(2,i*mass/surf[iel].T)*exp(i*muf/surf[iel].T)/i ;
+    }
     if(ip>0) cumulantDensity[ip] = cumulantDensity[ip-1] + density ;
         else cumulantDensity[ip] = density ;
     totalDensity += density ;
+
+    ip += 1;
    }
+
    if(totalDensity<0.  || totalDensity>100.){ ntherm_fail++ ; continue ; }
    //cout<<"thermal densities calculated.\n" ;
    //cout<<cumulantDensity[NPART-1]<<" = "<<totalDensity<<endl ;
@@ -277,18 +281,13 @@ int generate()
     nToGen = rnd->Poisson(dvEff*totalDensity) ;
   }
    // ---- we generate a particle!
-   ip = 0;
-   for (auto& part : database) {
-     ip += 1;
-     // Exclude photons and dileptons
-     if (part.pdgcode() == photon || part.pdgcode() == electron ||
-         part.pdgcode() == positron || part.pdgcode() == muon ||
-         part.pdgcode() == antimuon || part.pdgcode() == tau ||
-         part.pdgcode() == antitau) {continue;}
+   for(int ipart=0; ipart<nToGen; ipart++){
+
   int isort = 0 ;
   // SMASH random number [0..1]
   double xsort = rnd->Rndm()*totalDensity ; // throw dice, particle sort
   while(cumulantDensity[isort]<xsort) isort++ ;
+   auto& part = database[isort];
    const double J = part.spin() * 0.5;
    const double mass = part.mass() ;
    const double stat = int(2.*J) & 1 ? -1. : 1. ;
@@ -348,11 +347,11 @@ void acceptParticle(int ievent, const smash::ParticleTypePtr &ldef, smash::FourV
 {
  int& npart1 = npart[ievent] ;
 
- smash::ParticleData new_particle(*ldef);
- new_particle.set_4momentum(momentum);
- new_particle.set_4position(position);
+ smash::ParticleData* new_particle = new smash::ParticleData(*ldef);
+ new_particle->set_4momentum(momentum);
+ new_particle->set_4position(position);
 
- pList[ievent][npart1] = &new_particle;
+ pList[ievent][npart1] = new_particle;
  npart1++ ;
  if(isinf(momentum.x0()) || isnan(momentum.x0())){
    cout << "acceptPart nan: known, coord="<< position <<endl ;
