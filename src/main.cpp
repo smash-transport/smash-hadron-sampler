@@ -23,6 +23,9 @@
 #include "tree.h"
 #include "params.h"
 
+#include "smash/particles.h"
+#include "smash/setup_particles_decaymodes.h"
+
 using namespace std ;
 int getNlines(char *filename) ;
 int readCommandLine(int argc, char** argv) ;
@@ -55,21 +58,9 @@ int main(int argc, char **argv)
 	random3->SetSeed(ranseed);
   cout<<"Random seed = "<<ranseed<<endl ;
   gen::rnd = random3 ;
-  
-//========= particle database init
-	DatabasePDG2 *database = new DatabasePDG2("Tb/ptl3.data","Tb/dky3.mar.data");
-	database->LoadData();
-//	database->SetMassRange(0.01, 10.0); //-------without PHOTONS
-//	database->SetWidthRange(0., 10.0);
-	database->SortParticlesByMass() ;
-	database->CorrectBranching() ;
-	database->DumpData() ;
-	cout << " pion index = " << database->GetPionIndex() << endl ;
-  gen::database = database ;
-  
-// ========== generator init
+
+ // ========== generator init
  gen::load(sSurface,getNlines(sSurface)) ;
- //cout << "dfMax = " << gen::calcDFMax() << endl ;
 
  // ========== trees & files
  time_t start, end ;
@@ -79,26 +70,26 @@ int main(int argc, char **argv)
  char sbuffer [255] ;
  sprintf(sbuffer,"mkdir -p %s",sSpectraDir) ;
  system(sbuffer) ;
- //gen::loadDFMax(sbuffer,getNlines(sbuffer)) ;
+
  sprintf(sbuffer, "%s/%i.root",sSpectraDir,prefix) ;
- TFile *outputFile = new TFile(sbuffer, "RECREATE"); 
+ TFile *outputFile = new TFile(sbuffer, "RECREATE");
  outputFile->cd();
  MyTree *treeIni = new MyTree("treeini") ;
  MyTree *treeFin = new MyTree("treefin") ;
- 
+
  gen::generate() ; // one call for NEVENTS
-
- for(int iev=0; iev<NEVENTS; iev++){
- treeIni->fill(iev) ;
- treeFin->fill(iev) ;
- } // end events loop
- outputFile->Write() ;
- outputFile->Close() ;
-
- cout << "event generation done\n" ;
- time(&end); float diff2 = difftime(end, start);
- cout<<"Execution time = "<<diff2<< " [sec]" << endl;
- return 0;
+//
+//  for(int iev=0; iev<NEVENTS; iev++){
+//  treeIni->fill(iev) ;
+//  treeFin->fill(iev) ;
+//  } // end events loop
+//  outputFile->Write() ;
+//  outputFile->Close() ;
+//
+//  cout << "event generation done\n" ;
+//  time(&end); float diff2 = difftime(end, start);
+//  cout<<"Execution time = "<<diff2<< " [sec]" << endl;
+//  return 0;
 }
 
 

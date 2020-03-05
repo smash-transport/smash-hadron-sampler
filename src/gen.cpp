@@ -20,6 +20,13 @@
 #include "particle.h"
 #include "const.h"
 
+#include <list>
+#include <string>
+#include <algorithm>
+
+#include "smash/particles.h"
+#include "smash/setup_particles_decaymodes.h"
+
 using namespace std ;
 
 #define _USE_MATH_DEFINES
@@ -71,7 +78,6 @@ namespace gen{
 int Nelem ;
 double *ntherm, dvMax, dsigmaMax ;
 TRandom3 *rnd ;
-DatabasePDG2 *database ;
 int NPART ;
 //const int NPartBuf = 10000 ;
 Particle ***pList ; // particle arrays
@@ -188,8 +194,18 @@ void load(char *filename, int N)
  cout<<"failed elements = "<<nfail<<endl ;
  cout<<"mu_cut elements = "<<ncut<<endl ;
 // ---- prepare some stuff to calculate thermal densities
- // SMASH NPART = total number of hadron states
- NPART=database->GetNParticles() ;
+
+ // Load SMASH hadron list
+ smash::load_default_particles_and_decaymodes();
+ const smash::ParticleTypeList& database = smash::ParticleType::list_all();
+
+ // Dump list of hadronic states to terminal
+ // for (auto& HadronState: database) {
+ //   std::cout << HadronState << '\n';
+ // }
+
+ // NPART = total number of hadron states
+ NPART=database.size();
  cout<<"NPART="<<NPART<<endl ;
  cout<<"dsigmaMax="<<dsigmaMax<<endl ;
  cumulantDensity = new double [NPART] ;
@@ -218,20 +234,40 @@ int generate()
  int nmaxiter = 0 ;
  int ntherm_fail=0 ;
 
+ // Define EM particles codes to later exclude them
+ smash::PdgCode electron(0x11);
+ smash::PdgCode positron(-0x11);
+ smash::PdgCode muon(0x13);
+ smash::PdgCode antimuon(-0x13);
+ smash::PdgCode tau(0x15);
+ smash::PdgCode antitau(-0x15);
+ smash::PdgCode photon(0x22);
+
  for(int iel=0; iel<Nelem; iel++){ // loop over all elements
   // ---> thermal densities, for each surface element
    totalDensity = 0.0 ;
    if(surf[iel].T<=0.){ ntherm_fail++ ; continue ; }
-   for(int ip=0; ip<NPART; ip++){
+
+   const smash::ParticleTypeList& database = smash::ParticleType::list_all();
+   int ip = 0;
+   for (auto& particle : database) {
+    ip += 1;
+    // Exclude photons and dileptons
+    if (particle.pdgcode() == photon || particle.pdgcode() == electron ||
+        particle.pdgcode() == positron || particle.pdgcode() == muon ||
+        particle.pdgcode() == antimuon || particle.pdgcode() == tau ||
+        particle.pdgcode() == antitau) {continue;}
+
     double density = 0. ;
-    // SMASH the object containing hadron properties is fetched
-    ParticlePDG2 *particle = database->GetPDGParticleByIndex(ip) ;
-    const double mass = particle->GetMass() ;
-    const double J = particle->GetSpin() ;
+    const double mass = particle.mass() ;
+    // By definition, the spin in SMASH is defined as twice the spin of the
+    // multiplet, so that it can be stored as an integer. Hence, it needs to
+    // be multiplied by 1/2
+    const double J = particle.spin() * 0.5 ;
     const double stat = int(2.*J) & 1 ? -1. : 1. ;
     // SMASH quantum charges for the hadron state
-    const double muf = particle->GetBaryonNumber()*surf[iel].mub + particle->GetStrangeness()*surf[iel].mus +
-               particle->GetElectricCharge()*surf[iel].muq ;
+    const double muf = particle.baryon_number()*surf[iel].mub + particle.strangeness()*surf[iel].mus +
+               particle.charge()*surf[iel].muq ;
     for(int i=1; i<11; i++)
     density += (2.*J+1.)*pow(gevtofm,3)/(2.*pow(TMath::Pi(),2))*mass*mass*surf[iel].T*pow(stat,i+1)*TMath::BesselK(2,i*mass/surf[iel].T)*exp(i*muf/surf[iel].T)/i ;
     if(ip>0) cumulantDensity[ip] = cumulantDensity[ip-1] + density ;
@@ -257,19 +293,25 @@ int generate()
     nToGen = rnd->Poisson(dvEff*totalDensity) ;
   }
    // ---- we generate a particle!
-  for(int ip=0; ip<nToGen; ip++){
+   ip = 0;
+   for (auto& part : database) {
+     ip += 1;
+     // Exclude photons and dileptons
+     if (part.pdgcode() == photon || part.pdgcode() == electron ||
+         part.pdgcode() == positron || part.pdgcode() == muon ||
+         part.pdgcode() == antimuon || part.pdgcode() == tau ||
+         part.pdgcode() == antitau) {continue;}
   int isort = 0 ;
   // SMASH random number [0..1]
   double xsort = rnd->Rndm()*totalDensity ; // throw dice, particle sort
   while(cumulantDensity[isort]<xsort) isort++ ;
-   ParticlePDG2 *part = database->GetPDGParticleByIndex(isort) ;
-   const double J = part->GetSpin() ;
-   const double mass = part->GetMass() ;
+   const double J = part.spin() * 0.5;
+   const double mass = part.mass() ;
    const double stat = int(2.*J) & 1 ? -1. : 1. ;
    // SMASH quantum charges for the hadron state
-   const double muf = part->GetBaryonNumber()*surf[iel].mub + part->GetStrangeness()*surf[iel].mus +
-               part->GetElectricCharge()*surf[iel].muq ;
-   if(muf>=mass) cout << " ^^ muf = " << muf << "  " << part->GetPDG() << endl ;
+   const double muf = part.baryon_number()*surf[iel].mub + part.strangeness()*surf[iel].mus +
+               part.charge()*surf[iel].muq ;
+   if(muf>=mass) cout << " ^^ muf = " << muf << "  " << part.pdgcode() << endl ;
    fthermal->SetParameters(surf[iel].T,muf,mass,stat) ;
    //const double dfMax = part->GetFMax() ;
    int niter = 0 ; // number of iterations, for debug purposes
@@ -304,8 +346,8 @@ int generate()
    const double vy = surf[iel].u[2]/surf[iel].u[0]*cosh(etaF)/cosh(etaF+etaShift) ;
    const double vz = tanh(etaF+etaShift) ;
    mom.Boost(vx,vy,vz) ;
-   acceptParticle(ievent,part, surf[iel].x, surf[iel].y, surf[iel].tau*sinh(surf[iel].eta+etaShift),
-     surf[iel].tau*cosh(surf[iel].eta+etaShift), mom.Px(), mom.Py(), mom.Pz(), mom.E()) ;
+   // acceptParticle(ievent,part, surf[iel].x, surf[iel].y, surf[iel].tau*sinh(surf[iel].eta+etaShift),
+   //   surf[iel].tau*cosh(surf[iel].eta+etaShift), mom.Px(), mom.Py(), mom.Pz(), mom.E()) ;
   } // coordinate accepted
   } // events loop
   if(iel%(Nelem/50)==0) cout<<(iel*100)/Nelem<<" percents done, maxiter= "<<nmaxiter<<endl ;
