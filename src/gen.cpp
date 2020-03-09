@@ -3,12 +3,9 @@
 #include <TRandom3.h>
 #include <TF1.h>
 
-#include "smash/particles.h"
-#include "smash/setup_particles_decaymodes.h"
-
+#include "const.h"
 #include "gen.h"
 #include "params.h"
-#include "const.h"
 
 
 using namespace std ;
@@ -334,7 +331,7 @@ int generate()
    acceptParticle(ievent, &part, position, momentum) ;
   } // coordinate accepted
   } // events loop
-  if(iel%(Nelem/50)==0) cout<<(iel*100)/Nelem<<" percents done, maxiter= "<<nmaxiter<<endl ;
+  if(iel%(Nelem/50)==0) cout<<(iel*100)/Nelem<<" % done, maxiter= "<<nmaxiter<<endl ;
  } // loop over all elements
  cout << "therm_failed elements: " <<ntherm_fail << endl ;
  return npart[0] ;

@@ -1,3 +1,6 @@
+#ifndef INCLUDE_TREE_H_
+#define INCLUDE_TREE_H_
+
 class TTree ;
 
 class MyTree{
@@ -10,3 +13,5 @@ public:
  MyTree(const char *name) ;
  void fill(int iev) ;
 } ;
+
+#endif // INCLUDE_TREE_H_

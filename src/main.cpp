@@ -1,12 +1,13 @@
 #include <TFile.h>
 #include <TRandom3.h>
 
-#include "smash/particles.h"
-#include "smash/setup_particles_decaymodes.h"
+// #include "smash/particles.h"
+// #include "smash/setup_particles_decaymodes.h"
 
 #include "gen.h"
-#include "tree.h"
+#include "oscaroutput.h"
 #include "params.h"
+#include "tree.h"
 
 using namespace std ;
 int getNlines(char *filename) ;
@@ -53,20 +54,23 @@ int main(int argc, char **argv)
  sprintf(sbuffer,"mkdir -p %s",sSpectraDir) ;
  system(sbuffer) ;
 
+ // Initialize ROOT output
  sprintf(sbuffer, "%s/%i.root",sSpectraDir,prefix) ;
  TFile *outputFile = new TFile(sbuffer, "RECREATE");
  outputFile->cd();
  MyTree *treeIni = new MyTree(static_cast<const char*>("treeini")) ;
- MyTree *treeFin = new MyTree(static_cast<const char*>("treefin")) ;
 
  gen::generate() ; // one call for NEVENTS
 
+ // Write ROOT output
  for(int iev=0; iev<NEVENTS; iev++){
  treeIni->fill(iev) ;
- treeFin->fill(iev) ;
  } // end events loop
  outputFile->Write() ;
  outputFile->Close() ;
+
+ // Write Oscar output
+ write_oscar_output();
 
  cout << "event generation done\n" ;
  time(&end); float diff2 = difftime(end, start);

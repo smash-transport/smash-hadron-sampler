@@ -1,3 +1,6 @@
+#ifndef INCLUDE_GEN_H_
+#define INCLUDE_GEN_H_
+
 #include "smash/particles.h"
 #include "smash/setup_particles_decaymodes.h"
 
@@ -17,3 +20,5 @@ const int NPartBuf = 15000; // dimension of particle buffer for each event
 void load(char *filename, int N) ;
 int generate() ;
 }
+
+#endif // INCLUDE_GEN_H_
