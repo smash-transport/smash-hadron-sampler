@@ -215,14 +215,10 @@ int generate()
  int nmaxiter = 0 ;
  int ntherm_fail=0 ;
 
- // Define EM particles codes to later exclude them
- smash::PdgCode electron(0x11);
- smash::PdgCode positron(-0x11);
- smash::PdgCode muon(0x13);
- smash::PdgCode antimuon(-0x13);
- smash::PdgCode tau(0x15);
- smash::PdgCode antitau(-0x15);
- smash::PdgCode photon(0x22);
+ // List species that should not be sampled: photon, electron, muon, tau
+ // Sigma meson needs to be excluded to generate correct multiplicities
+ std::vector<smash::PdgCode> species_to_exclude{0x11, -0x11, 0x13, -0x13,
+                                                0x15, -0x15, 0x22, 0x9000221};
 
  for(int iel=0; iel<Nelem; iel++){ // loop over all elements
   // ---> thermal densities, for each surface element
@@ -233,11 +229,8 @@ int generate()
    int ip = 0;
    for (auto& particle : database) {
     double density = 0. ;
-    if (particle.pdgcode() == photon || particle.pdgcode() == electron ||
-        particle.pdgcode() == positron || particle.pdgcode() == muon ||
-        particle.pdgcode() == antimuon || particle.pdgcode() == tau ||
-        particle.pdgcode() == antitau) {
-      // Photons and dileptons should not be sampled
+    const bool exclude_species = std::find(species_to_exclude.begin(), species_to_exclude.end(), particle.pdgcode()) != species_to_exclude.end();
+    if (exclude_species) {
       density = 0;
     } else {
       const double mass = particle.mass() ;
