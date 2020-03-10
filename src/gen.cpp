@@ -2,6 +2,7 @@
 #include <TLorentzVector.h>
 #include <TRandom3.h>
 #include <TF1.h>
+#include <fstream>
 
 #include "const.h"
 #include "gen.h"
@@ -238,7 +239,7 @@ int generate()
       // multiplet, so that it can be stored as an integer. Hence, it needs to
       // be multiplied by 1/2
       const double J = particle.spin() * 0.5 ;
-      const double stat = int(2.*J) & 1 ? -1. : 1. ;
+      const double stat = static_cast<int>(round(2.*J)) & 1 ? -1. : 1. ;
       // SMASH quantum charges for the hadron state
       const double muf = particle.baryon_number()*surf[iel].mub + particle.strangeness()*surf[iel].mus +
                  particle.charge()*surf[iel].muq ;
@@ -280,7 +281,7 @@ int generate()
    auto& part = database[isort];
    const double J = part.spin() * 0.5;
    const double mass = part.mass() ;
-   const double stat = int(2.*J) & 1 ? -1. : 1. ;
+   const double stat = static_cast<int>(round(2.*J)) & 1 ? -1. : 1. ;
    // SMASH quantum charges for the hadron state
    const double muf = part.baryon_number()*surf[iel].mub + part.strangeness()*surf[iel].mus +
                part.charge()*surf[iel].muq ;
