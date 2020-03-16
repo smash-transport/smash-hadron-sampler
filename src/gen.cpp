@@ -28,7 +28,7 @@ void fillBoostMatrix(double vx, double vy, double vz, double boostMatrix [4][4])
   const double vv [3] = {vx, vy, vz} ;
   const double v2 = vx*vx+vy*vy+vz*vz ;
   const double gamma = 1.0/sqrt(1.0-v2) ;
-  if(isinf(gamma)||isnan(gamma)){ cout<<"boost vector invalid; exiting\n" ; exit(1) ; }
+  if(std::isinf(gamma)||std::isnan(gamma)){ cout<<"boost vector invalid; exiting\n" ; exit(1) ; }
   boostMatrix[0][0] = gamma ;
   boostMatrix[0][1] = boostMatrix[1][0] = vx*gamma ;
   boostMatrix[0][2] = boostMatrix[2][0] = vy*gamma ;
@@ -344,7 +344,7 @@ void acceptParticle(int ievent, const smash::ParticleTypePtr &ldef, smash::FourV
 
  pList[ievent][npart1] = new_particle;
  npart1++ ;
- if(isinf(momentum.x0()) || isnan(momentum.x0())){
+ if(std::isinf(momentum.x0()) || std::isnan(momentum.x0())){
    cout << "acceptPart nan: known, coord="<< position <<endl ;
    exit(1) ;
  }
