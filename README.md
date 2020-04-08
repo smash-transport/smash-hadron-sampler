@@ -12,7 +12,7 @@ To compile the project, first set the environment variable to the smash director
 
 Copy the cmake files to the sampler directory:
 
-    cd [...]/hadronSampler
+    cd [...]/hadron-sampler
     cp -r $SMASH_DIR/cmake ./
 
 Execute the following commands to build the project:
