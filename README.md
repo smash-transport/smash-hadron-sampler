@@ -19,8 +19,9 @@ Execute the following commands to build the project:
 
     mkdir build
     cd build
-    cmake .. -DCMAKE_INSTALL_PREFIX=[...]/eigen3 -DPythia_CONFIG_EXECUTABLE=[...]/pythia8235/bin/pythia8-config
+    cmake .. -DCMAKE_INSTALL_PREFIX=[...]/eigen3 -DGSL_ROOT_DIR=[...]/gsl-2.0 -DPythia_CONFIG_EXECUTABLE=[...]/pythia8235/bin/pythia8-config
     make
+where `[...]/gsl-2.0` is the path to the GSL root directory (in this case GSL-2.0, however any newer version is also supported).
 
 In continuation, the executable `sampler` is created.
 
