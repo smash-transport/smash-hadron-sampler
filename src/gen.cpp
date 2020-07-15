@@ -76,9 +76,6 @@ struct element {
 element *surf ;
 int *npart ;               // number of generated particles in each event
 
-const double pmax = 10.0 ;
-const double rapmax = 6.0 ;
-
 const double c1 = pow(1./2./hbarC/TMath::Pi(),3.0) ;
 double *cumulantDensity ; // particle densities (thermal). Seems to be redundant, but needed for fast generation
 double totalDensity ; // sum of all thermal densities
@@ -87,7 +84,7 @@ double totalDensity ; // sum of all thermal densities
 // ######## load the elements
 void load(char *filename, int N)
 {
- double dV, vEff=0.0, vEffOld=0.0, dvEff, dvEffOld ;
+ double vEff=0.0, vEffOld=0.0, dvEff, dvEffOld ;
  int nfail=0, ncut=0 ;
  TLorentzVector dsigma ;
  Nelem = N ;
