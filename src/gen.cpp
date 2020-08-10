@@ -116,10 +116,10 @@ void load(char *filename, int N)
       >>surf[n].T>>surf[n].mub>>surf[n].muq>>surf[n].mus ;
       for(int i=0; i<10; i++) instream>>surf[n].pi[i] ;
       instream>>surf[n].Pi ;
-      if(surf[n].muq>0.12){ surf[n].muq=0.12 ; // omit charge ch.pot. for test
+      if(surf[n].muq>0.13){ surf[n].muq=0.13 ; // omit charge ch.pot. for test
 	ncut++ ;
       }
-      if(surf[n].muq<-0.12){ surf[n].muq=-0.12 ; // omit charge ch.pot. for test
+      if(surf[n].muq<-0.13){ surf[n].muq=-0.13 ; // omit charge ch.pot. for test
 	ncut++ ;
       }
 
