@@ -228,7 +228,7 @@ int generate()
    for (auto& particle : database) {
     double density = 0. ;
     const bool exclude_species = std::find(species_to_exclude.begin(), species_to_exclude.end(), particle.pdgcode()) != species_to_exclude.end();
-    if (exclude_species) {
+    if (exclude_species || !particle.is_hadron() || particle.pdgcode().charmness() != 0) {
       density = 0;
     } else {
       const double mass = particle.mass() ;
