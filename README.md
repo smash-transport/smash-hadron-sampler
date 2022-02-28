@@ -4,7 +4,7 @@ This sampler is meant to be applied in hybrid models, simulating heavy-ion colli
 
 When using the smash-hadron-sampler, please cite:
 - [I. Karpenko et al., Phys.Rev.C 91 (2015) 6, 064901](https://inspirehep.net/literature/1343339)
-- this repository (https://github.com/smash-transport/smash-hadron-sampler).
+- [A. Schäfer el al., arXiv:2112.08724](https://arxiv.org/abs/2112.08724).
 
 ### Prerequisites:
 - [cmake](https://cmake.org) version &ge; 3.15.4
