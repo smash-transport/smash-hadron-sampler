@@ -30,7 +30,7 @@ Execute the following commands to build the project:
     cd build
     cmake .. -DPythia_CONFIG_EXECUTABLE=[...]/pythia8307/bin/pythia8-config
     make
-where `[...]/gsl-2.0` is the path to the GSL root directory (in this case GSL-2.0, however any newer version is also supported).
+where `[...]/pythia8307` is the path to the pythia directory to which also SMASH is coupled.
 
 In continuation, the executable `sampler` is created.
 
