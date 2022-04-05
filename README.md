@@ -21,14 +21,14 @@ To compile the project, first set the environment variable to the smash director
 
 Copy the cmake files to the sampler directory:
 
-    cd [...]/hadron-sampler
+    cd [...]/smash-hadron-sampler
     cp -r $SMASH_DIR/cmake ./
 
 Execute the following commands to build the project:
 
     mkdir build
     cd build
-    cmake .. -DCMAKE_INSTALL_PREFIX=[...]/eigen3 -DGSL_ROOT_DIR=[...]/gsl-2.0 -DPythia_CONFIG_EXECUTABLE=[...]/pythia8235/bin/pythia8-config
+    cmake .. -DPythia_CONFIG_EXECUTABLE=[...]/pythia8307/bin/pythia8-config
     make
 where `[...]/gsl-2.0` is the path to the GSL root directory (in this case GSL-2.0, however any newer version is also supported).
 
