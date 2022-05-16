@@ -175,7 +175,7 @@ void load(char *filename, int N)
 // ---- prepare some stuff to calculate thermal densities
 
  // Load SMASH hadron list
- smash::load_default_particles_and_decaymodes();
+ smash:: initialize_default_particles_and_decaymodes();
  const smash::ParticleTypeList& database = smash::ParticleType::list_all();
 
  // Dump list of hadronic states to terminal
