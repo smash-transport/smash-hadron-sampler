@@ -8,7 +8,7 @@ When using the smash-hadron-sampler, please cite:
 
 ### Prerequisites:
 - [cmake](https://cmake.org) version &ge; 3.15.4
-- [SMASH](https://github.com/smash-transport/smash) version &ge; 2.0 and prerequisites therein
+- [SMASH](https://github.com/smash-transport/smash) version &ge; 2.2 and prerequisites therein
 - [ROOT](https://root.cern.ch) version &ge; 6.06
 
 ### Install instructions:
