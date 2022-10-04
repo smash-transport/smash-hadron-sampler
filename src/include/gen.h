@@ -13,6 +13,7 @@ namespace gen{
 // data
 extern TRandom3 *rnd ;
 extern smash::ParticleData ***pList ; // particle arrays
+static smash::Integrator integrate;
 extern int *npart ;
 const int NPartBuf = 15000; // dimension of particle buffer for each event
 

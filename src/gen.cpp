@@ -1,3 +1,4 @@
+
 #include <TMath.h>
 #include <TLorentzVector.h>
 #include <TRandom3.h>
@@ -61,6 +62,7 @@ int Nelem ;
 double *ntherm, dvMax, dsigmaMax ;
 TRandom3 *rnd ;
 int NPART ;
+double max_widths=7.0;// Max mass sampled from spectral function Mmax= max_widths * total_width
 //const int NPartBuf = 10000 ;
 smash::ParticleData ***pList ; // particle arrays
 
@@ -175,7 +177,9 @@ void load(char *filename, int N)
 // ---- prepare some stuff to calculate thermal densities
 
  // Load SMASH hadron list
+ // smash::load_default_particles_and_decaymodes();
  smash::initialize_default_particles_and_decaymodes();
+
  const smash::ParticleTypeList& database = smash::ParticleType::list_all();
 
  // Dump list of hadronic states to terminal
@@ -193,6 +197,7 @@ void load(char *filename, int N)
 
 void acceptParticle(int event, const smash::ParticleTypePtr &ldef, smash::FourVector position, smash::FourVector momentum) ;
 
+double sample_spectral_mass(  const smash::ParticleTypePtr &ldef );
 
 double ffthermal(double *x, double *par)
 {
@@ -203,6 +208,28 @@ double ffthermal(double *x, double *par)
   return x[0]*x[0]/( exp((sqrt(x[0]*x[0]+mass*mass)-mu)/T) - stat ) ;
 }
 
+double thermal_density(double mass, double T, double mu, double J, double stat){
+  double density_sum= 0;
+  for(int i=1; i<11; i++){
+    density_sum += (2.*J+1.)*pow(gevtofm,3)/(2.*pow(TMath::Pi(),2))*mass*mass* T *pow(stat,i+1)*TMath::BesselK(2,i*mass/ T)*exp(i*mu/T)/i;
+  }
+  return density_sum;
+}
+
+
+double mass_integrated_thermal_density(  const smash::ParticleTypePtr &ldef, double T, double mu, double J, double stat ){
+
+  double pole_mass = ldef->mass();
+  double width_at_pole= ldef->total_width(pole_mass);
+  double min_mass= ldef->min_mass_spectral();
+  double max_mass= max_widths*width_at_pole;
+  // double sampled_mass,rho_over_uniform;
+
+  const auto integral = integrate(min_mass, max_mass, [&](double x) {
+    return (ldef->spectral_function(x))*thermal_density(x, T, mu, J, stat );
+   });
+   return integral;
+}
 
 int generate()
 {
@@ -240,8 +267,14 @@ int generate()
       // SMASH quantum charges for the hadron state
       const double muf = particle.baryon_number()*surf[iel].mub + particle.strangeness()*surf[iel].mus +
                  particle.charge()*surf[iel].muq ;
-      for(int i=1; i<11; i++)
-      density += (2.*J+1.)*pow(gevtofm,3)/(2.*pow(TMath::Pi(),2))*mass*mass*surf[iel].T*pow(stat,i+1)*TMath::BesselK(2,i*mass/surf[iel].T)*exp(i*muf/surf[iel].T)/i ;
+      if( particle.is_stable() ){
+        // Sampled mass is restricted to pole-mass
+        density = thermal_density(mass, surf[iel].T,muf,J, stat);
+      }
+      else{
+        // sampled mass is plucked from spectral function, using the acceptance-rejection method
+        density = mass_integrated_thermal_density(&particle, surf[iel].T,muf,J, stat);
+      }
     }
     if(ip>0) cumulantDensity[ip] = cumulantDensity[ip-1] + density ;
         else cumulantDensity[ip] = density ;
@@ -277,7 +310,21 @@ int generate()
   while(cumulantDensity[isort]<xsort) isort++ ;
    auto& part = database[isort];
    const double J = part.spin() * 0.5;
-   const double mass = part.mass() ;
+   // For a particle with a spectral function, sample mass and then sample momentum.
+   // First part: Mass Selection
+   // Here mass is sampled from the spectral function using
+   double mass_sample;
+   if(part.is_stable()){
+     // Sampled mass is restricted to pole-mass
+     mass_sample = part.mass();}
+   else{
+     // sampled mass is plucked from spectral function, using the acceptance-rejection method
+     mass_sample = sample_spectral_mass(&part);
+   }
+   // mass is set to be the sampled mass.
+   const double mass = mass_sample ;
+
+
    const double stat = static_cast<int>(round(2.*J)) & 1 ? -1. : 1. ;
    // SMASH quantum charges for the hadron state
    const double muf = part.baryon_number()*surf[iel].mub + part.strangeness()*surf[iel].mus +
@@ -347,6 +394,27 @@ void acceptParticle(int ievent, const smash::ParticleTypePtr &ldef, smash::FourV
  }
  if(npart1>NPartBuf){ cout<<"Error. Please increase gen::npartbuf\n"; exit(1);}
 }
+
+double sample_spectral_mass( const smash::ParticleTypePtr &ldef ){
+  // sampled mass is plucked from spectral function, using the acceptance-rejection method
+  // Quantities needed
+  double pole_mass = ldef->mass();
+  double width_at_pole= ldef->total_width(pole_mass);
+  double min_mass= ldef->min_mass_spectral();
+  double max_mass= max_widths*width_at_pole;
+  double sampled_mass,rho_over_uniform;
+
+  bool is_rejected=true;
+  while(is_rejected){
+    sampled_mass= (max_mass-min_mass)*( rnd->Rndm() ) + min_mass;
+    rho_over_uniform =  ldef->spectral_function(sampled_mass)/ldef->spectral_function(pole_mass);
+    if(rnd->Rndm()<rho_over_uniform){is_rejected=false;}
+  }
+  return sampled_mass;
+}
+
+//Here the SpectralFunction  has to be called
+
 
 // ################### end #################
 } // end namespace gen

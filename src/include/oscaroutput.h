@@ -1,6 +1,8 @@
 #ifndef INCLUDE_OSCAROUTPUT_H_
 #define INCLUDE_OSCAROUTPUT_H_
 
+#include <boost/filesystem.hpp>
+
 #include "smash/file.h"
 #include "smash/oscaroutput.h"
 #include "smash/outputparameters.h"
@@ -11,7 +13,7 @@
 
 void write_oscar_output() {
   // initialize Oscar output
-  const std::filesystem::path OutputPath = params::sSpectraDir;
+  const smash::bf::path OutputPath = params::sSpectraDir;
   std::unique_ptr<smash::OutputInterface> OscarOutput =
        create_oscar_output("Oscar2013", "Particles", OutputPath,
                            smash::OutputParameters());
