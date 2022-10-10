@@ -116,6 +116,8 @@ void load(char *filename, int N)
       >>surf[n].T>>surf[n].mub>>surf[n].muq>>surf[n].mus ;
       for(int i=0; i<10; i++) instream>>surf[n].pi[i] ;
       instream>>surf[n].Pi ;
+  // Randomly sample eta in [-2,2] to restore the third dimension after a 2D hydro run
+  surf[n].eta=4.0*(rnd->Rndm())-2.0;
       if(surf[n].muq>0.12){ surf[n].muq=0.12 ; // omit charge ch.pot. for test
 	ncut++ ;
       }
