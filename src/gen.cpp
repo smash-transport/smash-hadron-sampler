@@ -301,10 +301,16 @@ int generate()
     for(int i=0; i<4; i++)
     for(int j=0; j<4; j++)
      pipp += momArray[i]*momArray[j]*gmumu[i]*gmumu[j]*surf[iel].pi[index44(i,j)] ;
-    WviscFactor = (1.0 + (1.0+stat*feq)*pipp/(2.*surf[iel].T*surf[iel].T*(params::ecrit*1.15))) ;
-    if(WviscFactor<0.1) WviscFactor = 0.1 ; // test, jul17; before: 0.5
-    //if(WviscFactor>1.2) WviscFactor = 1.2 ; //              before: 1.5
+    WviscFactor += (1.0+stat*feq)*pipp/(2.*surf[iel].T*surf[iel].T*(params::ecrit*1.15)) ;
    }
+   if(params::bulk){
+     const double feq = C_Feq/( exp((sqrt(p*p+mass*mass)-muf)/surf[iel].T) - stat ) ;
+     //assume cs**2 is around 0.15
+     WviscFactor -= (1.0+stat*feq)*surf[iel].Pi*6.0*(mass*mass/(3*mom.E())-mom.E()*0.184)/(5.068*surf[iel].T*surf[iel].T)  ;
+   }
+   if(WviscFactor<0.1) WviscFactor = 0.1 ; 
+   // test, jul17; before: 0.5
+    //if(WviscFactor>1.2) WviscFactor = 1.2 ; //              before: 1.5
    W *= WviscFactor ;
    rval = rnd->Rndm()*dsigmaMax ;
    niter++ ;

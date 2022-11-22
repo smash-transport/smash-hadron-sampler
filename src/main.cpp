@@ -34,7 +34,7 @@ int main(int argc, char **argv)
   params::printParameters() ;
   time_t time0 ;
   time(&time0) ;
-  ranseed = time0+prefix*16 ;
+  ranseed = 1668524157 ;
 
   TRandom3* random3 = new TRandom3();
 	random3->SetSeed(ranseed);
