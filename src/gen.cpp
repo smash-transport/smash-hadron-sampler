@@ -322,7 +322,7 @@ int generate()
    acceptParticle(ievent, &part, position, momentum) ;
   } // coordinate accepted
   } // events loop
-  if(iel%(Nelem/50)==0) cout<<(iel*100)/Nelem<<" % done, maxiter= "<<nmaxiter<<endl ;
+  if(iel%(Nelem/50)==0) cout<<round(iel/(Nelem*0.01))<<" % done, maxiter= "<<nmaxiter<<endl ;
  } // loop over all elements
  cout << "therm_failed elements: " <<ntherm_fail << endl ;
  return npart[0] ;
