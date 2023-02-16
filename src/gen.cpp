@@ -232,9 +232,14 @@ int generate()
  std::vector<smash::PdgCode> species_to_exclude{0x11, -0x11, 0x13, -0x13,
                                                 0x15, -0x15, 0x22, 0x9000221};
 
+
+
  for(int iel=0; iel<Nelem; iel++){ // loop over all elements
    // ---> thermal densities, for each surface element
    totalDensity = 0.0 ;
+
+   std::cout << "Element number: " << iel << std::endl;
+
    if(surf[iel].T<=0.){ ntherm_fail++ ; continue ; } 
 
    const smash::ParticleTypeList& database = smash::ParticleType::list_all();
@@ -272,6 +277,9 @@ int generate()
    // dvEff = dsigma_mu * u^mu
    dvEff = surf[iel].dsigma[0] ;
    for(int ievent=0; ievent<params::NEVENTS; ievent++){
+
+     std::cout << "Event number: " << ievent << std::endl;
+
      // ---- number of particles to generate
      int nToGen = 0 ;
      if(dvEff*totalDensity<0.01){
@@ -285,9 +293,16 @@ int generate()
     
      // Loop over all eta slices 
      for(int islice=0; islice<num_eta_slices; islice++){
+
+      std::cout << "Slice number: " << islice << std::endl;
+      std::cout << "nToGen" << nToGen << std::endl;
+
        // ---- we generate a particle!
        for(int ipart=0; ipart<nToGen; ipart++){
          int isort = 0 ;
+
+         std::cout << "Particle number: " << ipart << std::endl;
+
          // SMASH random number [0..1]
          double xsort = rnd->Rndm()*totalDensity ; // throw dice, particle sort
          while(cumulantDensity[isort]<xsort) isort++ ;
@@ -302,25 +317,26 @@ int generate()
          fthermal->SetParameters(surf[iel].T,muf,mass,stat) ;
          //const double dfMax = part->GetFMax() ;
          int niter = 0 ; // number of iterations, for debug purposes
+
          do{ // fast momentum generation loop
-         const double p = fthermal->GetRandom() ;
-         const double phi = 2.0*TMath::Pi()*rnd->Rndm() ;
-         const double sinth = -1.0 + 2.0*rnd->Rndm() ;
-         mom.SetPxPyPzE(p*sqrt(1.0-sinth*sinth)*cos(phi), p*sqrt(1.0-sinth*sinth)*sin(phi), p*sinth, sqrt(p*p+mass*mass) ) ;
-         W = ( surf[iel].dsigma[0]*mom.E() + surf[iel].dsigma[1]*mom.Px() +
-             surf[iel].dsigma[2]*mom.Py() + surf[iel].dsigma[3]*mom.Pz() ) / mom.E() ;
-         double WviscFactor = 1.0 ;
-         if(params::shear){
-           const double feq = C_Feq/( exp((sqrt(p*p+mass*mass)-muf)/surf[iel].T) - stat ) ;
-           double pipp = 0 ;
-           double momArray [4] = {mom[3],mom[0],mom[1],mom[2]} ;
-           for(int i=0; i<4; i++)
-           for(int j=0; j<4; j++)
-             pipp += momArray[i]*momArray[j]*gmumu[i]*gmumu[j]*surf[iel].pi[index44(i,j)] ;
-           WviscFactor = (1.0 + (1.0+stat*feq)*pipp/(2.*surf[iel].T*surf[iel].T*(params::ecrit*1.15))) ;
-           if(WviscFactor<0.1) WviscFactor = 0.1 ; // test, jul17; before: 0.5
-           //if(WviscFactor>1.2) WviscFactor = 1.2 ; //              before: 1.5
-         }
+          const double p = fthermal->GetRandom() ;
+          const double phi = 2.0*TMath::Pi()*rnd->Rndm() ;
+          const double sinth = -1.0 + 2.0*rnd->Rndm() ;
+          mom.SetPxPyPzE(p*sqrt(1.0-sinth*sinth)*cos(phi), p*sqrt(1.0-sinth*sinth)*sin(phi), p*sinth, sqrt(p*p+mass*mass) ) ;
+          W = ( surf[iel].dsigma[0]*mom.E() + surf[iel].dsigma[1]*mom.Px() +
+              surf[iel].dsigma[2]*mom.Py() + surf[iel].dsigma[3]*mom.Pz() ) / mom.E() ;
+          double WviscFactor = 1.0 ;
+          if(params::shear){
+             const double feq = C_Feq/( exp((sqrt(p*p+mass*mass)-muf)/surf[iel].T) - stat ) ;
+            double pipp = 0 ;
+            double momArray [4] = {mom[3],mom[0],mom[1],mom[2]} ;
+            for(int i=0; i<4; i++)
+              for(int j=0; j<4; j++)
+                pipp += momArray[i]*momArray[j]*gmumu[i]*gmumu[j]*surf[iel].pi[index44(i,j)] ;
+            WviscFactor = (1.0 + (1.0+stat*feq)*pipp/(2.*surf[iel].T*surf[iel].T*(params::ecrit*1.15))) ;
+            if(WviscFactor<0.1) WviscFactor = 0.1 ; // test, jul17; before: 0.5
+            //if(WviscFactor>1.2) WviscFactor = 1.2 ; //              before: 1.5
+          }
          W *= WviscFactor ;
          rval = rnd->Rndm()*dsigmaMax ;
          niter++ ;
@@ -355,6 +371,9 @@ int generate()
 
 void acceptParticle(int ievent, const smash::ParticleTypePtr &ldef, smash::FourVector position, smash::FourVector momentum)
 {
+ 
+ std::cout << "acceptParticle entered" << std::endl;
+ 
  int& npart1 = npart[ievent] ;
 
  smash::ParticleData* new_particle = new smash::ParticleData(*ldef);
