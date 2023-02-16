@@ -116,8 +116,6 @@ void load(char *filename, int N)
       >>surf[n].T>>surf[n].mub>>surf[n].muq>>surf[n].mus ;
       for(int i=0; i<10; i++) instream>>surf[n].pi[i] ;
       instream>>surf[n].Pi ;
-  // Randomly sample eta in [-1,1] to restore the third dimension after a 2D hydro run
-  surf[n].eta=2.0*(rnd->Rndm())-1.0;
       if(surf[n].muq>0.12){ surf[n].muq=0.12 ; // omit charge ch.pot. for test
 	ncut++ ;
       }
@@ -234,146 +232,136 @@ int generate()
 
 
 
+
+
  for(int iel=0; iel<Nelem; iel++){ // loop over all elements
-   // ---> thermal densities, for each surface element
+  // ---> thermal densities, for each surface element
    totalDensity = 0.0 ;
-
-   std::cout << "Element number: " << iel << std::endl;
-
-   if(surf[iel].T<=0.){ ntherm_fail++ ; continue ; } 
+   if(surf[iel].T<=0.){ ntherm_fail++ ; continue ; }
 
    const smash::ParticleTypeList& database = smash::ParticleType::list_all();
    int ip = 0;
    for (auto& particle : database) {
-     double density = 0. ;
-     const bool exclude_species = std::find(species_to_exclude.begin(), species_to_exclude.end(), particle.pdgcode()) != species_to_exclude.end();
-     if (exclude_species || !particle.is_hadron() || particle.pdgcode().charmness() != 0) {
-       density = 0;
-     } else {
-       const double mass = particle.mass() ;
-       // By definition, the spin in SMASH is defined as twice the spin of the
-       // multiplet, so that it can be stored as an integer. Hence, it needs to
-       // be multiplied by 1/2
-       const double J = particle.spin() * 0.5 ;
-       const double stat = static_cast<int>(round(2.*J)) & 1 ? -1. : 1. ;
-       // SMASH quantum charges for the hadron state
-       const double muf = particle.baryon_number()*surf[iel].mub + particle.strangeness()*surf[iel].mus +
+    double density = 0. ;
+    const bool exclude_species = std::find(species_to_exclude.begin(), species_to_exclude.end(), particle.pdgcode()) != species_to_exclude.end();
+    if (exclude_species || !particle.is_hadron() || particle.pdgcode().charmness() != 0) {
+      density = 0;
+    } else {
+      const double mass = particle.mass() ;
+      // By definition, the spin in SMASH is defined as twice the spin of the
+      // multiplet, so that it can be stored as an integer. Hence, it needs to
+      // be multiplied by 1/2
+      const double J = particle.spin() * 0.5 ;
+      const double stat = static_cast<int>(round(2.*J)) & 1 ? -1. : 1. ;
+      // SMASH quantum charges for the hadron state
+      const double muf = particle.baryon_number()*surf[iel].mub + particle.strangeness()*surf[iel].mus +
                  particle.charge()*surf[iel].muq ;
-       for(int i=1; i<11; i++)
-       density += (2.*J+1.)*pow(gevtofm,3)/(2.*pow(TMath::Pi(),2))*mass*mass*surf[iel].T*pow(stat,i+1)*TMath::BesselK(2,i*mass/surf[iel].T)*exp(i*muf/surf[iel].T)/i ;
-     }
-     if(ip>0) cumulantDensity[ip] = cumulantDensity[ip-1] + density ;
-         else cumulantDensity[ip] = density ;
-     totalDensity += density ; 
-
-     ip += 1;
+      for(int i=1; i<11; i++)
+      density += (2.*J+1.)*pow(gevtofm,3)/(2.*pow(TMath::Pi(),2))*mass*mass*surf[iel].T*pow(stat,i+1)*TMath::BesselK(2,i*mass/surf[iel].T)*exp(i*muf/surf[iel].T)/i ;
     }
+    if(ip>0) cumulantDensity[ip] = cumulantDensity[ip-1] + density ;
+        else cumulantDensity[ip] = density ;
+    totalDensity += density ;
+
+    ip += 1;
+   }
 
    if(totalDensity<0.  || totalDensity>100.){ ntherm_fail++ ; continue ; }
    //cout<<"thermal densities calculated.\n" ;
    //cout<<cumulantDensity[NPART-1]<<" = "<<totalDensity<<endl ;
    // ---< end thermal densities calc
-   double rval, dvEff = 0., W ;
-   // dvEff = dsigma_mu * u^mu
-   dvEff = surf[iel].dsigma[0] ;
-   for(int ievent=0; ievent<params::NEVENTS; ievent++){
+  double rval, dvEff = 0., W ;
+  // dvEff = dsigma_mu * u^mu. In the fluid rest frame u^mu=(1,0,0,0)
+  dvEff = surf[iel].dsigma[0] ;
 
-     std::cout << "Event number: " << ievent << std::endl;
 
-     // ---- number of particles to generate
-     int nToGen = 0 ;
-     if(dvEff*totalDensity<0.01){
-     // SMASH random number [0..1]
-     double x = rnd->Rndm() ; // throw dice
-     if(x<dvEff*totalDensity) nToGen = 1 ;
-     }else{
-       // SMASH random number according to Poisson DF
-       nToGen = rnd->Poisson(dvEff*totalDensity) ;
-     }
-    
-     // Loop over all eta slices 
-     for(int islice=0; islice<num_eta_slices; islice++){
+  // Loop over all eta slices 
+  for(int islice=0; islice<num_eta_slices; islice++){
 
-      std::cout << "Slice number: " << islice << std::endl;
-      std::cout << "nToGen" << nToGen << std::endl;
 
-       // ---- we generate a particle!
-       for(int ipart=0; ipart<nToGen; ipart++){
-         int isort = 0 ;
+  for(int ievent=0; ievent<params::NEVENTS; ievent++){
+  // ---- number of particles to generate
+  int nToGen = 0 ;
+  if(dvEff*totalDensity<0.01){
+   // SMASH random number [0..1]
+    double x = rnd->Rndm() ; // throw dice
+    if(x<dvEff*totalDensity) nToGen = 1 ;
+  }else{
+   // SMASH random number according to Poisson DF
+    nToGen = rnd->Poisson(dvEff*totalDensity) ;
+  }
 
-         std::cout << "Particle number: " << ipart << std::endl;
 
-         // SMASH random number [0..1]
-         double xsort = rnd->Rndm()*totalDensity ; // throw dice, particle sort
-         while(cumulantDensity[isort]<xsort) isort++ ;
-         auto& part = database[isort];
-         const double J = part.spin() * 0.5;
-         const double mass = part.mass() ;
-         const double stat = static_cast<int>(round(2.*J)) & 1 ? -1. : 1. ;
-         // SMASH quantum charges for the hadron state
-         const double muf = part.baryon_number()*surf[iel].mub + part.strangeness()*surf[iel].mus +
-                     part.charge()*surf[iel].muq ;
-         if(muf>=mass) cout << " ^^ muf = " << muf << "  " << part.pdgcode() << endl ;
-         fthermal->SetParameters(surf[iel].T,muf,mass,stat) ;
-         //const double dfMax = part->GetFMax() ;
-         int niter = 0 ; // number of iterations, for debug purposes
 
-         do{ // fast momentum generation loop
-          const double p = fthermal->GetRandom() ;
-          const double phi = 2.0*TMath::Pi()*rnd->Rndm() ;
-          const double sinth = -1.0 + 2.0*rnd->Rndm() ;
-          mom.SetPxPyPzE(p*sqrt(1.0-sinth*sinth)*cos(phi), p*sqrt(1.0-sinth*sinth)*sin(phi), p*sinth, sqrt(p*p+mass*mass) ) ;
-          W = ( surf[iel].dsigma[0]*mom.E() + surf[iel].dsigma[1]*mom.Px() +
-              surf[iel].dsigma[2]*mom.Py() + surf[iel].dsigma[3]*mom.Pz() ) / mom.E() ;
-          double WviscFactor = 1.0 ;
-          if(params::shear){
-             const double feq = C_Feq/( exp((sqrt(p*p+mass*mass)-muf)/surf[iel].T) - stat ) ;
-            double pipp = 0 ;
-            double momArray [4] = {mom[3],mom[0],mom[1],mom[2]} ;
-            for(int i=0; i<4; i++)
-              for(int j=0; j<4; j++)
-                pipp += momArray[i]*momArray[j]*gmumu[i]*gmumu[j]*surf[iel].pi[index44(i,j)] ;
-            WviscFactor = (1.0 + (1.0+stat*feq)*pipp/(2.*surf[iel].T*surf[iel].T*(params::ecrit*1.15))) ;
-            if(WviscFactor<0.1) WviscFactor = 0.1 ; // test, jul17; before: 0.5
-            //if(WviscFactor>1.2) WviscFactor = 1.2 ; //              before: 1.5
-          }
-         W *= WviscFactor ;
-         rval = rnd->Rndm()*dsigmaMax ;
-         niter++ ;
-         }while(rval>W) ; // end fast momentum generation 
 
-         if(niter>nmaxiter) nmaxiter = niter ;
 
-         // additional random smearing over eta and boost of slices
-         const double etaSlice = eta_coordinates[islice] ;
+   // ---- we generate a particle!
+   for(int ipart=0; ipart<nToGen; ipart++){
 
-         const double etaF = 0.5*log((surf[iel].u[0]+surf[iel].u[3])/(surf[iel].u[0]-surf[iel].u[3])) ;
-         const double etaShift = params::deta*(-0.5+rnd->Rndm()) ;
-         const double vx = surf[iel].u[1]/surf[iel].u[0]*cosh(etaF)/cosh(etaF+etaShift+etaSlice) ;
-         const double vy = surf[iel].u[2]/surf[iel].u[0]*cosh(etaF)/cosh(etaF+etaShift+etaSlice) ;
-         const double vz = tanh(etaF+etaShift+etaSlice) ;
-         mom.Boost(vx,vy,vz) ;
-         smash::FourVector momentum(mom.E(), mom.Px(), mom.Py(), mom.Pz());
-         smash::FourVector position(surf[iel].tau*cosh(surf[iel].eta+etaShift+etaSlice), surf[iel].x, surf[iel].y, surf[iel].tau*sinh(surf[iel].eta+etaShift+etaSlice));
-         acceptParticle(ievent, &part, position, momentum) ;
-        } // coordinate accepted
-      } // loop over all slices
-      if(iel%(Nelem/50)==0) cout<<(iel*100)/Nelem<<" % done, maxiter= "<<nmaxiter<<endl ;
-    } // loop over all events
-    cout << "therm_failed elements: " <<ntherm_fail << endl ;
-    return npart[0] ;
-    delete fthermal ;
-  } //loop over all elements
- 
+  int isort = 0 ;
+  // SMASH random number [0..1]
+  double xsort = rnd->Rndm()*totalDensity ; // throw dice, particle sort
+  while(cumulantDensity[isort]<xsort) isort++ ;
+   auto& part = database[isort];
+   const double J = part.spin() * 0.5;
+   const double mass = part.mass() ;
+   const double stat = static_cast<int>(round(2.*J)) & 1 ? -1. : 1. ;
+   // SMASH quantum charges for the hadron state
+   const double muf = part.baryon_number()*surf[iel].mub + part.strangeness()*surf[iel].mus +
+               part.charge()*surf[iel].muq ;
+   if(muf>=mass) cout << " ^^ muf = " << muf << "  " << part.pdgcode() << endl ;
+   fthermal->SetParameters(surf[iel].T,muf,mass,stat) ;
+   //const double dfMax = part->GetFMax() ;
+   int niter = 0 ; // number of iterations, for debug purposes
+   do{ // fast momentum generation loop
+   const double p = fthermal->GetRandom() ;
+   const double phi = 2.0*TMath::Pi()*rnd->Rndm() ;
+   const double sinth = -1.0 + 2.0*rnd->Rndm() ;
+   mom.SetPxPyPzE(p*sqrt(1.0-sinth*sinth)*cos(phi), p*sqrt(1.0-sinth*sinth)*sin(phi), p*sinth, sqrt(p*p+mass*mass) ) ;
+   W = ( surf[iel].dsigma[0]*mom.E() + surf[iel].dsigma[1]*mom.Px() +
+        surf[iel].dsigma[2]*mom.Py() + surf[iel].dsigma[3]*mom.Pz() ) / mom.E() ;
+   double WviscFactor = 1.0 ;
+   if(params::shear){
+    const double feq = C_Feq/( exp((sqrt(p*p+mass*mass)-muf)/surf[iel].T) - stat ) ;
+    double pipp = 0 ;
+    double momArray [4] = {mom[3],mom[0],mom[1],mom[2]} ;
+    for(int i=0; i<4; i++)
+    for(int j=0; j<4; j++)
+     pipp += momArray[i]*momArray[j]*gmumu[i]*gmumu[j]*surf[iel].pi[index44(i,j)] ;
+    WviscFactor = (1.0 + (1.0+stat*feq)*pipp/(2.*surf[iel].T*surf[iel].T*(params::ecrit*1.15))) ;
+    if(WviscFactor<0.1) WviscFactor = 0.1 ; // test, jul17; before: 0.5
+    //if(WviscFactor>1.2) WviscFactor = 1.2 ; //              before: 1.5
+   }
+   W *= WviscFactor ;
+   rval = rnd->Rndm()*dsigmaMax ;
+   niter++ ;
+   }while(rval>W) ; // end fast momentum generation
+   if(niter>nmaxiter) nmaxiter = niter ;
+   // additional random smearing over eta
+   const double etaSlice = eta_coordinates[islice] ;
+   const double etaF = 0.5*log((surf[iel].u[0]+surf[iel].u[3])/(surf[iel].u[0]-surf[iel].u[3])) ;
+   const double etaShift = params::deta*(-0.5+rnd->Rndm()) ;
+   const double vx = surf[iel].u[1]/surf[iel].u[0]*cosh(etaF)/cosh(etaF+etaShift+etaSlice) ;
+   const double vy = surf[iel].u[2]/surf[iel].u[0]*cosh(etaF)/cosh(etaF+etaShift+etaSlice) ;
+   const double vz = tanh(etaF+etaShift+etaSlice) ;
+   mom.Boost(vx,vy,vz) ;
+   smash::FourVector momentum(mom.E(), mom.Px(), mom.Py(), mom.Pz());
+   smash::FourVector position(surf[iel].tau*cosh(surf[iel].eta+etaShift+etaSlice), surf[iel].x, surf[iel].y, surf[iel].tau*sinh(surf[iel].eta+etaShift+etaSlice));
+   acceptParticle(ievent, &part, position, momentum) ;
+  } // coordinate accepted
+  } // events loop
+  } // slice loop
+  if(iel%(Nelem/50)==0) cout<<round(iel/(Nelem*0.01))<<" % done, maxiter= "<<nmaxiter<<endl ;
+ } // loop over all elements
+ cout << "therm_failed elements: " <<ntherm_fail << endl ;
+ return npart[0] ;
+ delete fthermal ;
 }
 
 
 
 void acceptParticle(int ievent, const smash::ParticleTypePtr &ldef, smash::FourVector position, smash::FourVector momentum)
 {
- 
- std::cout << "acceptParticle entered" << std::endl;
- 
  int& npart1 = npart[ievent] ;
 
  smash::ParticleData* new_particle = new smash::ParticleData(*ldef);
