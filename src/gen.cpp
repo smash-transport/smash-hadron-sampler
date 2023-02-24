@@ -208,15 +208,14 @@ int generate()
 {
  // This defines the parameters for restoring the eta coordinate.
  // Should go into the config file once it works.
- const int num_eta_slices = 31 ;
- const double eta_min = -4.0 ;
- const double eta_max = 4.0;
- const double delta_eta = (eta_max-eta_min)/(num_eta_slices-1) ;
+ const double delta_eta = (0.075 + 0.075)/6 ;   // TODO needs to take this value from vHLLE config
+ const double eta_min = -0.2 ; 
+ const double eta_max = 0.2 ;
+ const double small_value = 0.0000001 ;
+ const int num_eta_slices = std::ceil((eta_max-eta_min)/delta_eta) ;
  double eta_coordinates[num_eta_slices] ;
 
- for(int i=0; i<num_eta_slices; i++){
-  eta_coordinates[i] = eta_min + i*delta_eta ;
- }
+ for(int i=0; i<num_eta_slices; i++) eta_coordinates[i] = eta_min + i*delta_eta + small_value ;
  
  const double gmumu [4] = {1., -1., -1., -1.} ;
  TF1 *fthermal = new TF1("fthermal",ffthermal,0.0,10.0,4) ;
@@ -340,7 +339,7 @@ int generate()
    // additional random smearing over eta
    const double etaSlice = eta_coordinates[islice] ;
    const double etaF = 0.5*log((surf[iel].u[0]+surf[iel].u[3])/(surf[iel].u[0]-surf[iel].u[3])) ;
-   const double etaShift = params::deta*(-0.5+rnd->Rndm()) ;
+   const double etaShift = 0.0 ;  //params::deta*(-0.5+rnd->Rndm()) ;
    const double vx = surf[iel].u[1]/surf[iel].u[0]*cosh(etaF)/cosh(etaF+etaShift+etaSlice) ;
    const double vy = surf[iel].u[2]/surf[iel].u[0]*cosh(etaF)/cosh(etaF+etaShift+etaSlice) ;
    const double vz = tanh(etaF+etaShift+etaSlice) ;
