@@ -209,14 +209,29 @@ int generate()
  // This defines the parameters for restoring the eta coordinate.
  // Should go into the config file once it works.
  const double delta_eta = (0.075 + 0.075)/6 ;   // TODO needs to take this value from vHLLE config
- const double eta_min = -0.2 ; 
- const double eta_max = 0.2 ;
- const double small_value = 0.0000001 ;
- const int num_eta_slices = std::ceil((eta_max-eta_min)/delta_eta) ;
+ const double eta_min = -0.5 ; 
+ const double eta_max = 0.5 ;
+ const double small_value = 0.00001 ;
+ const int num_eta_slices = std::ceil((eta_max-eta_min)/delta_eta)+1 ;
  double eta_coordinates[num_eta_slices] ;
-
- for(int i=0; i<num_eta_slices; i++) eta_coordinates[i] = eta_min + i*delta_eta + small_value ;
  
+ std::cout << "#######################################\n" ;
+ std::cout << "###### 3D Restoration Parameters ######\n" ;
+ std::cout << "#######################################\n" ;
+
+ std::cout << "Delta Eta:" << delta_eta << std::endl;
+ std::cout << "eta min" << eta_min << std::endl;
+ std::cout << "eta max:" << eta_max << std::endl;
+ std::cout << "No. of eta slices:" << num_eta_slices << std::endl;
+ std::cout << std::endl;
+
+ for(int i=0; i<num_eta_slices; i++) {
+	eta_coordinates[i] = eta_min + i*(delta_eta + small_value) - (num_eta_slices-1)*small_value/2 ;
+	std::cout << "Eta coordinate of slice " << i << ": " << eta_coordinates[i] << std::endl;
+	}
+ 
+ std::cout << "List of eta coordinates" << eta_coordinates << std::endl;
+
  const double gmumu [4] = {1., -1., -1., -1.} ;
  TF1 *fthermal = new TF1("fthermal",ffthermal,0.0,10.0,4) ;
  TLorentzVector mom ;
