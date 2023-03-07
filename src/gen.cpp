@@ -258,9 +258,9 @@ int generate()
       for(int i=1; i<11; i++)
       density += (2.*J+1.)*pow(gevtofm,3)/(2.*pow(TMath::Pi(),2))*mass*mass*surf[iel].T*pow(stat,i+1)*TMath::BesselK(2,i*mass/surf[iel].T)*exp(i*muf/surf[iel].T)/i ;
     }
-    if(ip>0) cumulantDensity[ip] = cumulantDensity[ip-1] + density ;
-        else cumulantDensity[ip] = density ;
-    totalDensity += density ;
+    if(ip>0) cumulantDensity[ip] = (cumulantDensity[ip-1] + density) * 0.04 ;
+        else cumulantDensity[ip] = density * 0.04 ;
+    totalDensity += density * 0.04 ;
 
     ip += 1;
    }
