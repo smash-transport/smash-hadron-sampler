@@ -6,11 +6,11 @@ This changelog is in place since version SMASH-hadron-sampler-3.0.
 
 The major categories to group changes in this log are:
 
-* `Input / Output` for all, in particular breaking, changes, fixes and additions to the in- and output files.
-* `Added` for new features.
-* `Changed` for changes in existing functionality.
-* `Fixed` for any bug fixes.
-* `Removed` for now removed features.
+* :left_right_arrow: for all, in particular breaking, changes, fixes and additions to the in- and output files.
+* :heavy_plus_sign: for new features.
+* :recycle: for changes in existing functionality.
+* :sos: for any bug fixes.
+* :heavy_minus_sign: for now removed features.
 
 Also possible, but for this project less relevant, is `Deprecated` for soon-to-be removed features.
 
@@ -20,9 +20,11 @@ Also possible, but for this project less relevant, is `Deprecated` for soon-to-b
 ## SMASH-hadron-sampler-3.0
 Date:
 
-### Fixed
-* The particle buffer was increased in order to sample from a bigger hypersurface
+* :sos: The particle buffer was increased in order to sample from a bigger hypersurface
+* :recycle: ⚠️ The `master` branch has been renamed to `main`
+* :recycle: The hadron sampler makes now use of the C++17 standard
 
-### Changed
-* ⚠️ The `master` branch has been renamed to `main`
-* The hadron sampler makes now use of the C++17 standard
+[Link to diff from previous version](https://github.com/smash-transport/smash/compare/SMASH-hadron-sampler-1.1...SMASH-hadron-sampler-3.0)
+
+## SMASH-hadron-sampler-1.1
+Date: 2022-05-17
