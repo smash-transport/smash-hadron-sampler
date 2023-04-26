@@ -3,6 +3,8 @@
 #include <TRandom3.h>
 #include <TF1.h>
 #include <fstream>
+#include <string>
+#include <tuple>
 
 #include "const.h"
 #include "gen.h"
@@ -19,6 +21,40 @@ const double C_Feq = (pow(0.5/M_PI/hbarC,3)) ;
 // #  on freezeout hypersurface (May'2012)                  #
 // #  also, pre-BOOSTED dsigma is used                      #
 // ##########################################################
+
+
+
+
+
+
+
+
+// get eta values from vhlle_config for 3D restoration
+std::tuple<float, float, float> eta_values_from_vhlle_config(){
+  std::string line ;
+  std::string PATH_VHLLE_CONFIG = "../configs/vhlle_hydro" ; //TODO: Implement a more flexible way to find vhlle_hydro... maybe from CMAKE???
+
+  ifstream vhlleConfig ;
+  vhlleConfig.open(PATH_VHLLE_CONFIG) ;
+
+  for (int i = 0; i <= 9 &&  getline(fileToOpen, line); i++){}
+
+  std::cout << '#####  VHLLE CONFIG VALUES  ##### ' << std::endl ;
+  std::cout << 'Line: ' << line << std::endl;
+  size_t found = line.find(keyword);
+  std::cout << 'found: ' << found << std::endl;
+  nPart = line[ found + keyword.size() + 1 ];     // get key value
+  std::cout << line[ found + keyword.size() + 1 ] << std::endl;
+  std::cout << nPart << std::endl;
+
+  return {0.0, 0.0 ,0.0} ;
+
+}
+
+
+
+
+
 
 
 // active Lorentz boost
@@ -214,6 +250,7 @@ int generate()
  const double small_value = 0.0000001 ;
  const int num_eta_slices = std::ceil((eta_max-eta_min)/delta_eta) ;
  double eta_coordinates[num_eta_slices] ;
+ eta_values_from_vhlle_config() ;
 
 
  std::cout << "#######################################\n" ;
