@@ -30,25 +30,43 @@ const double C_Feq = (pow(0.5/M_PI/hbarC,3)) ;
 
 
 // get eta values from vhlle_config for 3D restoration
-std::tuple<float, float, float> eta_values_from_vhlle_config(){
-  std::string line ;
-  std::string PATH_VHLLE_CONFIG = "../configs/vhlle_hydro" ; //TODO: Implement a more flexible way to find vhlle_hydro... maybe from CMAKE???
+std::tuple<int, double, double> eta_values_from_vhlle_config(){
+  float value ;
+  int nz ;
+  float etamin ;
+  float etamax ;
 
-  ifstream vhlleConfig ;
+  std::string vhlle_key ;
+  std::string line ;
+  std::string PATH_VHLLE_CONFIG = "../configs/vhlle_hydro" ;
+
+  std::ifstream vhlleConfig ;
   vhlleConfig.open(PATH_VHLLE_CONFIG) ;
 
-  for (int i = 0; i <= 9 &&  getline(fileToOpen, line); i++){}
+  while (vhlleConfig.good()){
 
-  std::cout << '#####  VHLLE CONFIG VALUES  ##### ' << std::endl ;
-  std::cout << 'Line: ' << line << std::endl;
-  size_t found = line.find(keyword);
-  std::cout << 'found: ' << found << std::endl;
-  nPart = line[ found + keyword.size() + 1 ];     // get key value
-  std::cout << line[ found + keyword.size() + 1 ] << std::endl;
-  std::cout << nPart << std::endl;
+    getline(vhlleConfig, line) ;
+    std::stringstream input_line(line) ;
 
-  return {0.0, 0.0 ,0.0} ;
+    if (!line.empty()){
+      input_line >> vhlle_key >> value ;
 
+      if (vhlle_key == "nz"){
+        nz = value ;
+      }
+      else if (vhlle_key == "etamin") {
+        etamin = value ;
+      }
+      else if (vhlle_key == "etamax") {
+        etamax = value ;
+      }
+      else {
+        continue ;
+      }
+    }
+  }
+
+  return {nz, etamin, etamax} ;
 }
 
 
@@ -244,13 +262,15 @@ int generate()
 {
  // This defines the parameters for restoring the eta coordinate.
  // Should go into the config file once it works.
- const double delta_eta = (0.075 + 0.075)/6 ;   // TODO needs to take this value from vHLLE config
+
+ auto [n_eta, etamin, etamax] = eta_values_from_vhlle_config() ;
+ const double delta_eta = (etamax - etamin)/(n_eta - 1) ;
  const double eta_min = -0.4 ;  //Before -0.2 to 0.2
  const double eta_max = 0.4 ;
  const double small_value = 0.0000001 ;
  const int num_eta_slices = std::ceil((eta_max-eta_min)/delta_eta) ;
  double eta_coordinates[num_eta_slices] ;
- eta_values_from_vhlle_config() ;
+ 
 
 
  std::cout << "#######################################\n" ;
