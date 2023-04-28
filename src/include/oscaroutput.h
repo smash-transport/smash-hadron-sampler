@@ -11,14 +11,14 @@
 
 void write_oscar_output() {
   // initialize Oscar output
-  const smash::bf::path OutputPath = params::sSpectraDir;
+  const std::filesystem::path OutputPath = params::sSpectraDir;
   std::unique_ptr<smash::OutputInterface> OscarOutput =
        create_oscar_output("Oscar2013", "Particles", OutputPath,
                            smash::OutputParameters());
 
   for(int iev=0; iev<params::NEVENTS; iev++){
     // Create Particles oject which contains the full particle list of each event
-    std::unique_ptr<smash::Particles> particles = smash::make_unique<smash::Particles>();
+    std::unique_ptr<smash::Particles> particles = std::make_unique<smash::Particles>();
 
     for(int inpart=0; inpart<gen::npart[iev]; inpart++) {
       smash::ParticleData* data = gen::pList[iev][inpart];

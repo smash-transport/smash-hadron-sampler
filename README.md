@@ -8,8 +8,10 @@ When using the smash-hadron-sampler, please cite:
 
 ### Prerequisites:
 - [cmake](https://cmake.org) version &ge; 3.15.4
-- [SMASH](https://github.com/smash-transport/smash) version &ge; 2.2 and prerequisites therein
+- [SMASH](https://github.com/smash-transport/smash) version 3.0, as well as prerequisites therein
 - [ROOT](https://root.cern.ch) version &ge; 6.06
+
+Please note that only tagged versions are guaranteed to be compatible with SMASH.
 
 ### Install instructions:
 It is expected that the output of this sampler is used in combination with the SMASH transport model. We therefore assume SMASH was already compiled and is available to be used as an external library. All necessary prerequisites are also assumed to already be installed.
@@ -28,7 +30,7 @@ Execute the following commands to build the project:
 
     mkdir build
     cd build
-    cmake .. -DPythia_CONFIG_EXECUTABLE=[...]/pythia8307/bin/pythia8-config
+    cmake .. -DPythia_CONFIG_EXECUTABLE=[...]/pythia8307/bin/pythia8-config -DCMAKE_CXX_STANDARD=14
     make
 where `[...]/pythia8307` is the path to the pythia directory to which also SMASH is coupled.
 
