@@ -18,7 +18,7 @@ Also possible, but for this project less relevant, is `Deprecated` for soon-to-b
 ## Unreleased
 
 ## SMASH-hadron-sampler-3.0
-Date:
+Date: 2023-04-28
 
 * :sos: The particle buffer was increased in order to sample from a bigger hypersurface
 * :recycle: ⚠️ The `master` branch has been renamed to `main`
