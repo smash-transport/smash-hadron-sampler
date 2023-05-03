@@ -29,8 +29,8 @@ const double C_Feq = (pow(0.5/M_PI/hbarC,3)) ;
 
 
 
-// get eta values from vhlle_config for 3D restoration
-std::tuple<int, double, double> eta_values_from_vhlle_config(){
+  // get eta values from vhlle_config for 3D restoration
+  std::tuple<int, double, double> eta_values_from_vhlle_config(){
   float value ;
   int nz ;
   float etamin ;
@@ -265,8 +265,8 @@ int generate()
 
  auto [n_eta, etamin, etamax] = eta_values_from_vhlle_config() ;
  const double delta_eta = (etamax - etamin)/(n_eta - 1) ;
- const double eta_min = -0.4 ;  //Before -0.2 to 0.2
- const double eta_max = 0.4 ;
+ const double eta_min = -0.8 ;  //Before -0.2 to 0.2
+ const double eta_max = 0.8 ;
  const double small_value = 0.0000001 ;
  const int num_eta_slices = std::ceil((eta_max-eta_min)/delta_eta) ;
  double eta_coordinates[num_eta_slices] ;
