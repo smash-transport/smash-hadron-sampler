@@ -5,10 +5,18 @@ project(vHLLE_SMASH_particle_sampler)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 
-# Set the relevant generic compiler flags (optimisation + warnings)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -Wextra -Wmissing-declarations -Wpointer-arith -Wshadow -Wuninitialized -Winit-self -Wundef -Wcast-align -Wformat=2 -Wold-style-cast -Werror=switch -std=c++17 -mfpmath=sse")
-message(STATUS "CXX_FLAGS = " ${CMAKE_CXX_FLAGS})
+# Determine System and set the relevant generic compiler flags accordingly (optimisation + warnings) 
+if(NOT (APPLE AND
+   CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "^arm" AND
+   CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" AND
+   CMAKE_CXX_COMPILER_VERSION VERSION_LESS "15"))
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -Wextra -Wmissing-declarations -Wpointer-arith -Wshadow -Wuninitialized -Winit-self -Wundef -Wcast-align -Wformat=2 -Wold-style-cast -Werror=switch -std=c++17 -mfpmath=sse")
+     message(STATUS "CXX_FLAGS = " ${CMAKE_CXX_FLAGS})    
+else()
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -Wextra -Wmissing-declarations -Wpointer-arith -Wshadow -Wuninitialized -Winit-self -Wundef -Wcast-align -Wformat=2 -Wold-style-cast -Werror=switch -std=c++17")
+   message(STATUS "CXX_FLAGS = " ${CMAKE_CXX_FLAGS})
+endif()
 
 # Collect all the cpp files
 set(sampler_src
