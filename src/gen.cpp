@@ -306,7 +306,7 @@ int generate()
    if(params::bulk){
      const double feq = C_Feq/( exp((sqrt(p*p+mass*mass)-muf)/surf[iel].T) - stat ) ;
      //assume cs**2 is around 0.15
-     WviscFactor -= (1.0+stat*feq)*surf[iel].Pi*6.0*(mass*mass/(3*mom.E())-mom.E()*0.184)/(5.068*surf[iel].T*surf[iel].T)  ;
+     WviscFactor -= (1.0+stat*feq)*surf[iel].Pi*6.0*(mass*mass/(3*mom.E())-mom.E()*0.184)/(gevtofm*surf[iel].T*surf[iel].T)  ;
    }
    if(WviscFactor<0.1) WviscFactor = 0.1 ; 
    // test, jul17; before: 0.5
