@@ -40,9 +40,9 @@ void readParams(char* filename)
 	 else if(strcmp(parName,"number_of_events")==0) NEVENTS = atoi(parValue) ;
 	 else if(strcmp(parName,"rescatter")==0) rescatter = atoi(parValue) ;
 	 else if(strcmp(parName,"weakContribution")==0) weakContribution = atoi(parValue) ;
-     else if(strcmp(parName,"shear")==0) shear = atoi(parValue) ;
+   else if(strcmp(parName,"shear")==0) shear = atoi(parValue) ;
 	 else if(strcmp(parName,"bulk")==0) bulk = atoi(parValue) ;
-     else if(strcmp(parName,"ecrit")==0) ecrit = atof(parValue) ;
+   else if(strcmp(parName,"ecrit")==0) ecrit = atof(parValue) ;
 	 else if(parName[0]=='!') cout << "CCC " << sline.str() << endl ;
 	 else cout << "UUU " << sline.str() << endl ;
 	}
