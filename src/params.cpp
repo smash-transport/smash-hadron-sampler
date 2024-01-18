@@ -29,22 +29,22 @@ void readParams(char* filename)
 	ifstream fin(filename) ;
 	if(!fin.is_open()) { cout << "cannot open parameters file " << filename << endl ; exit(1) ; }
 	while(fin.good()){
-	 string line ;
-	 getline(fin, line) ;
-	 istringstream sline (line) ;
-	 sline >> parName >> parValue ;
-	 if     (strcmp(parName,"surface")==0) strcpy(sSurface, parValue) ;
-	 else if(strcmp(parName,"spectra_dir")==0) strcpy(sSpectraDir, parValue) ;
-	 else if(strcmp(parName,"Nbins")==0) NBINS = atoi(parValue) ;
-	 else if(strcmp(parName,"q_max")==0) QMAX = atof(parValue) ;
-	 else if(strcmp(parName,"number_of_events")==0) NEVENTS = atoi(parValue) ;
-	 else if(strcmp(parName,"rescatter")==0) rescatter = atoi(parValue) ;
-	 else if(strcmp(parName,"weakContribution")==0) weakContribution = atoi(parValue) ;
-   else if(strcmp(parName,"shear")==0) shear = atoi(parValue) ;
-	 else if(strcmp(parName,"bulk")==0) bulk = atoi(parValue) ;
-   else if(strcmp(parName,"ecrit")==0) ecrit = atof(parValue) ;
-	 else if(parName[0]=='!') cout << "CCC " << sline.str() << endl ;
-	 else cout << "UUU " << sline.str() << endl ;
+		string line ;
+		getline(fin, line) ;
+		istringstream sline (line) ;
+		sline >> parName >> parValue ;
+		if     (strcmp(parName,"surface")==0) strcpy(sSurface, parValue) ;
+		else if(strcmp(parName,"spectra_dir")==0) strcpy(sSpectraDir, parValue) ;
+		else if(strcmp(parName,"Nbins")==0) NBINS = atoi(parValue) ;
+		else if(strcmp(parName,"q_max")==0) QMAX = atof(parValue) ;
+		else if(strcmp(parName,"number_of_events")==0) NEVENTS = atoi(parValue) ;
+		else if(strcmp(parName,"rescatter")==0) rescatter = atoi(parValue) ;
+		else if(strcmp(parName,"weakContribution")==0) weakContribution = atoi(parValue) ;
+		else if(strcmp(parName,"shear")==0) shear = atoi(parValue) ;
+		else if(strcmp(parName,"bulk")==0) bulk = atoi(parValue) ;
+		else if(strcmp(parName,"ecrit")==0) ecrit = atof(parValue) ;
+		else if(parName[0]=='!') cout << "CCC " << sline.str() << endl ;
+		else cout << "UUU " << sline.str() << endl ;
 	}
  deta=0.05 ; dx=dy=0.0 ; // TODO!
 }
