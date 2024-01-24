@@ -20,6 +20,8 @@ int NEVENTS ;
 double NBINS, QMAX ;
 double dx, dy, deta ;
 double ecrit ;
+double cs2=0.15;
+double ratio_pressure_energydensity=0.15;
 
 // ############ reading and processing the parameters
 
@@ -43,6 +45,8 @@ void readParams(char* filename)
 		else if(strcmp(parName,"shear")==0) shear = atoi(parValue) ;
 		else if(strcmp(parName,"bulk")==0) bulk = atoi(parValue) ;
 		else if(strcmp(parName,"ecrit")==0) ecrit = atof(parValue) ;
+		else if(strcmp(parName,"cs2")==0) cs2 = atof(parValue) ;
+		else if(strcmp(parName,"ratio_pressure_energydensity")==0) ratio_pressure_energydensity = atof(parValue) ;
 		else if(parName[0]=='!') cout << "CCC " << sline.str() << endl ;
 		else cout << "UUU " << sline.str() << endl ;
 	}
@@ -62,6 +66,8 @@ void printParameters()
   cout << "e_critical = " << ecrit << endl ;
   cout << "Nbins = " << NBINS << endl ;
   cout << "q_max = " << QMAX << endl ;
+  cout << "cs2 = " << cs2 << endl ;
+  cout << "ratio_pressure_energydensity = " << ratio_pressure_energydensity << endl ;
   cout << "======= end parameters =======\n" ;
 }
 
