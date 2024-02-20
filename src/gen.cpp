@@ -71,6 +71,11 @@ struct element {
  double T, mub, muq, mus ;
  double pi[10] ;
  double Pi ;
+ // All derivatives of the 4-velocity, following the structure
+ // dt_u0, dt_ux, dt_uy, dt_uz, dx_u0, dx_ux, dx_uy, dx_uz, dy_u0 ...
+ double u_derivatives[16] ;
+ // The absolute minimum and maximum values of the vorticity over the whole surface
+ double min_max_vorticity[2] ;
 } ;
 
 element *surf ;
@@ -82,9 +87,10 @@ double totalDensity ; // sum of all thermal densities
 
 
 // ######## load the elements
-void load(char *filename, int N)
+void load(char *filename, int N, MinMax &min_max_vorticity)
 {
  double vEff=0.0, vEffOld=0.0, dvEff, dvEffOld ;
+ double min_vorticity = 0.0, max_vorticity = 0.0 ;
  int nfail=0, ncut=0 ;
  TLorentzVector dsigma ;
  Nelem = N ;
@@ -116,11 +122,22 @@ void load(char *filename, int N)
       >>surf[n].T>>surf[n].mub>>surf[n].muq>>surf[n].mus ;
       for(int i=0; i<10; i++) instream>>surf[n].pi[i] ;
       instream>>surf[n].Pi ;
+      /* Load the thermal vorticity tensor if spin sampling is switched on and 
+      *  vorticity tensor was printed to freezeout surface
+      */
+      if(params::is_spin_sampling_on) {
+        for(int i=0; i<16; i++) {
+          if (!(instream>>surf[n].u_derivatives[i])){
+            throw runtime_error("Thermal vorticity tensor elements not found in "
+            "freezeout surface for cell " + to_string(n));
+          }
+        }
+      }
       if(surf[n].muq>0.12){ surf[n].muq=0.12 ; // omit charge ch.pot. for test
-	ncut++ ;
+	      ncut++ ;
       }
       if(surf[n].muq<-0.12){ surf[n].muq=-0.12 ; // omit charge ch.pot. for test
-	ncut++ ;
+	      ncut++ ;
       }
 
    if(instream.fail()){ cout<<"reading failed at line "<<n<<"; exiting\n" ; exit(1) ; }
@@ -163,16 +180,23 @@ void load(char *filename, int N)
    }
    for(int i=0; i<10; i++) surf[n].pi[i] = _pi[i] ;
    } // end pi boost
- }
- if(params::shear) dsigmaMax *= 2.0 ; // *2.0: jun17. default: *1.5
- else dsigmaMax *= 1.3 ;
+
+   // Update the minimum and maximum value of the z projection of the vorticity
+   if(params::is_spin_sampling_on) {
+    double vorticity_cell = get_vorticity_z_projection_in_cell(surf[n].u, surf[n].u_derivatives);
+    update_min_max_vorticity_values(n, vorticity_cell, min_max_vorticity);
+   }
+
+  if(params::shear) dsigmaMax *= 2.0 ; // *2.0: jun17. default: *1.5
+  else dsigmaMax *= 1.3 ;
 
  cout<<"..done.\n" ;
  cout<<"Veff = "<<vEff<<"  dvMax = "<<dvMax<<endl ;
  cout<<"Veff(old) = "<<vEffOld<<endl ;
  cout<<"failed elements = "<<nfail<<endl ;
  cout<<"mu_cut elements = "<<ncut<<endl ;
-// ---- prepare some stuff to calculate thermal densities
+ // ---- prepare some stuff to calculate thermal densities
+}
 
  // Load SMASH hadron list
  smash::initialize_default_particles_and_decaymodes();
@@ -190,10 +214,6 @@ void load(char *filename, int N)
  cumulantDensity = new double [NPART] ;
 }
 
-
-void acceptParticle(int event, const smash::ParticleTypePtr &ldef, smash::FourVector position, smash::FourVector momentum) ;
-
-
 double ffthermal(double *x, double *par)
 {
   double &T = par[0] ;
@@ -202,7 +222,6 @@ double ffthermal(double *x, double *par)
   double &stat = par[3] ;
   return x[0]*x[0]/( exp((sqrt(x[0]*x[0]+mass*mass)-mu)/T) - stat ) ;
 }
-
 
 int generate()
 {
@@ -335,8 +354,6 @@ int generate()
  delete fthermal ;
 }
 
-
-
 void acceptParticle(int ievent, const smash::ParticleTypePtr &ldef, smash::FourVector position, smash::FourVector momentum)
 {
  int& npart1 = npart[ievent] ;
@@ -352,6 +369,52 @@ void acceptParticle(int ievent, const smash::ParticleTypePtr &ldef, smash::FourV
    exit(1) ;
  }
  if(npart1>NPartBuf){ cout<<"Error. Please increase gen::npartbuf\n"; exit(1);}
+}
+
+double get_vorticity_z_projection_in_cell(double (&u)[4], double (&u_derivatives)[16]) {
+  //dy_ux = 9
+  //dx_uy = 6
+  //dt_uy = 2
+  //dy_ut = 8
+  //dx_ut = 4
+  //dt_ux = 1
+  double vorticity = 0.5 * (u[0]*(u_derivatives[9] - u_derivatives[6]) + 
+                            u[1]*(u_derivatives[2] - u_derivatives[8]) +
+                            u[2]*(u_derivatives[4] - u_derivatives[1]));
+}
+
+void update_min_max_vorticity_values(int iterator, double vorticity_cell,
+                                     MinMax &min_max_vorticity) {
+  // Set min and max values of the vorticity to the value of the first 
+  // cell before starting to update them for each cell 
+  if(iterator == 0) {
+    min_max_vorticity.minimum = min_max_vorticity.maximum = vorticity_cell;
+  } else {
+    if(vorticity_cell < min_max_vorticity.minimum) {
+      min_max_vorticity.minimum = vorticity_cell ;
+    } else if(vorticity_cell > min_max_vorticity.maximum) {
+      min_max_vorticity.maximum = vorticity_cell ;
+    }
+  }
+}
+
+int get_favored_spin_projection_in_cell(const double vorticity_cell,
+                                        const MinMax &min_max_vorticity,
+                                        const int spin) {
+  if(spin == 0) {
+    return 0 ;
+  } else {
+    // As SMASH saves spin in multiples of 1/2, the spin degeneracy is not 2s+1 but s+1 
+    const int num_spin_states = spin + 1 ;
+    // Perform binning to map the vorticity in the cell onto the 
+    // possible spin projection states
+    const double bin_width = 
+      (min_max_vorticity.maximum - min_max_vorticity.minimum) / num_spin_states ;
+    const int bin_index = 
+      static_cast<int>((vorticity_cell - min_max_vorticity.minimum) / bin_width) ;
+    return -spin + (2 * bin_index) ;
+  }
+  
 }
 
 // ################### end #################

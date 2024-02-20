@@ -12,10 +12,11 @@ extern int NEVENTS ;
 extern double NBINS, QMAX ;
 extern double dx, dy, deta ;
 extern double ecrit, cs2, ratio_pressure_energydensity ;
+extern bool is_spin_sampling_on;
 
 // ---- rooutines ----
-void readParams(char* filename) ;
-void printParameters() ;
-}
+void readParams(char* filename);
+void printParameters();
+}  // namespace params
 
-#endif // INCLUDE_PARAMS_H_
+#endif  // INCLUDE_PARAMS_H_

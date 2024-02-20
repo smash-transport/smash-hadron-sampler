@@ -42,7 +42,12 @@ int main(int argc, char **argv)
   gen::rnd = random3 ;
 
  // ========== generator init
- gen::load(sSurface,getNlines(sSurface)) ;
+ /*
+ * Stores the minimum and maximum value of the z projection of 
+ * the vorticity over the whole freezeout surface. 
+ */
+ gen::MinMax min_max_vorticity ;
+ gen::load(sSurface, getNlines(sSurface), min_max_vorticity) ;
 
  // ========== trees & files
  time_t start, end ;

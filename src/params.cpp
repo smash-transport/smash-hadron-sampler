@@ -47,6 +47,7 @@ void readParams(char* filename)
 		else if(strcmp(parName,"ecrit")==0) ecrit = atof(parValue) ;
 		else if(strcmp(parName,"cs2")==0) cs2 = atof(parValue) ;
 		else if(strcmp(parName,"ratio_pressure_energydensity")==0) ratio_pressure_energydensity = atof(parValue) ;
+		else if(strcmp(parName, "sample_spin") == 0) is_spin_sampling_on = atoi(parValue);
 		else if(parName[0]=='!') cout << "CCC " << sline.str() << endl ;
 		else cout << "UUU " << sline.str() << endl ;
 	}
