@@ -35,8 +35,9 @@ void acceptParticle(int event, const smash::ParticleTypePtr &ldef,
  * it's vorticity
  * \return Favored spin projection in multiples of 1/2
  */
-int get_favored_spin_projection_in_cell(double vorticity_cell,
-                                        MinMax &min_max_vorticity);
+int get_favored_spin_projection_in_cell(const double vorticity_cell,
+                                        const MinMax &min_max_vorticity,
+                                        const int spin);
 
 /*
  * Calculate the z projection of the vorticity in the given cell.
