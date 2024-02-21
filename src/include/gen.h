@@ -17,6 +17,7 @@ extern int *npart ;
 const int NPartBuf = 30000; // dimension of particle buffer for each event
 
 // functions
+int test(const double h);
 void load(char *filename, int N) ;
 int generate() ;
 }
