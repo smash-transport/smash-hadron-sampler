@@ -56,6 +56,9 @@ int index44(const int &i, const int &j){
 
 namespace gen{
 
+int test(const double h) {
+  return static_cast<int>(h);
+}
 
 int Nelem ;
 double *ntherm, dvMax, dsigmaMax ;
