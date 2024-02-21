@@ -50,11 +50,15 @@ target_link_libraries(sampler ${SAMPLER_LIBRARIES})
 message(STATUS "BUILD_TESTING=${BUILD_TESTING}")
 
 if(BUILD_TESTING)
-   # Add the executable for the gen test
+  # library for unit tests
+  #add_library(sampler_static STATIC $<TARGET_OBJECTS:objlib>)
+  #set_target_properties(sampler_static PROPERTIES OUTPUT_NAME sampler)
+
+  # Add the executable for the gen test
   add_executable(gen tests/gen.cpp)
 
   # Link the test executable with Virtest and any other necessary libraries
-  target_link_libraries(gen ${SAMPLER_LIBRARIES})
+  target_link_libraries(gen objlib ${SAMPLER_LIBRARIES})
 
   # Add the test to ctest
   add_test(NAME gen_test COMMAND gen)

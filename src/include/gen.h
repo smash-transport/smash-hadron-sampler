@@ -8,6 +8,8 @@ class TRandom3 ;
 class DatabasePDG2;
 class Particle ;
 
+int index44(const int &i, const int &j);
+
 namespace gen{
 //typedef std::vector<Particle*> ParticleList ; // TODO in far future
 // data
@@ -17,7 +19,6 @@ extern int *npart ;
 const int NPartBuf = 30000; // dimension of particle buffer for each event
 
 // functions
-int test(const double h);
 void load(char *filename, int N) ;
 int generate() ;
 }
