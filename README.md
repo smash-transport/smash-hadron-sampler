@@ -30,9 +30,9 @@ Execute the following commands to build the project:
 
     mkdir build
     cd build
-    cmake .. -DPythia_CONFIG_EXECUTABLE=[...]/pythia8309/bin/pythia8-config
+    cmake .. -DPythia_CONFIG_EXECUTABLE=[...]/pythia8310/bin/pythia8-config
     make
-where `[...]/pythia8309` is the path to the pythia directory to which also SMASH is coupled.
+where `[...]/pythia8310` is the path to the pythia directory to which also SMASH is coupled.
 
 In continuation, the executable `sampler` is created.
 
