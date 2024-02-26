@@ -15,6 +15,7 @@ bool weakContribution ;
 bool rescatter ;
 bool shear ;
 bool bulk ;
+bool is_spin_sampling_on;
 //double Temp, mu_b, mu_q, mu_s ;
 int NEVENTS ;
 double NBINS, QMAX ;
@@ -69,6 +70,7 @@ void printParameters()
   cout << "q_max = " << QMAX << endl ;
   cout << "cs2 = " << cs2 << endl ;
   cout << "ratio_pressure_energydensity = " << ratio_pressure_energydensity << endl ;
+  cout << "spin_sampling_on = " << is_spin_sampling_on << endl ;
   cout << "======= end parameters =======\n" ;
 }
 

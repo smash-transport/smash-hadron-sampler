@@ -23,12 +23,12 @@ struct MinMax {
   double maximum;
 };
 
-
 // functions
-void load(char *filename, int N, MinMax &min_max_vorticity);
+void load(char *filename, int N);
 int generate();
 void acceptParticle(int event, const smash::ParticleTypePtr &ldef,
-                    smash::FourVector position, smash::FourVector momentum);
+                    smash::FourVector position, smash::FourVector momentum,
+                    double vorticity_cell);
 
 /*
  * Get the most likely spin projection in one cell in multiples of 1/2, based on
@@ -36,7 +36,7 @@ void acceptParticle(int event, const smash::ParticleTypePtr &ldef,
  * \return Favored spin projection in multiples of 1/2
  */
 int get_favored_spin_projection_in_cell(const double vorticity_cell,
-                                        const MinMax &min_max_vorticity,
+                                        const MinMax &vorticity_extrema,
                                         const int spin);
 
 /*
@@ -50,8 +50,8 @@ double get_vorticity_z_projection_in_cell(double (&u)[4],
  * element, such that min_max_vorticity stores the absolute minimum and maximum
  * of the z projection of the vorticity over the whole surface in the end
  */
-void update_min_max_vorticity_values(int iterator, double vorticity_cell,
-                                     MinMax &min_max_vorticity);
+void update_vorticity_extrema(int iterator, double vorticity_cell,
+                                     MinMax &vorticity_extrema);
 
 /*
  * Sample the spin projection of a particle based on the vorticity (z
@@ -60,7 +60,8 @@ void update_min_max_vorticity_values(int iterator, double vorticity_cell,
  * Monte-Carlo sampling, with the acceptance range adjusted according to the
  * most likely spin projection determined before.
  */
-int get_sampled_spin_projection();
+int sample_spin_projection(const int spin, const int favored_spin_projection,
+                           const double polarization_percentage);
 }  // namespace gen
 
 #endif  // INCLUDE_GEN_H_
