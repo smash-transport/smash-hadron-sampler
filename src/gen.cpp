@@ -301,10 +301,16 @@ int generate()
     for(int i=0; i<4; i++)
     for(int j=0; j<4; j++)
      pipp += momArray[i]*momArray[j]*gmumu[i]*gmumu[j]*surf[iel].pi[index44(i,j)] ;
-    WviscFactor = (1.0 + (1.0+stat*feq)*pipp/(2.*surf[iel].T*surf[iel].T*(params::ecrit*1.15))) ;
-    if(WviscFactor<0.1) WviscFactor = 0.1 ; // test, jul17; before: 0.5
-    //if(WviscFactor>1.2) WviscFactor = 1.2 ; //              before: 1.5
+    WviscFactor += (1.0+stat*feq)*pipp/(2.*surf[iel].T*surf[iel].T*(params::ecrit+params::ecrit*params::ratio_pressure_energydensity)) ;
    }
+   if(params::bulk){
+     const double feq = C_Feq/( exp((sqrt(p*p+mass*mass)-muf)/surf[iel].T) - stat ) ;
+     WviscFactor -= (1.0+stat*feq)*surf[iel].Pi*(mass*mass/(3*mom.E())-mom.E()*(1.0/3.0-params::cs2))
+     /(15*(1.0/3.0-params::cs2)*(1.0/3.0-params::cs2)*surf[iel].T*(params::ecrit+params::ecrit*params::ratio_pressure_energydensity))  ;
+   }
+   if(WviscFactor<0.1) WviscFactor = 0.1 ; 
+   // test, jul17; before: 0.5
+    //if(WviscFactor>1.2) WviscFactor = 1.2 ; //              before: 1.5
    W *= WviscFactor ;
    rval = rnd->Rndm()*dsigmaMax ;
    niter++ ;

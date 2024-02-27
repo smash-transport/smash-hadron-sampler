@@ -8,6 +8,8 @@ class TRandom3 ;
 class DatabasePDG2;
 class Particle ;
 
+int index44(const int &i, const int &j);
+
 namespace gen{
 //typedef std::vector<Particle*> ParticleList ; // TODO in far future
 // data

@@ -8,7 +8,7 @@ When using the smash-hadron-sampler, please cite:
 
 ### Prerequisites:
 - [cmake](https://cmake.org) version &ge; 3.15.4
-- [SMASH](https://github.com/smash-transport/smash) version 3.0, as well as prerequisites therein
+- [SMASH](https://github.com/smash-transport/smash) version 3.1, as well as prerequisites therein
 - [ROOT](https://root.cern.ch) version &ge; 6.06
 
 Please note that only tagged versions are guaranteed to be compatible with SMASH.
@@ -30,9 +30,9 @@ Execute the following commands to build the project:
 
     mkdir build
     cd build
-    cmake .. -DPythia_CONFIG_EXECUTABLE=[...]/pythia8309/bin/pythia8-config
+    cmake .. -DPythia_CONFIG_EXECUTABLE=[...]/pythia8310/bin/pythia8-config
     make
-where `[...]/pythia8309` is the path to the pythia directory to which also SMASH is coupled.
+where `[...]/pythia8310` is the path to the pythia directory to which also SMASH is coupled.
 
 In continuation, the executable `sampler` is created.
 
