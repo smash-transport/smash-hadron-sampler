@@ -20,6 +20,39 @@ TEST(index44) {
   }
 }
 
+TEST(index44_index_out_of_range) {
+  int valid_index[4] = {0, 1, 2, 3};
+  int invalid_index[4] = {-2, -1, 4, 5};
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      // first index out of range
+      try {
+        index44(invalid_index[i], valid_index[j]);
+        std::cout << "index44 unexpectedly passed with first argument "
+                  << "out of range" << std::endl;
+      } catch (std::out_of_range &e) {
+        // Exception was caught as expected
+      }
+      // second index out of range
+      try {
+        index44(valid_index[i], invalid_index[j]);
+        std::cout << "index44 unexpectedly passed with second argument "
+                  << "out of range" << std::endl;
+      } catch (std::out_of_range &e) {
+        // Exception was caught as expected
+      }
+      // both indices out of range
+      try {
+        index44(invalid_index[i], invalid_index[j]);
+        std::cout << "index44 unexpectedly passed with both arguments "
+                  << "out of range" << std::endl;
+      } catch (std::out_of_range &e) {
+        // Exception was caught as expected
+      }
+    }
+  }
+}
+
 TEST(vorticity_validity) {
   // Unset vorticity extrema
   MinMax limits_1 = {-5.9, std::numeric_limits<double>::quiet_NaN()};

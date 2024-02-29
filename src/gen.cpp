@@ -50,10 +50,17 @@ void fillBoostMatrix(double vx, double vy, double vz, double boostMatrix [4][4])
 
 
 // index44: returns an index of pi^{mu nu} mu,nu component in a plain 1D array
-int index44(const int &i, const int &j){
-  if(i>3 || j>3 || i<0 || j<0) {std::cout<<"index44: i j " <<i<<" "<<j<<endl ; exit(1) ; }
-  if(j<i) return (i*(i+1))/2 + j ;
-  else return (j*(j+1))/2 + i ;
+int index44(const int &i, const int &j) {
+  // Index out of range
+  if (i > 3 || j > 3 || i < 0 || j < 0) {
+    throw std::out_of_range("Index out of range [0, 3]. Indices passed are (" +
+                            std::to_string(i) + ", " + std::to_string(j) + ")");
+  }
+  if (j < i) {
+    return (i * (i + 1)) / 2 + j;
+  } else {
+    return (j * (j + 1)) / 2 + i;
+  }
 }
 
 
