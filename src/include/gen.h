@@ -29,7 +29,12 @@ int generate();
 void acceptParticle(int event, const smash::ParticleTypePtr &ldef,
                     smash::FourVector position, smash::FourVector momentum,
                     double vorticity_cell);
-
+/*
+* Check that the vorticity extrema have been set and that the vorticity
+* in the cell does not exceed those extrema. Throw exception otherwise.
+*/
+void check_if_vorticity_values_are_valid(const double vorticity_cell,
+                                         const MinMax &vorticity_extrema);
 /*
  * Get the most likely spin projection in one cell in multiples of 1/2, based on
  * it's vorticity

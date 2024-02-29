@@ -401,6 +401,22 @@ void acceptParticle(int ievent, const smash::ParticleTypePtr &ldef,
  if(npart1>NPartBuf){ cout<<"Error. Please increase gen::npartbuf\n"; exit(1);}
 }
 
+void check_if_vorticity_values_are_valid(const double vorticity_cell,
+                                         const MinMax &vorticity_extrema) {
+  if (std::isnan(vorticity_extrema.minimum) ||
+      std::isnan(vorticity_extrema.maximum)) {
+    throw std::invalid_argument("The absolute minimum and/or absolute maximum"
+        " of the vorticity has not been updated properly and are set to nan");
+  } else if (vorticity_cell < vorticity_extrema.minimum ||
+             vorticity_cell > vorticity_extrema.maximum) {
+    throw invalid_argument(
+        "Vorticity in cell " + to_string(vorticity_cell) +
+        " lower/larger than the min/max vorticity of the complete surface: [" +
+        to_string(vorticity_extrema.minimum) + ", " +
+        to_string(vorticity_extrema.maximum) + "]");
+  }
+}
+
 double get_vorticity_z_projection_in_cell(double (&u)[4], double (&u_derivatives)[16]) {
   // The index structure of the derivatives d_mu of the 4-velocity u_nu in u_derivatives
   // is: dy_ux -> 9, dx_uy -> 6, dt_uy -> 2, dy_ut -> 8, dx_ut -> 4, dt_ux -> 1
@@ -428,27 +444,15 @@ void update_vorticity_extrema(int iterator, double vorticity_cell,
 int get_favored_spin_projection_in_cell(const double vorticity_cell,
                                         const MinMax &vorticity_extrema,
                                         const int spin) {
-  if (std::isnan(vorticity_extrema.minimum) ||
-      std::isnan(vorticity_extrema.maximum)) {
-    throw std::invalid_argument("The absolute minimum and/or absolute maximum"
-        " of the vorticity has not been updated properly and are set to nan");
-  }
+  check_if_vorticity_values_are_valid(vorticity_cell, vorticity_extrema);
   // small value for double comparison
   const double epsilon = 0.00000001;
-  if (vorticity_cell < vorticity_extrema.minimum ||
-      vorticity_cell > vorticity_extrema.maximum) {
-    throw invalid_argument(
-        "Vorticity in cell " + to_string(vorticity_cell) +
-        " lower/larger than the min/max vorticity of the complete surface: [" +
-        to_string(vorticity_extrema.minimum) + ", " +
-        to_string(vorticity_extrema.maximum) + "]");
+  if (spin == 0) {
+    return 0;
   } else if (abs(vorticity_cell - vorticity_extrema.maximum) < epsilon) {
-    // Needed to not overshoot right boundary
+    // Needed to not overshoot right boundary due to double comparison precision
     return spin ;
   } else {
-    if(spin == 0) {
-      return 0 ;
-    } else {
       // As SMASH saves spin in multiples of 1/2, the spin degeneracy is not 2s+1 but s+1
       const int num_spin_states = spin + 1 ;
       // Perform binning to map the vorticity in the cell onto the
@@ -458,7 +462,6 @@ int get_favored_spin_projection_in_cell(const double vorticity_cell,
       const int bin_index =
         static_cast<int>((vorticity_cell - vorticity_extrema.minimum) / bin_width) ;
       return -spin + (2 * bin_index) ;
-    }
   }
 }
 
@@ -466,31 +469,37 @@ int sample_spin_projection(const int spin, const int favored_spin_projection,
                            const double polarization_percentage) {
   if (spin < 0) {
     throw std::invalid_argument("Spin must be positive");
-  } else if (spin == 0) {
+    // Check if favored_spin_projection is within the allowed range
+  } else if (favored_spin_projection < -spin || favored_spin_projection > spin ||
+            (favored_spin_projection + spin) % 2 != 0) {
+    throw std::invalid_argument(
+        "Favored spin projection must be within "
+        "[-spin, -spin+2, ..., spin-2, spin] with a step size of two");
+  }
+  // For spin 0 it does not make sense to check for polarization as there is
+  // just one allowed state and thus polarization is not taken into account.
+  // Therefore all polarization values are allowed for spin = 0.
+  if (spin == 0) {
     return 0;
   }
-  // Check if favored_spin_projection is within the allowed range
-  if (favored_spin_projection < -spin || favored_spin_projection > spin ||
-      (favored_spin_projection + spin) % 2 != 0) {
-    throw std::invalid_argument(
-        "Favored spin projection must be within [-spin, -spin+2, ..., spin-2, spin] "
-        "with a step size of two");
-  }
+
   // Check if polarization_percentage is within the allowed range
   if (std::abs(polarization_percentage) > spin) {
-    throw std::invalid_argument("Polarization percentage must be within [-spin, spin]");
+    throw std::invalid_argument("Polarization percentage must be"
+      " within [-spin, spin]");
   }
   // Calculate number of states and base probability
   int num_states = spin + 1;
   double base_prob = 1.0 / num_states;
 
-  // Calculate total increase in probability due to factor
+  // Calculate total increase in probability due to polarization
   double favored_prob = (1. + polarization_percentage) * base_prob;
 
   // Decrease probability of all other states equally to compensate
   double other_states_decrease = (1. - favored_prob) / (num_states - 1);
 
-  // Create probability distribution with favored state adjustment and decreased others
+  // Create probability distribution with favored state adjustment
+  // and decreased others.
   std::vector<double> probs(num_states, other_states_decrease);
   probs[(favored_spin_projection + spin)/2] = favored_prob;
 
@@ -502,7 +511,8 @@ int sample_spin_projection(const int spin, const int favored_spin_projection,
   std::vector<double> cumulative_probs(num_states);
   std::partial_sum(probs.begin(), probs.end(), cumulative_probs.begin());
 
-  // Find the index of the first state with cumulative probability exceeding random_num
+  // Find the index of the first state with cumulative probability exceeding
+  // random_num
   int index = std::lower_bound(cumulative_probs.begin(), cumulative_probs.end(),
                                random_num) - cumulative_probs.begin();
 
