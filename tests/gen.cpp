@@ -220,6 +220,7 @@ static bool check_other_elements_than_given_index(
 
 TEST(spin_sampling_probability) {
   const double precision = 0.01;
+  const double epsilon = 0.0001;
   const int num_samples = 600000;
   const double polarization = 0.2;
 
@@ -251,7 +252,6 @@ TEST(spin_sampling_probability) {
 
     for (int favored_spin = 0; favored_spin <= spin; favored_spin++) {
       // Loop over samples to generate statistics and fill counts
-
       for (int sample = 0; sample < num_samples; sample++) {
         int state = sample_spin_projection(spin, valid_states[favored_spin],
                                            polarization);
@@ -259,11 +259,12 @@ TEST(spin_sampling_probability) {
         int index = (state + spin) / 2;
         counts[index]++;
       }
+
       // Check that sum of all counts coincides with num_samples
       int sum_counts = std::accumulate(counts.begin(), counts.end(), 0);
       VERIFY(sum_counts == num_samples);
 
-      // Check that the favored probability is set correctly
+      // Check that the favored probability is sampled correctly
       double probability =
           static_cast<double>(counts[favored_spin]) / num_samples;
       VERIFY(std::abs(probability - favored_probability) < precision);
@@ -275,6 +276,13 @@ TEST(spin_sampling_probability) {
                                                 disfavored_probability,
                                                 num_samples, precision);
       VERIFY(are_other_probabilities_disfavored);
+
+      // Check that the sum of all probabilities is normalized to 1
+      double total_probability = 0.0;
+      for (int count : counts) {
+        total_probability += static_cast<double>(count) / num_samples;
+      }
+      VERIFY(std::abs(total_probability - 1.0) <= epsilon);
 
       // Reset counts for next favored spin index
       counts.assign(counts.size(), 0);
