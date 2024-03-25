@@ -386,7 +386,7 @@ void acceptParticle(int ievent, const smash::ParticleTypePtr &ldef,
  new_particle->set_4position(position);
 
  if (params::is_spin_sampling_on && !(std::isnan(vorticity_cell))) {
-    const double polarization_percentage = 0.05;
+    const double polarization_percentage = params::global_polarization ;
     const int favored_spin = get_favored_spin_projection_in_cell(
         vorticity_cell, min_max_vorticity, new_particle->spin());
     const int sampled_spin_projection =

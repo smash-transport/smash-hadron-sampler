@@ -23,6 +23,7 @@ double dx, dy, deta ;
 double ecrit ;
 double cs2=0.15;
 double ratio_pressure_energydensity=0.15;
+double global_polarization=0.0;
 
 // ############ reading and processing the parameters
 
@@ -49,6 +50,7 @@ void readParams(char* filename)
 		else if(strcmp(parName,"cs2")==0) cs2 = atof(parValue) ;
 		else if(strcmp(parName,"ratio_pressure_energydensity")==0) ratio_pressure_energydensity = atof(parValue) ;
 		else if(strcmp(parName, "sample_spin") == 0) is_spin_sampling_on = atoi(parValue);
+		else if(strcmp(parName, "polarization") == 0) global_polarization = atof(parValue);
 		else if(parName[0]=='!') cout << "CCC " << sline.str() << endl ;
 		else cout << "UUU " << sline.str() << endl ;
 	}
@@ -71,6 +73,7 @@ void printParameters()
   cout << "cs2 = " << cs2 << endl ;
   cout << "ratio_pressure_energydensity = " << ratio_pressure_energydensity << endl ;
   cout << "spin_sampling_on = " << is_spin_sampling_on << endl ;
+  cout << "polarization" << global_polarization << endl ;
   cout << "======= end parameters =======\n" ;
 }
 
