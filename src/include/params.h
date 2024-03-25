@@ -12,6 +12,7 @@ extern int NEVENTS ;
 extern double NBINS, QMAX ;
 extern double dx, dy, deta ;
 extern double ecrit, cs2, ratio_pressure_energydensity ;
+extern bool createRootOutput;
 
 // ---- rooutines ----
 void readParams(char* filename) ;
