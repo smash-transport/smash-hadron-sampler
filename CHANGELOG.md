@@ -17,6 +17,11 @@ Also possible, but for this project less relevant, is `Deprecated` for soon-to-b
 
 ## Unreleased
 
+* :heavy_plus_sign: A testing framework was added
+* :heavy_plus_sign: The (boolean) key "sample_spin" was added
+* :heavy_plus_sign: The (double) key "polarization" was added
+* :heavy_plus_sign: A spin sampling procedure was added in order to set spin states at freezeout when "sample_spin" is set to true, given a polarization controlled by the key "polarization"
+
 ## SMASH-hadron-sampler-3.0
 Date: 2023-04-28
 
