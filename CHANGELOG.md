@@ -22,6 +22,15 @@ Also possible, but for this project less relevant, is `Deprecated` for soon-to-b
 * :heavy_plus_sign: The (double) key "polarization" was added
 * :heavy_plus_sign: A spin sampling procedure was added in order to set spin states at freezeout when "sample_spin" is set to true, given a polarization controlled by the key "polarization"
 
+## SMASH-hadron-sampler-3.1
+Date: 2023-02-29
+
+* :heavy_plus_sign: Preliminary support for delta f corrections for bulk
+* :sos: Adjusted compiler flags for Apple machines
+
+[Link to diff from previous version](https://github.com/smash-transport/smash/compare/SMASH-hadron-sampler-3.0...SMASH-hadron-sampler-3.1)
+
+
 ## SMASH-hadron-sampler-3.0
 Date: 2023-04-28
 
