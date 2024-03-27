@@ -21,6 +21,7 @@ Also possible, but for this project less relevant, is `Deprecated` for soon-to-b
 * :heavy_plus_sign: The (boolean) key "sample_spin" was added
 * :heavy_plus_sign: The (double) key "polarization" was added
 * :heavy_plus_sign: A spin sampling procedure was added in order to set spin states at freezeout when "sample_spin" is set to true, given a polarization controlled by the key "polarization"
+* :left_right_arrow: ROOT output is now disabled by default, it can be enabled in the config by setting createRootOutput parameter to 1
 
 ## SMASH-hadron-sampler-3.1
 Date: 2023-02-29

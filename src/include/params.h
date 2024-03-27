@@ -7,6 +7,7 @@ extern bool weakContribution;
 extern bool rescatter;
 extern bool shear;
 extern bool bulk;
+extern bool createRootOutput;
 // extern double Temp, mu_b, mu_q, mu_s ;
 extern int NEVENTS;
 extern double NBINS, QMAX;

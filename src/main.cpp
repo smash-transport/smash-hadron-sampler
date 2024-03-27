@@ -53,20 +53,24 @@ int main(int argc, char **argv)
  sprintf(sbuffer,"mkdir -p %s",sSpectraDir) ;
  system(sbuffer) ;
 
- // Initialize ROOT output
- sprintf(sbuffer, "%s/%i.root",sSpectraDir,prefix) ;
- TFile *outputFile = new TFile(sbuffer, "RECREATE");
- outputFile->cd();
- MyTree *treeIni = new MyTree(static_cast<const char*>("treeini")) ;
-
  gen::generate() ; // one call for NEVENTS
-
- // Write ROOT output
- for(int iev=0; iev<NEVENTS; iev++){
- treeIni->fill(iev) ;
- } // end events loop
- outputFile->Write() ;
- outputFile->Close() ;
+ 
+ // ROOT output disabled by default
+ if (params::createRootOutput) {
+ 
+   // Initialize ROOT output
+   sprintf(sbuffer, "%s/%i.root",sSpectraDir,prefix) ;
+   TFile *outputFile = new TFile(sbuffer, "RECREATE");
+   outputFile->cd();
+   MyTree *treeIni = new MyTree(static_cast<const char*>("treeini")) ;
+ 
+   // Write ROOT output
+   for(int iev=0; iev<NEVENTS; iev++){
+   treeIni->fill(iev) ;
+   } // end events loop
+   outputFile->Write() ;
+   outputFile->Close() ;
+ }
 
  // Write Oscar output
  write_oscar_output();
