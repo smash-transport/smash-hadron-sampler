@@ -41,7 +41,10 @@ if(${SMASH_FOUND})
   else()
     message(FATAL_ERROR "Environment variable SMASH_DIR unset. Unable to include virtest.")
   endif()
-endif(${SMASH_FOUND})
+else()
+  message(FATAL_ERROR "SMASH could not be found.")
+endif()
+
 
 find_package(ROOT 5.34)
 if(ROOT_FOUND)

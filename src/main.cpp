@@ -42,7 +42,7 @@ int main(int argc, char **argv)
   gen::rnd = random3 ;
 
  // ========== generator init
- gen::load(sSurface,getNlines(sSurface)) ;
+ gen::load(sSurface, getNlines(sSurface)) ;
 
  // ========== trees & files
  time_t start, end ;
