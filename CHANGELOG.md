@@ -17,6 +17,8 @@ Also possible, but for this project less relevant, is `Deprecated` for soon-to-b
 
 ## Unreleased
 
+* :sos: Fix problems with thread safety from ROOT objects
+
 ## SMASH-hadron-sampler-3.1
 Date: 2023-02-29
 

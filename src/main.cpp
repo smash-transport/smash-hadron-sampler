@@ -1,6 +1,6 @@
 #include <TFile.h>
 #include <TRandom3.h>
-
+#include <TROOT.h>
 #include <fstream>
 
 #include "gen.h"
@@ -29,6 +29,7 @@ extern "C"{
 
 int main(int argc, char **argv)
 {
+  ROOT::EnableThreadSafety();
   // command-line parameters
   int prefix = readCommandLine(argc, argv) ;
   params::printParameters() ;

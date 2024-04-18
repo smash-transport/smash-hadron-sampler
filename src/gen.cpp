@@ -3,7 +3,7 @@
 #include <TRandom3.h>
 #include <TF1.h>
 #include <fstream>
-
+#include <TROOT.h>
 #include "const.h"
 #include "gen.h"
 #include "params.h"
@@ -84,6 +84,7 @@ double totalDensity ; // sum of all thermal densities
 // ######## load the elements
 void load(char *filename, int N)
 {
+ ROOT::EnableThreadSafety();  
  double vEff=0.0, vEffOld=0.0, dvEff, dvEffOld ;
  int nfail=0, ncut=0 ;
  TLorentzVector dsigma ;
@@ -206,6 +207,7 @@ double ffthermal(double *x, double *par)
 
 int generate()
 {
+ ROOT::EnableThreadSafety();
  const double gmumu [4] = {1., -1., -1., -1.} ;
  TF1 *fthermal = new TF1("fthermal",ffthermal,0.0,10.0,4) ;
  TLorentzVector mom ;
