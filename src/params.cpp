@@ -22,6 +22,7 @@ double dx, dy, deta ;
 double ecrit ;
 double cs2=0.15;
 double ratio_pressure_energydensity=0.15;
+bool createRootOutput {false};
 
 // ############ reading and processing the parameters
 
@@ -47,6 +48,7 @@ void readParams(char* filename)
 		else if(strcmp(parName,"ecrit")==0) ecrit = atof(parValue) ;
 		else if(strcmp(parName,"cs2")==0) cs2 = atof(parValue) ;
 		else if(strcmp(parName,"ratio_pressure_energydensity")==0) ratio_pressure_energydensity = atof(parValue) ;
+		else if(strcmp(parName,"createRootOutput")==0) createRootOutput = atoi(parValue) ;
 		else if(parName[0]=='!') cout << "CCC " << sline.str() << endl ;
 		else cout << "UUU " << sline.str() << endl ;
 	}
@@ -68,6 +70,7 @@ void printParameters()
   cout << "q_max = " << QMAX << endl ;
   cout << "cs2 = " << cs2 << endl ;
   cout << "ratio_pressure_energydensity = " << ratio_pressure_energydensity << endl ;
+  cout << "createRootOutput = " << createRootOutput << endl ;
   cout << "======= end parameters =======\n" ;
 }
 
