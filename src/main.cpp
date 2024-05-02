@@ -81,19 +81,21 @@ int main(int argc, char **argv)
 int readCommandLine(int argc, char** argv)
 {
 	if(argc==1){cout << "NO PARAMETERS, exit" << endl ; exit(1) ;}
-	int prefix = 0 ;
-	if(strcmp(argv[1],"events")==0){
+	int prefix = 0;
 	  prefix = atoi(argv[2]) ;
-	  cout << "events mode, prefix = " << prefix << endl ;
-	  params::readParams(argv[3]) ;
-    }else if(strcmp(argv[1],"fmax")==0){
-	  if(static_cast<int>(argv[2][0]<58)){
-		prefix = atoi(argv[2]) ;
-		cout << "fmax mode, prefix = " << prefix << endl ;
-		params::readParams(argv[3]) ;
-	  }else
-	  params::readParams(argv[2]) ;
-	}else{cout << "unknown command-line switch: " << argv[1] << endl ; exit(1) ;}
+	for(int iarg=1; iarg<argc-1; iarg++){
+		/*if(strcmp(argv[iarg],"-Npart")==0) {
+			float Nparticipants_float = atof(argv[iarg+1]);
+			Nparticipants = (int)round(Nparticipants_float);
+		}*/
+		if(strcmp(argv[iarg],"--parameters")==0) params::readParams(argv[iarg+1]);
+		if(strcmp(argv[iarg],"--surface")==0) strcpy(sSurface, argv[iarg+1]);
+		if(strcmp(argv[iarg],"--output")==0) strcpy(sSpectraDir, argv[iarg+1]);
+	}
+	cout << "hadronSampler: command line parameters are:\n";
+	//cout << "Npart  " << Nparticipants << endl;
+	cout << "hydro surface:  " << sSurface << endl;
+	cout << "output dir:  " << sSpectraDir << endl;
 	return prefix ;
 }
 
