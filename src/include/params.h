@@ -2,7 +2,7 @@
 #define INCLUDE_PARAMS_H_
 
 namespace params {
-extern char sSurface[255], sSpectraDir[255];
+extern char sSurface[255], sSpectraDir[255], sDbeta[255];
 extern bool weakContribution;
 extern bool rescatter;
 extern bool shear;

@@ -3,6 +3,8 @@
 #include <TRandom3.h>
 #include <TF1.h>
 #include <fstream>
+#include <sstream>
+#include <string>
 #include <limits>
 #include <cmath>
 #include <random>
@@ -63,7 +65,6 @@ int index44(const int &i, const int &j) {
   }
 }
 
-
 namespace gen{
 
 int Nelem ;
@@ -73,37 +74,20 @@ int NPART ;
 //const int NPartBuf = 10000 ;
 smash::ParticleData ***pList ; // particle arrays
 
-struct element {
- double tau, x, y, eta ;
- double u[4] ;
- double dsigma[4] ;
- double T, mub, muq, mus ;
- double pi[10] ;
- double Pi ;
- // All derivatives of the 4-velocity, following the structure
- // dt_u0, dt_ux, dt_uy, dt_uz, dx_u0, dx_ux, dx_uy, dx_uz, dy_u0 ...
- double u_derivatives[16] ;
- double vorticity_z_projection ;
-} ;
-
-element *surf ;
-int *npart ;               // number of generated particles in each event
-/*
-* Absolute minimum and maximum vorticity of the whole surface. Initialization
-* with Nans is chosen for easy identification in case the updating has failed
-*/
-MinMax min_max_vorticity = {
-        std::numeric_limits<double>::quiet_NaN(),
-        std::numeric_limits<double>::quiet_NaN()
-    };
+element *surf;
+int *npart;               // number of generated particles in each event
 const double c1 = pow(1./2./hbarC/TMath::Pi(),3.0) ;
 double *cumulantDensity ; // particle densities (thermal). Seems to be redundant, but needed for fast generation
 double totalDensity ; // sum of all thermal densities
 
-
 // ######## load the elements
 void load(char *filename, int N)
 {
+  // Ensure that the extended freezeout surface was used if spin sampling is on
+  if (params::is_spin_sampling_on) {
+    ensure_extended_freezeout_is_used(filename);
+  }
+
  double vEff=0.0, vEffOld=0.0, dvEff, dvEffOld ;
  int nfail=0, ncut=0 ;
  TLorentzVector dsigma ;
@@ -385,19 +369,26 @@ void acceptParticle(int ievent, const smash::ParticleTypePtr &ldef,
  new_particle->set_4momentum(momentum);
  new_particle->set_4position(position);
 
+
+
  if (params::is_spin_sampling_on && !(std::isnan(vorticity_cell))) {
-    const double polarization_percentage = params::global_polarization ;
-    const int favored_spin = get_favored_spin_projection_in_cell(
-        vorticity_cell, min_max_vorticity, new_particle->spin());
-    const int sampled_spin_projection =
-        sample_spin_projection(new_particle->spin(), favored_spin,
-                               polarization_percentage);
-            new_particle->set_spin_projection(sampled_spin_projection);
+
+    // sample_spin_projection(new_particle, ... );
+
+    // const double polarization_percentage = params::global_polarization ;
+    // const int favored_spin = get_favored_spin_projection_in_cell(
+    //     vorticity_cell, min_max_vorticity, new_particle->spin());
+    // const int sampled_spin_projection =
+    //     sample_spin_projection(new_particle->spin(), favored_spin,
+    //                            polarization_percentage);
+    //         new_particle->set_spin_projection(sampled_spin_projection);
   } else if (params::is_spin_sampling_on && std::isnan(vorticity_cell)) {
     throw std::invalid_argument(
         "Unable to sample spin! Vorticity z projection "
         "of cell is not set to a numerical value.");
   }
+
+
 
  pList[ievent][npart1] = new_particle;
  npart1++ ;
@@ -408,123 +399,45 @@ void acceptParticle(int ievent, const smash::ParticleTypePtr &ldef,
  if(npart1>NPartBuf){ cout<<"Error. Please increase gen::npartbuf\n"; exit(1);}
 }
 
-void check_if_vorticity_values_are_valid(const double vorticity_cell,
-                                         const MinMax &vorticity_extrema) {
-  if (std::isnan(vorticity_extrema.minimum) ||
-      std::isnan(vorticity_extrema.maximum)) {
-    throw std::invalid_argument("The absolute minimum and/or absolute maximum"
-        " of the vorticity has not been updated properly and are set to nan");
-  } else if (vorticity_cell < vorticity_extrema.minimum ||
-             vorticity_cell > vorticity_extrema.maximum) {
-    throw invalid_argument(
-        "Vorticity in cell " + to_string(vorticity_cell) +
-        " lower/larger than the min/max vorticity of the complete surface: [" +
-        to_string(vorticity_extrema.minimum) + ", " +
-        to_string(vorticity_extrema.maximum) + "]");
+void ensure_extended_freezeout_is_used(const std::string &filename) {
+  /*
+   * Make sure that the extended freezeout surface including the energy density
+   * was used. This is done by checking if the file contains 29 entries per
+   * line.
+   */
+  std::ifstream fin(filename);
+  if (!fin) {
+    std::cerr << "Cannot read file " << filename << std::endl;
+    exit(1);
   }
-}
-
-double get_vorticity_z_projection_in_cell(double (&u)[4], double (&u_derivatives)[16]) {
-  // The index structure of the derivatives d_mu of the 4-velocity u_nu in u_derivatives
-  // is: dy_ux -> 9, dx_uy -> 6, dt_uy -> 2, dy_ut -> 8, dx_ut -> 4, dt_ux -> 1
-  double vorticity = 0.5 * (u[0]*(u_derivatives[9] - u_derivatives[6]) + 
-                            u[1]*(u_derivatives[2] - u_derivatives[8]) +
-                            u[2]*(u_derivatives[4] - u_derivatives[1]));
-  return vorticity;
-}
-
-void update_vorticity_extrema(int iterator, double vorticity_cell,
-                                     MinMax &vorticity_extrema) {
-  // Set min and max values of the vorticity to the value of the first 
-  // cell before starting to update them for each cell 
-  if(iterator == 0) {
-    vorticity_extrema.minimum = vorticity_extrema.maximum = vorticity_cell;
-  } else {
-    if(vorticity_cell < vorticity_extrema.minimum) {
-      vorticity_extrema.minimum = vorticity_cell ;
-    } else if(vorticity_cell > vorticity_extrema.maximum) {
-      vorticity_extrema.maximum = vorticity_cell ;
+  std::string line;
+  while (std::getline(fin, line)) {
+    // Skip empty lines
+    if (line.empty()) continue;
+    // Skip potential comment lines
+    if (line[0] == '#') continue;
+    // Count the number of whitespace-separated entries
+    std::istringstream iss(line);
+    int count = 0;
+    std::string word;
+    while (iss >> word) {
+      count++;
     }
+    // Check if the line contains 29 entries
+    if (count != 29) {
+      std::cerr
+          << "Error: Invalid format of the freezeout surface. Ensure using the "
+             "extended freezeout format when spin sampling is enabled"
+          << std::endl;
+      exit(1);
+    }
+    // Close the file and break the loop
+    fin.close();
+    return;
   }
-}
-
-int get_favored_spin_projection_in_cell(const double vorticity_cell,
-                                        const MinMax &vorticity_extrema,
-                                        const int spin) {
-  check_if_vorticity_values_are_valid(vorticity_cell, vorticity_extrema);
-  // small value for double comparison
-  const double epsilon = 0.00000001;
-  if (spin == 0) {
-    return 0;
-  } else if (abs(vorticity_cell - vorticity_extrema.maximum) < epsilon) {
-    // Needed to not overshoot right boundary due to double comparison precision
-    return spin ;
-  } else {
-      // As SMASH saves spin in multiples of 1/2, the spin degeneracy is not 2s+1 but s+1
-      const int num_spin_states = spin + 1 ;
-      // Perform binning to map the vorticity in the cell onto the
-      // possible spin projection states
-      const double bin_width =
-        (vorticity_extrema.maximum - vorticity_extrema.minimum) / num_spin_states ;
-      const int bin_index =
-        static_cast<int>((vorticity_cell - vorticity_extrema.minimum) / bin_width) ;
-      return -spin + (2 * bin_index) ;
-  }
-}
-
-int sample_spin_projection(const int spin, const int favored_spin_projection,
-                           const double polarization_percentage) {
-  if (spin < 0) {
-    throw std::invalid_argument("Spin must be positive");
-    // Check if favored_spin_projection is within the allowed range
-  } else if (favored_spin_projection < -spin || favored_spin_projection > spin ||
-            (favored_spin_projection + spin) % 2 != 0) {
-    throw std::invalid_argument(
-        "Favored spin projection must be within "
-        "[-spin, -spin+2, ..., spin-2, spin] with a step size of two");
-  }
-  // For spin 0 it does not make sense to check for polarization as there is
-  // just one allowed state and thus polarization is not taken into account.
-  // Therefore all polarization values are allowed for spin = 0.
-  if (spin == 0) {
-    return 0;
-  }
-
-  // Check if polarization_percentage is within the allowed range
-  if (std::abs(polarization_percentage) > spin) {
-    throw std::invalid_argument("Polarization percentage must be"
-      " within [-spin, spin]");
-  }
-  // Calculate number of states and base probability
-  int num_states = spin + 1;
-  double base_prob = 1.0 / num_states;
-
-  // Calculate total increase in probability due to polarization
-  double favored_prob = (1. + polarization_percentage) * base_prob;
-
-  // Decrease probability of all other states equally to compensate
-  double other_states_decrease = (1. - favored_prob) / (num_states - 1);
-
-  // Create probability distribution with favored state adjustment
-  // and decreased others.
-  std::vector<double> probs(num_states, other_states_decrease);
-  probs[(favored_spin_projection + spin)/2] = favored_prob;
-
-  // Generate random number and calculate cumulative probabilities
-  std::random_device rd;
-  std::uniform_real_distribution<double> dist(0.0, 1.0);
-  double random_num = dist(rd);
-
-  std::vector<double> cumulative_probs(num_states);
-  std::partial_sum(probs.begin(), probs.end(), cumulative_probs.begin());
-
-  // Find the index of the first state with cumulative probability exceeding
-  // random_num
-  int index = std::lower_bound(cumulative_probs.begin(), cumulative_probs.end(),
-                               random_num) - cumulative_probs.begin();
-
-  // Correctly calculate and return the spin state based on the index
-  return 2 * index - spin;
+  // If we reach here, it means no valid line was found
+  std::cerr << "Error: No valid line found in the file" << std::endl;
+  exit(1);
 }
 
 // ################### end #################

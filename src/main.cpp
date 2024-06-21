@@ -9,6 +9,7 @@
 #include "tree.h"
 
 using namespace std ;
+void check_input_formats(char *filename);
 int getNlines(char *filename) ;
 int readCommandLine(int argc, char** argv) ;
 
@@ -35,6 +36,9 @@ int main(int argc, char **argv)
   time_t time0 ;
   time(&time0) ;
   ranseed = time0+prefix*16 ;
+
+  // check input format
+  check_input_formats(sSurface);
 
   TRandom3* random3 = new TRandom3();
 	random3->SetSeed(ranseed);
@@ -110,4 +114,12 @@ int getNlines(char *filename)
   } ;
   fin.close() ;
   return nlines-1 ;
+}
+
+void check_input_formats(char *filename) {
+  // check that freezeout surface is in extended format if spin sampling is 
+  // enabled
+  if(params::is_spin_sampling_on){
+    gen::ensure_extended_freezeout_is_used(filename);
+  }
 }
