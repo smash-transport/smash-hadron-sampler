@@ -21,7 +21,8 @@ set(sampler_src
         src/gen.cpp
         src/params.cpp
         src/tree.cpp
-	src/const.cpp
+        src/spin.cpp
+        src/vorticity.cpp
         )
 
 # Create object library for the linker which contains pre-compiled cpp files
