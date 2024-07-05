@@ -12,6 +12,7 @@
 #include "const.h"
 #include "gen.h"
 #include "params.h"
+#include "vorticity.h"
 
 
 using namespace std ;
@@ -85,7 +86,8 @@ void load(char *filename, int N)
 {
   // Ensure that the extended freezeout surface was used if spin sampling is on
   if (params::is_spin_sampling_on) {
-    ensure_extended_freezeout_is_used(filename);
+    ensure_extended_freezeout_is_used();
+    Vorticity::ensure_vorticity_file_exists_and_contains_16_values() ;
   }
 
  double vEff=0.0, vEffOld=0.0, dvEff, dvEffOld ;
@@ -100,45 +102,53 @@ void load(char *filename, int N)
  }
  npart = new int [params::NEVENTS] ;
 
- cout<<"reading "<<N<<" lines from  "<<filename<<"\n" ;
+ cout << "reading " << N << " lines from  " << filename << "\n" ;
  ifstream fin(filename) ;
  if(!fin){ cout << "cannot read file " << filename << endl ; exit(1) ; }
- dvMax=0. ;
- dsigmaMax=0. ;
+ dvMax = 0. ;
+ dsigmaMax = 0. ;
+
+  // Read the vorticity tensor from file and set it in all surface cells
+  if (params::is_spin_sampling_on) {
+    Vorticity::set_vorticity_in_all_surface_cells(surf, Nelem);
+ }
+
  // ---- reading loop
  string line ;
  istringstream instream ;
- cout<<"1?: failbit="<<instream.fail()<<endl ;
+ cout << "1?: failbit=" << instream.fail() << endl ;
  for(int n=0; n<Nelem; n++){
    getline(fin, line) ;
    instream.str(line) ;
    instream.seekg(0) ;
    instream.clear() ; // does not work with gcc 4.1 otherwise
-    instream>>surf[n].tau>>surf[n].x>>surf[n].y>>surf[n].eta
+   instream>>surf[n].tau>>surf[n].x>>surf[n].y>>surf[n].eta
       >>surf[n].dsigma[0]>>surf[n].dsigma[1]>>surf[n].dsigma[2]>>surf[n].dsigma[3]
       >>surf[n].u[0]>>surf[n].u[1]>>surf[n].u[2]>>surf[n].u[3]
       >>surf[n].T>>surf[n].mub>>surf[n].muq>>surf[n].mus ;
-      for(int i=0; i<10; i++) instream>>surf[n].pi[i] ;
-      instream>>surf[n].Pi ;
-      /* Load the thermal vorticity tensor if spin sampling is switched on and 
-      *  vorticity tensor was printed to freezeout surface
-      */
-      if(params::is_spin_sampling_on) {
-        for(int i=0; i<16; i++) {
-          if (!(instream>>surf[n].u_derivatives[i])){
-            throw runtime_error("Thermal vorticity tensor elements not found in "
-            "freezeout surface for cell " + to_string(n));
-          }
-        }
-      }
-      if(surf[n].muq>0.12){ surf[n].muq=0.12 ; // omit charge ch.pot. for test
-	      ncut++ ;
-      }
-      if(surf[n].muq<-0.12){ surf[n].muq=-0.12 ; // omit charge ch.pot. for test
-	      ncut++ ;
-      }
-
-   if(instream.fail()){ cout<<"reading failed at line "<<n<<"; exiting\n" ; exit(1) ; }
+   for(int i=0; i<10; i++) instream>>surf[n].pi[i] ;
+   instream>>surf[n].Pi ;
+   /* Load the thermal vorticity tensor if spin sampling is switched on and
+   *  vorticity tensor was printed to freezeout surface
+   */
+   if(params::is_spin_sampling_on) {
+     if (!(instream>>surf[n].e)){
+       throw runtime_error("Energy density not found in "
+       "freezeout surface for cell " + to_string(n));
+     }
+   }
+   if(surf[n].muq > 0.12) {
+     surf[n].muq = 0.12 ; // omit charge ch.pot. for test
+	   ncut++ ;
+   }
+   if(surf[n].muq < -0.12) {
+     surf[n].muq = -0.12 ; // omit charge ch.pot. for test
+	   ncut++ ;
+   }
+   if(instream.fail()) {
+    cout << "reading failed at line " << n << "; exiting\n" ;
+    exit(1) ;
+    }
    // calculate in the old way
    dvEffOld = surf[n].dsigma[0]*surf[n].u[0]+surf[n].dsigma[1]*surf[n].u[1]+
    surf[n].dsigma[2]*surf[n].u[2]+surf[n].dsigma[3]*surf[n].u[3] ;
@@ -178,12 +188,6 @@ void load(char *filename, int N)
    }
    for(int i=0; i<10; i++) surf[n].pi[i] = _pi[i] ;
    } // end pi boost
-
-   // Update the minimum and maximum value of the z projection of the vorticity
-   if(params::is_spin_sampling_on) {
-    double vorticity_cell = get_vorticity_z_projection_in_cell(surf[n].u, surf[n].u_derivatives);
-    update_vorticity_extrema(n, vorticity_cell, min_max_vorticity);
-   }
 
   if(params::shear) dsigmaMax *= 2.0 ; // *2.0: jun17. default: *1.5
   else dsigmaMax *= 1.3 ;
@@ -240,13 +244,6 @@ int generate()
   // ---> thermal densities, for each surface element
    totalDensity = 0.0 ;
    if(surf[iel].T<=0.){ ntherm_fail++ ; continue ; }
-
-  if(params::is_spin_sampling_on) {
-    surf[iel].vorticity_z_projection =
-      get_vorticity_z_projection_in_cell(surf[iel].u, surf[iel].u_derivatives);
-  } else {
-    surf[iel].vorticity_z_projection = std::numeric_limits<double>::quiet_NaN();
-  }
 
    const smash::ParticleTypeList& database = smash::ParticleType::list_all();
    int ip = 0;
@@ -360,35 +357,19 @@ int generate()
  delete fthermal ;
 }
 
-void acceptParticle(int ievent, const smash::ParticleTypePtr &ldef,
-                    smash::FourVector position, smash::FourVector momentum,
-                    double vorticity_cell) {
+void acceptParticle(element &cell, int ievent,
+                    const smash::ParticleTypePtr &ldef,
+                    smash::FourVector position, smash::FourVector momentum) {
  int& npart1 = npart[ievent] ;
 
  smash::ParticleData* new_particle = new smash::ParticleData(*ldef);
  new_particle->set_4momentum(momentum);
  new_particle->set_4position(position);
 
-
-
- if (params::is_spin_sampling_on && !(std::isnan(vorticity_cell))) {
-
-    // sample_spin_projection(new_particle, ... );
-
-    // const double polarization_percentage = params::global_polarization ;
-    // const int favored_spin = get_favored_spin_projection_in_cell(
-    //     vorticity_cell, min_max_vorticity, new_particle->spin());
-    // const int sampled_spin_projection =
-    //     sample_spin_projection(new_particle->spin(), favored_spin,
-    //                            polarization_percentage);
-    //         new_particle->set_spin_projection(sampled_spin_projection);
-  } else if (params::is_spin_sampling_on && std::isnan(vorticity_cell)) {
-    throw std::invalid_argument(
-        "Unable to sample spin! Vorticity z projection "
-        "of cell is not set to a numerical value.");
+ // Calculate the spin vector of the particle
+ if (params::is_spin_sampling_on) {
+    std::array<double, 4> spin_vector = spin_vector(cell, *new_particle);
   }
-
-
 
  pList[ievent][npart1] = new_particle;
  npart1++ ;
@@ -399,12 +380,13 @@ void acceptParticle(int ievent, const smash::ParticleTypePtr &ldef,
  if(npart1>NPartBuf){ cout<<"Error. Please increase gen::npartbuf\n"; exit(1);}
 }
 
-void ensure_extended_freezeout_is_used(const std::string &filename) {
+void ensure_extended_freezeout_is_used() {
   /*
    * Make sure that the extended freezeout surface including the energy density
    * was used. This is done by checking if the file contains 29 entries per
    * line.
    */
+  const std::string filename = params::sSurface;
   std::ifstream fin(filename);
   if (!fin) {
     std::cerr << "Cannot read file " << filename << std::endl;

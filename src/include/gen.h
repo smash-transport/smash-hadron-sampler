@@ -1,6 +1,10 @@
 #ifndef INCLUDE_GEN_H_
 #define INCLUDE_GEN_H_
 
+#include <array>
+#include <memory>
+#include <optional>
+
 #include "smash/particles.h"
 #include "smash/setup_particles_decaymodes.h"
 
@@ -18,6 +22,10 @@ extern smash::ParticleData ***pList;  // particle arrays
 extern int *npart;
 const int NPartBuf = 30000;  // dimension of particle buffer for each event
 
+// creating aliases for Vorticity and energy density
+using OptionalVorticity = std::optional<std::unique_ptr<Vorticity>>;
+using OptionalEnergy = std::optional<std::unique_ptr<double>>;
+
 // Define the structure of the elements of the freeze-out surface
 struct element {
   // Milne coorinates
@@ -28,29 +36,29 @@ struct element {
   double dsigma[4];
   // temperature and chemical potentials
   double T, mub, muq, mus;
-  // energy density
-  double e;
   // shear stress tensor
   double pi[10];
   // bulk pressure
   double Pi;
-  // thermal vorticity tensor omega_{mu nu} following the index structure
-  // {mu nu} = [{0 0}, {0 1}, {0 2}, {0 3}, {1 0}, ..., {3 3}]
-  double vorticity[16];
+  // optional pointer to the energy density.
+  OptionalEnergy e = std::nullopt;
+  // Optional pointer to the thermal vorticity tensor omega_{mu nu} following
+  // the index structure {mu nu} = [{0 0}, {0 1}, {0 2}, {0 3}, {1 0}, ... ]
+  OptionalVorticity vorticity = std::nullopt;
 };
 
 // functions
 void load(char *filename, int N);
 int generate();
-void acceptParticle(int event, const smash::ParticleTypePtr &ldef,
-                    smash::FourVector position, smash::FourVector momentum,
-                    double vorticity_cell);
+void acceptParticle(element &cell, int event,
+                    const smash::ParticleTypePtr &ldef,
+                    smash::FourVector position, smash::FourVector momentum);
 /*
- * If spin sampling is enabled, we need the energy ensity of every cell, which
- * is stored in the extended freezeout surface format. This function checks if
- * the extended freezeout surface is used and throws an exception if not.
+ * If spin sampling is enabled, we need the energy density of every cell,
+ * which is stored in the extended freezeout surface. This function checks
+ * if the extended freezeout surface is used and throws an exception if not.
  */
-void ensure_extended_freezeout_is_used(const std::string &filename);
+void ensure_extended_freezeout_is_used();
 }  // namespace gen
 
 #endif  // INCLUDE_GEN_H_

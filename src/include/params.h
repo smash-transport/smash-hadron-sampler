@@ -2,7 +2,11 @@
 #define INCLUDE_PARAMS_H_
 
 namespace params {
-extern char sSurface[255], sSpectraDir[255], sDbeta[255];
+/**
+ * sVorticity is the path to the file containing the 16 components of the
+ * thermal vorticity tensor which is given as dbeta.dat by vHLLE.
+ */
+extern char sSurface[255], sSpectraDir[255], sVorticity[255];
 extern bool weakContribution;
 extern bool rescatter;
 extern bool shear;
@@ -19,17 +23,6 @@ extern double ecrit, cs2, ratio_pressure_energydensity;
  * **Default Value:** False
  */
 extern bool is_spin_sampling_on;
-/**
- * This parameter influences the probability of sampling a spin projection that
- * aligns with the vorticity by more than 50%.
- *
- * A value of 0.0 indicates no preference (equal probability for any spin
- * projection), while larger values favor spins aligned with the (local)
- * vorticity and negative values anti-alignment.
- * 
- * **Default Value:** False
- */
-extern double global_polarization;
 
 // ---- rooutines ----
 void readParams(char* filename);
