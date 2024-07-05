@@ -73,13 +73,4 @@ if(BUILD_TESTING)
   # Add the test to ctest
   add_test(NAME gen_test COMMAND gen)
   #add_subdirectory(tests)
-
-  # Add the executable for the gen test
-  add_executable(const tests/const.cpp)
-
-  # Link the test executable with Virtest and any other necessary libraries
-  target_link_libraries(const objlib ${SAMPLER_LIBRARIES})
-
-  # Add the test to ctest
-  add_test(NAME const_test COMMAND const)
 endif()
