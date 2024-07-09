@@ -2,10 +2,12 @@
 
 #include <array>
 #include <cmath>
+#include <vector>
 
 #include "const.h"
 #include "gen.h"
 #include "smash/particles.h"
+#include "vorticity.h"
 
 /* The following definitions correspond to the conventions used in Eq. (60)
  * of the paper "Exact spin polarization of massive and massless particles in
@@ -15,7 +17,7 @@
 
 // Calculate theta in EQ. (60) from arXiv:2304.02276v2
 static std::array<double, 4> theta(const double mass,
-                                   const std::array<double,16> &vorticity,
+                                   const std::array<double, 16> &vorticity,
                                    const double (&p_lower_index)[4]) {
   if (mass < small_value) {
     throw std::invalid_argument(
@@ -69,24 +71,27 @@ std::array<double, 4> spin_vector(const gen::element &freezeout_element,
   if (spin == 0) {
     return {0.0, 0.0, 0.0, 0.0};
   } else if (spin != 0) {
-    const double energy_density = freezeout_element.e;
+    const double energy_density = *freezeout_element.e;
     const double temperature = freezeout_element.T;
     const double mu = freezeout_element.mub;
     const std::array<double, 16> vorticity =
         (**freezeout_element.vorticity).get_vorticity();
     // Momentum with lower index
     double p_[4];
+    smash::FourVector four_momentum = particle->momentum();
     for (int i = 0; i < 4; i++) {
-      p_[i] = particle->momentum[i] * metric[i];
+      p_[i] = four_momentum[i] * metric[i];
     }
-    const std::array<double, 4> theta_array =
-        theta(particle->mass(), vorticity, p_);
+    std::array<double, 4> theta_array =
+        theta(particle->pole_mass(), vorticity, p_);
     const double theta_squared = four_vector_square(theta_array);
 
     // Calculate the numerator and denominator parts with the spin sums
     const int spin_degeneracy = spin + 1;
-    std::array<double, spin_degeneracy> numerator_array;
-    std::array<double, spin_degeneracy> denominator_array;
+
+    std::vector<double> numerator_vector;
+    std::vector<double> denominator_vector;
+
     int array_index = 0;
     // Calculate all terms of the sums in the numerator and denominator
     // separately and store them in arrays
@@ -97,16 +102,16 @@ std::array<double, 4> spin_vector(const gen::element &freezeout_element,
       }
       double exponential =
           std::exp(exponent(k, energy_density, temperature, mu, theta_squared));
-      denominator_array[array_index] =
-          1 / (exponential - (spin % 2 == 0 ? 1 : -1));
-      numerator_array[array_index] = k * denominator_array[array_index];
+      denominator_vector.push_back(1 /
+                                   (exponential - (spin % 2 == 0 ? 1 : -1)));
+      numerator_vector.push_back(k * denominator_vector[array_index]);
       array_index++;
     }
     // Performing the sum over k in the numerator and denominator
     const double numerator =
-        std::accumulate(numerator_array.begin(), numerator_array.end(), 0.0);
-    const double denominator = std::accumulate(denominator_array.begin(),
-                                               denominator_array.end(), 0.0);
+        std::accumulate(numerator_vector.begin(), numerator_vector.end(), 0.0);
+    const double denominator = std::accumulate(denominator_vector.begin(),
+                                               denominator_vector.end(), 0.0);
 
     // Calculate the spin vector
     std::array<double, 4> spin_vector;

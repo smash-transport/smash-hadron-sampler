@@ -6,8 +6,9 @@
 #include <string>
 #include <vector>
 
-#include "gen.h"
 #include "params.h"
+#include "gen.h"
+
 
 // Check if the vorticity file exists. If not, throw an exception.
 void Vorticity::ensure_vorticity_file_exists_and_contains_16_values() {
@@ -44,7 +45,7 @@ void Vorticity::ensure_vorticity_file_exists_and_contains_16_values() {
 
 // Given the complete freezeout surface, this function sets the vorticity tensor
 // in all surface cells from the vorticity file.
-void Vorticity::set_vorticity_in_all_surface_cells(element* surf, int N) {
+void Vorticity::set_vorticity_in_all_surface_cells(gen::element* surf, int N) {
   // Open the vorticity file
   std::ifstream file(params::sVorticity);
   if (!file.is_open()) {

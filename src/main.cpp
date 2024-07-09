@@ -120,6 +120,6 @@ void check_input_formats(char *filename) {
   // check that freezeout surface is in extended format if spin sampling is 
   // enabled
   if(params::is_spin_sampling_on){
-    gen::ensure_extended_freezeout_is_used(filename);
+    gen::ensure_extended_freezeout_is_used();
   }
 }

@@ -8,6 +8,8 @@
 #include "smash/particles.h"
 #include "smash/setup_particles_decaymodes.h"
 
+#include "vorticity.h"
+
 class TRandom3;
 class DatabasePDG2;
 class Particle;
@@ -24,7 +26,7 @@ const int NPartBuf = 30000;  // dimension of particle buffer for each event
 
 // creating aliases for Vorticity and energy density
 using OptionalVorticity = std::optional<std::unique_ptr<Vorticity>>;
-using OptionalEnergy = std::optional<std::unique_ptr<double>>;
+using OptionalEnergy = std::optional<double>;
 
 // Define the structure of the elements of the freeze-out surface
 struct element {

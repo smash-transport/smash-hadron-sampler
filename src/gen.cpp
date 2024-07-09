@@ -13,6 +13,7 @@
 #include "gen.h"
 #include "params.h"
 #include "vorticity.h"
+#include "spin.h"
 
 
 using namespace std ;
@@ -132,7 +133,7 @@ void load(char *filename, int N)
    *  vorticity tensor was printed to freezeout surface
    */
    if(params::is_spin_sampling_on) {
-     if (!(instream>>surf[n].e)){
+     if (!(instream >> (*surf[n].e))){
        throw runtime_error("Energy density not found in "
        "freezeout surface for cell " + to_string(n));
      }
@@ -347,7 +348,7 @@ int generate()
    mom.Boost(vx,vy,vz) ;
    smash::FourVector momentum(mom.E(), mom.Px(), mom.Py(), mom.Pz());
    smash::FourVector position(surf[iel].tau*cosh(surf[iel].eta+etaShift), surf[iel].x, surf[iel].y, surf[iel].tau*sinh(surf[iel].eta+etaShift));
-   acceptParticle(ievent, &part, position, momentum, surf[iel].vorticity_z_projection) ;
+   acceptParticle(surf[iel], ievent, &part, position, momentum) ;
   } // coordinate accepted
   } // events loop
   if(iel%(Nelem/50)==0) cout<<round(iel/(Nelem*0.01))<<" % done, maxiter= "<<nmaxiter<<endl ;
@@ -368,7 +369,7 @@ void acceptParticle(element &cell, int ievent,
 
  // Calculate the spin vector of the particle
  if (params::is_spin_sampling_on) {
-    std::array<double, 4> spin_vector = spin_vector(cell, *new_particle);
+    std::array<double, 4> spin_vec = spin_vector(cell, new_particle);
   }
 
  pList[ievent][npart1] = new_particle;
