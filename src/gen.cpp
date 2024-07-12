@@ -370,6 +370,8 @@ void acceptParticle(element &cell, int ievent,
  // Calculate the spin vector of the particle
  if (params::is_spin_sampling_on) {
     std::array<double, 4> spin_vec = spin_vector(cell, new_particle);
+    smash::FourVector spin(spin_vec[0], spin_vec[1], spin_vec[2], spin_vec[3]);
+    new_particle->set_spin_vector(spin);
   }
 
  pList[ievent][npart1] = new_particle;
