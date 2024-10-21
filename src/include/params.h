@@ -1,8 +1,9 @@
 #ifndef INCLUDE_PARAMS_H_
 #define INCLUDE_PARAMS_H_
 
-namespace params{
+namespace params {
 extern char sSurface [255], sSpectraDir [255];
+extern char coordinateSystemHydro [255];
 extern bool weakContribution ;
 extern bool rescatter ;
 extern bool shear ;
@@ -14,9 +15,9 @@ extern double dx, dy, deta ;
 extern double ecrit, cs2, ratio_pressure_energydensity ;
 extern bool createRootOutput;
 
-// ---- rooutines ----
-void readParams(char* filename) ;
-void printParameters() ;
+// ---- Routines ----
+void readParams(char* filename);
+void printParameters();
 }
 
 #endif // INCLUDE_PARAMS_H_

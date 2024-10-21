@@ -65,7 +65,7 @@ int NPART ;
 smash::ParticleData ***pList ; // particle arrays
 
 struct element {
- double tau, x, y, eta ;
+ double pos[4]; // position 4-vector (covariant), position[0] either tau or t (Cartesian) depending on config key
  double u[4] ;
  double dsigma[4] ;
  double T, mub, muq, mus ;
@@ -111,7 +111,7 @@ void load(char *filename, int N)
    instream.str(line) ;
    instream.seekg(0) ;
    instream.clear() ; // does not work with gcc 4.1 otherwise
-    instream>>surf[n].tau>>surf[n].x>>surf[n].y>>surf[n].eta
+    instream>>surf[n].pos[0]>>surf[n].pos[1]>>surf[n].pos[2]>>surf[n].pos[3]
       >>surf[n].dsigma[0]>>surf[n].dsigma[1]>>surf[n].dsigma[2]>>surf[n].dsigma[3]
       >>surf[n].u[0]>>surf[n].u[1]>>surf[n].u[2]>>surf[n].u[3]
       >>surf[n].T>>surf[n].mub>>surf[n].muq>>surf[n].mus ;
@@ -130,7 +130,7 @@ void load(char *filename, int N)
    surf[n].dsigma[2]*surf[n].u[2]+surf[n].dsigma[3]*surf[n].u[3] ;
    vEffOld += dvEffOld ;
    if(dvEffOld<0.0){
-     //cout<<"!!! dvOld!=dV " << dvEffOld <<"  " << dV << "  " << surf[n].tau <<endl ;
+     //cout<<"!!! dvOld!=dV " << dvEffOld <<"  " << dV << "  " << surf[n].pos[0] <<endl ;
      nfail++ ;
    }
    //if(nfail==100) exit(1) ;
@@ -318,15 +318,33 @@ int generate()
    niter++ ;
    }while(rval>W) ; // end fast momentum generation
    if(niter>nmaxiter) nmaxiter = niter ;
-   // additional random smearing over eta
-   const double etaF = 0.5*log((surf[iel].u[0]+surf[iel].u[3])/(surf[iel].u[0]-surf[iel].u[3])) ;
-   const double etaShift = params::deta*(-0.5+rnd->Rndm()) ;
-   const double vx = surf[iel].u[1]/surf[iel].u[0]*cosh(etaF)/cosh(etaF+etaShift) ;
-   const double vy = surf[iel].u[2]/surf[iel].u[0]*cosh(etaF)/cosh(etaF+etaShift) ;
-   const double vz = tanh(etaF+etaShift) ;
+   const double t, z;
+   const double x = surf[iel].pos[1];
+   const double y = surf[iel].pos[2];
+   const double vx, vy, vz;
+   if(params::coordinateSystemHydro == "Milne") {
+    // additional random smearing over eta
+    const double etaF = 0.5*log((surf[iel].u[0]+surf[iel].u[3])/(surf[iel].u[0]-surf[iel].u[3])) ;
+    const double etaShift = params::deta*(-0.5+rnd->Rndm()) ;
+    vx = surf[iel].u[1]/surf[iel].u[0]*cosh(etaF)/cosh(etaF+etaShift) ;
+    vy = surf[iel].u[2]/surf[iel].u[0]*cosh(etaF)/cosh(etaF+etaShift) ;
+    vz = tanh(etaF+etaShift) ;
+    t = surf[iel].pos[0]*cosh(surf[iel].pos[3]+etaShift);
+    z = surf[iel].pos[0]*sinh(surf[iel].pos[3]+etaShift);
+   }
+   else if(params::coordinateSystemHydro == "Cartesian") {
+    vx = surf[iel].u[1]/surf[iel].u[0];
+    vy = surf[iel].u[2]/surf[iel].u[0];
+    vz = surf[iel].u[3]/surf[iel].u[0];
+    t = surf[iel].pos[0];
+    z = surf[iel].pos[3];
+   }
+   else {
+    throw std::invalid_argument("Only 'Milne' or 'Cartesian' are supported as coordinate system for the hydro evolution. Provided was '" + params::coordinateSystemHydro + "'. Please update the config and try again.");
+   }
    mom.Boost(vx,vy,vz) ;
    smash::FourVector momentum(mom.E(), mom.Px(), mom.Py(), mom.Pz());
-   smash::FourVector position(surf[iel].tau*cosh(surf[iel].eta+etaShift), surf[iel].x, surf[iel].y, surf[iel].tau*sinh(surf[iel].eta+etaShift));
+   smash::FourVector position(t, x, y, z)
    acceptParticle(ievent, &part, position, momentum) ;
   } // coordinate accepted
   } // events loop

@@ -8,9 +8,10 @@
 
 using namespace std ;
 
-namespace params{
+namespace params {
 
 char sSurface [255], sSpectraDir [255];
+char coordinateSystemHydro [255] = "Milne";
 bool weakContribution ;
 bool rescatter ;
 bool shear ;
@@ -38,6 +39,7 @@ void readParams(char* filename)
 		sline >> parName >> parValue ;
 		if     (strcmp(parName,"surface")==0) strcpy(sSurface, parValue) ;
 		else if(strcmp(parName,"spectra_dir")==0) strcpy(sSpectraDir, parValue) ;
+		else if(strcmp(parName,"coordinateSystemHydro")==0) strcpy(coordinateSystemHydro, parValue) ;
 		else if(strcmp(parName,"Nbins")==0) NBINS = atoi(parValue) ;
 		else if(strcmp(parName,"q_max")==0) QMAX = atof(parValue) ;
 		else if(strcmp(parName,"number_of_events")==0) NEVENTS = atoi(parValue) ;
@@ -57,9 +59,10 @@ void readParams(char* filename)
 
 void printParameters()
 {
-  cout << "====== parameters ======\n" ;
+  cout << "======= parameters =======\n" ;
   cout << "surface = " << sSurface << endl ;
   cout << "spectraDir = " << sSpectraDir << endl ;
+	cout << "coordinateSystemHydro = " << coordinateSystemHydro << endl;
   cout << "numberOfEvents = " << NEVENTS << endl ;
   cout << "isRescatter = " << rescatter << endl ;
   cout << "weakContribution = " << weakContribution << endl ;
