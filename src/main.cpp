@@ -91,14 +91,8 @@ int readCommandLine(int argc, char** argv)
 	  prefix = atoi(argv[2]) ;
 	  cout << "events mode, prefix = " << prefix << endl ;
 	  params::readParams(argv[3]) ;
-    }else if(strcmp(argv[1],"fmax")==0){
-	  if(static_cast<int>(argv[2][0]<58)){
-		prefix = atoi(argv[2]) ;
-		cout << "fmax mode, prefix = " << prefix << endl ;
-		params::readParams(argv[3]) ;
-	  }else
-	  params::readParams(argv[2]) ;
-	}else{cout << "unknown command-line switch: " << argv[1] << endl ; exit(1) ;}
+  }
+  else{cout << "unknown command-line switch: " << argv[1] << endl ; exit(1) ;}
 	return prefix ;
 }
 
