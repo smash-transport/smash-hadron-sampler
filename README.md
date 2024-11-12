@@ -15,7 +15,7 @@ Please note that only tagged versions are guaranteed to be compatible with SMASH
 
 ### Install instructions:
 It is expected that the output of this sampler is used in combination with the SMASH transport model. We therefore assume SMASH was already compiled and is available to be used as an external library. All necessary prerequisites are also assumed to already be installed.
-If not, install instructions can be found [here](https://github.com/smash-transport/smash-devel/blob/master/README.md).
+If not, install instructions can be found [here](https://github.com/smash-transport/smash/blob/main/README.md).
 
 To compile the project, first set the environment variable to the smash directory:
 
