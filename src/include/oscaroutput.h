@@ -27,8 +27,9 @@ void write_oscar_output() {
     // Set dummy values for event info:
     // {impact parameter, box_length, current time, total_kinetic_energy, total mean field energy, number of test particles, empty event (no collisions?)}
     smash::EventInfo event_info{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1, false};
+    smash::EventLabel event_id{iev, 0};
     // Write output
-    OscarOutput->at_eventend(*particles, iev, event_info);
+    OscarOutput->at_eventend(*particles, event_id, event_info);
   }
 }
 
