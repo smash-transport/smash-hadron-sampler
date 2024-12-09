@@ -37,12 +37,15 @@ int main(int argc, char **argv)
   time(&time0) ;
   ranseed = time0+prefix*16 ;
 
-  // check input format
-  check_input_formats(sSurface);
+  // check input formats
+  if (params::is_spin_sampling_on) {
+    Vorticity::ensure_vorticity_file_exists_and_check_format();
+    Vorticity::set_number_of_corona_cells();
+  }
 
   TRandom3* random3 = new TRandom3();
 	random3->SetSeed(ranseed);
-  cout<<"Random seed = "<<ranseed<<endl ;
+  cout << "Random seed = " << ranseed << endl ;
   gen::rnd = random3 ;
 
  // ========== generator init
@@ -114,12 +117,4 @@ int getNlines(char *filename)
   } ;
   fin.close() ;
   return nlines-1 ;
-}
-
-void check_input_formats(char *filename) {
-  // check that freezeout surface is in extended format if spin sampling is 
-  // enabled
-  if(params::is_spin_sampling_on){
-    gen::ensure_extended_freezeout_is_used();
-  }
 }

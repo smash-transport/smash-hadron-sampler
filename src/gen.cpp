@@ -85,12 +85,6 @@ double totalDensity ; // sum of all thermal densities
 // ######## load the elements
 void load(char *filename, int N)
 {
-  // Ensure that the extended freezeout surface was used if spin sampling is on
-  if (params::is_spin_sampling_on) {
-    ensure_extended_freezeout_is_used();
-    Vorticity::ensure_vorticity_file_exists_and_contains_16_values() ;
-  }
-
  double vEff=0.0, vEffOld=0.0, dvEff, dvEffOld ;
  int nfail=0, ncut=0 ;
  TLorentzVector dsigma ;
@@ -111,7 +105,7 @@ void load(char *filename, int N)
 
   // Read the vorticity tensor from file and set it in all surface cells
   if (params::is_spin_sampling_on) {
-    Vorticity::set_vorticity_in_all_surface_cells(surf, Nelem);
+    Vorticity::set_vorticity_and_energy_in_surface_cells(surf, Nelem);
  }
 
  // ---- reading loop
@@ -132,12 +126,6 @@ void load(char *filename, int N)
    /* Load the thermal vorticity tensor if spin sampling is switched on and
    *  vorticity tensor was printed to freezeout surface
    */
-   if(params::is_spin_sampling_on) {
-     if (!(instream >> (*surf[n].e))){
-       throw runtime_error("Energy density not found in "
-       "freezeout surface for cell " + to_string(n));
-     }
-   }
    if(surf[n].muq > 0.12) {
      surf[n].muq = 0.12 ; // omit charge ch.pot. for test
 	   ncut++ ;
@@ -242,7 +230,7 @@ int generate()
 
  for(int iel=0; iel<Nelem; iel++){
    // loop over all elements
-  // ---> thermal densities, for each surface element
+   // ---> thermal densities, for each surface element
    totalDensity = 0.0 ;
    if(surf[iel].T<=0.){ ntherm_fail++ ; continue ; }
 
@@ -348,7 +336,12 @@ int generate()
    mom.Boost(vx,vy,vz) ;
    smash::FourVector momentum(mom.E(), mom.Px(), mom.Py(), mom.Pz());
    smash::FourVector position(surf[iel].tau*cosh(surf[iel].eta+etaShift), surf[iel].x, surf[iel].y, surf[iel].tau*sinh(surf[iel].eta+etaShift));
-   acceptParticle(surf[iel], ievent, &part, position, momentum) ;
+   acceptParticle(ievent, &part, position, momentum) ;
+
+   // Calculate and set the spin vector if spin sampling is enabled
+   if (params::is_spin_sampling_on) {
+    spin::calculate_and_set_spin_vector(surf[iel], ievent, pList, npart);
+   }
   } // coordinate accepted
   } // events loop
   if(iel%(Nelem/50)==0) cout<<round(iel/(Nelem*0.01))<<" % done, maxiter= "<<nmaxiter<<endl ;
@@ -358,7 +351,7 @@ int generate()
  delete fthermal ;
 }
 
-void acceptParticle(element &cell, int ievent,
+void acceptParticle(int ievent,
                     const smash::ParticleTypePtr &ldef,
                     smash::FourVector position, smash::FourVector momentum) {
  int& npart1 = npart[ievent] ;
@@ -367,13 +360,6 @@ void acceptParticle(element &cell, int ievent,
  new_particle->set_4momentum(momentum);
  new_particle->set_4position(position);
 
- // Calculate the spin vector of the particle
- if (params::is_spin_sampling_on) {
-    std::array<double, 4> spin_vec = spin_vector(cell, new_particle);
-    smash::FourVector spin(spin_vec[0], spin_vec[1], spin_vec[2], spin_vec[3]);
-    new_particle->set_spin_vector(spin);
-  }
-
  pList[ievent][npart1] = new_particle;
  npart1++ ;
  if(std::isinf(momentum.x0()) || std::isnan(momentum.x0())){
@@ -381,48 +367,6 @@ void acceptParticle(element &cell, int ievent,
    exit(1) ;
  }
  if(npart1>NPartBuf){ cout<<"Error. Please increase gen::npartbuf\n"; exit(1);}
-}
-
-void ensure_extended_freezeout_is_used() {
-  /*
-   * Make sure that the extended freezeout surface including the energy density
-   * was used. This is done by checking if the file contains 29 entries per
-   * line.
-   */
-  const std::string filename = params::sSurface;
-  std::ifstream fin(filename);
-  if (!fin) {
-    std::cerr << "Cannot read file " << filename << std::endl;
-    exit(1);
-  }
-  std::string line;
-  while (std::getline(fin, line)) {
-    // Skip empty lines
-    if (line.empty()) continue;
-    // Skip potential comment lines
-    if (line[0] == '#') continue;
-    // Count the number of whitespace-separated entries
-    std::istringstream iss(line);
-    int count = 0;
-    std::string word;
-    while (iss >> word) {
-      count++;
-    }
-    // Check if the line contains 29 entries
-    if (count != 29) {
-      std::cerr
-          << "Error: Invalid format of the freezeout surface. Ensure using the "
-             "extended freezeout format when spin sampling is enabled"
-          << std::endl;
-      exit(1);
-    }
-    // Close the file and break the loop
-    fin.close();
-    return;
-  }
-  // If we reach here, it means no valid line was found
-  std::cerr << "Error: No valid line found in the file" << std::endl;
-  exit(1);
 }
 
 // ################### end #################

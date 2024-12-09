@@ -7,7 +7,6 @@
 
 #include "smash/particles.h"
 #include "smash/setup_particles_decaymodes.h"
-
 #include "vorticity.h"
 
 class TRandom3;
@@ -52,15 +51,8 @@ struct element {
 // functions
 void load(char *filename, int N);
 int generate();
-void acceptParticle(element &cell, int event,
-                    const smash::ParticleTypePtr &ldef,
+void acceptParticle(int event, const smash::ParticleTypePtr &ldef,
                     smash::FourVector position, smash::FourVector momentum);
-/*
- * If spin sampling is enabled, we need the energy density of every cell,
- * which is stored in the extended freezeout surface. This function checks
- * if the extended freezeout surface is used and throws an exception if not.
- */
-void ensure_extended_freezeout_is_used();
 }  // namespace gen
 
 #endif  // INCLUDE_GEN_H_

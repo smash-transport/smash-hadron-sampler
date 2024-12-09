@@ -2,12 +2,15 @@
 
 #include <array>
 #include <cmath>
+#include <stdexcept>
 #include <vector>
 
 #include "const.h"
 #include "gen.h"
 #include "smash/particles.h"
 #include "vorticity.h"
+
+namespace spin {
 
 /* The following definitions correspond to the conventions used in Eq. (60)
  * of the paper "Exact spin polarization of massive and massless particles in
@@ -65,11 +68,25 @@ static double exponent(const int k, const double energy_density,
   return (energy_density - mu) / temperature - k * sqrt(-theta_squared);
 }
 
-std::array<double, 4> spin_vector(const gen::element &freezeout_element,
-                                  const smash::ParticleData *particle) {
+void calculate_and_set_spin_vector(const gen::element &freezeout_element,
+                                   int index_event,
+                                   smash::ParticleData ***particle_list,
+                                   int *npart) {
+  // Ensure that the optional values in the freezeout element are set
+  if (!freezeout_element.e || !freezeout_element.vorticity) {
+    throw std::runtime_error(
+        "Energy density or vorticity tensor is not set in the freezeout "
+        "element.");
+  }
+  // As gen::acceptParticle() increases the particle number in the corresponding
+  // event by 1, we need to subtract 1 to get the correct index of the particle.
+  const int index_particle = npart[index_event] - 1;
+  smash::ParticleData *particle = particle_list[index_event][index_particle];
   const int spin = particle->spin();
+
   if (spin == 0) {
-    return {0.0, 0.0, 0.0, 0.0};
+    const smash::FourVector spin_vec(0, 0, 0, 0);
+    particle->set_spin_vector(spin_vec);
   } else if (spin != 0) {
     const double energy_density = *freezeout_element.e;
     const double temperature = freezeout_element.T;
@@ -119,8 +136,15 @@ std::array<double, 4> spin_vector(const gen::element &freezeout_element,
       spin_vector[i] = (theta_array[i] * numerator) /
                        (std::sqrt(-theta_squared) * denominator);
     }
-    return spin_vector;
+
+    const smash::FourVector spin_vec(spin_vector[0], spin_vector[1],
+                                     spin_vector[2], spin_vector[3]);
+
+    // Set the spin vector in the particle data
+    particle->set_spin_vector(spin_vec);
   } else {
     throw std::runtime_error("Spin of particle is invalid or unset.");
   }
 }
+
+}  // namespace spin
