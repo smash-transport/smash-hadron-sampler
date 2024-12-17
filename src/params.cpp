@@ -26,20 +26,34 @@ double cs2=0.15;
 double ratio_pressure_energydensity=0.15;
 double global_polarization=0.0;
 
-// ############ reading and processing the parameters
+// Helper function to get the directory of a given file path
+string getDirectory(const string& filePath) {
+    size_t pos = filePath.find_last_of("/\\");
+    if (pos != string::npos) {
+        return filePath.substr(0, pos + 1);
+    }
+	// No directory found, return empty
+    return "";
+}
 
+// ############ reading and processing the parameters
 void readParams(char* filename)
 {
 	char parName [255], parValue [255] ;
 	ifstream fin(filename) ;
 	if(!fin.is_open()) { cout << "cannot open parameters file " << filename << endl ; exit(1) ; }
+
+	string dbetaFile = "";
 	while(fin.good()){
 		string line ;
 		getline(fin, line) ;
 		istringstream sline (line) ;
 		sline >> parName >> parValue ;
 		if     (strcmp(parName,"surface")==0) strcpy(sSurface, parValue) ;
-		else if(strcmp(parName,"dbeta")==0) strcpy(sVorticity, parValue) ;
+		else if(strcmp(parName,"dbeta")==0) {
+			strcpy(sVorticity, parValue) ;
+			dbetaFile = sVorticity;
+		}
 		else if(strcmp(parName,"spectra_dir")==0) strcpy(sSpectraDir, parValue) ;
 		else if(strcmp(parName,"Nbins")==0) NBINS = atoi(parValue) ;
 		else if(strcmp(parName,"q_max")==0) QMAX = atof(parValue) ;
@@ -55,6 +69,18 @@ void readParams(char* filename)
 		else if(parName[0]=='!') cout << "CCC " << sline.str() << endl ;
 		else cout << "UUU " << sline.str() << endl ;
 	}
+
+	// If no dbeta file was specified, set the directory to the same as the surface file as a default
+    if (dbetaFile.empty()) {
+    // Construct the path based on the directory of sSurface
+    string dir = getDirectory(sSurface);
+    string defaultFile = dir + "beta.dat";
+
+    // Safely copy the constructed string to sVorticity
+    strncpy(sVorticity, defaultFile.c_str(), sizeof(sVorticity) - 1);
+    sVorticity[sizeof(sVorticity) - 1] = '\0'; // Ensure null-termination
+}
+
  deta=0.05 ; dx=dy=0.0 ; // TODO!
 }
 
@@ -62,7 +88,7 @@ void printParameters()
 {
   cout << "====== parameters ======\n" ;
   cout << "surface = " << sSurface << endl ;
-  cout << "vorticity = " << sVorticity << endl ;
+  if(is_spin_sampling_on) cout << "vorticity = " << sVorticity << endl ;
   cout << "spectraDir = " << sSpectraDir << endl ;
   cout << "numberOfEvents = " << NEVENTS << endl ;
   cout << "isRescatter = " << rescatter << endl ;
@@ -74,7 +100,7 @@ void printParameters()
   cout << "q_max = " << QMAX << endl ;
   cout << "cs2 = " << cs2 << endl ;
   cout << "ratio_pressure_energydensity = " << ratio_pressure_energydensity << endl ;
-  cout << "spin_sampling_on = " << is_spin_sampling_on << endl ;
+  cout << "sample_spin = " << is_spin_sampling_on << endl ;
   cout << "======= end parameters =======\n" ;
 }
 

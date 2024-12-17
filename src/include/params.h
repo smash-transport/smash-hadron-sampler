@@ -24,6 +24,11 @@ extern double ecrit, cs2, ratio_pressure_energydensity;
  */
 extern bool is_spin_sampling_on;
 
+/**
+ * Helper function to get the directory part of a file path.
+ */
+std::string getDirectory(const std::string& filePath);
+
 // ---- rooutines ----
 void readParams(char* filename);
 void printParameters();
