@@ -155,48 +155,45 @@ void Vorticity::set_vorticity_and_energy_in_surface_cells(gen::element* surf,
   std::ifstream file(params::sVorticity);
   std::string line;
 
-  // Skip comment lines (lines starting with '#')
-  while (std::getline(file, line)) {
-    if (!line.empty() && line[0] != '#') {
-      break;  // Found the start of data
-    }
-  }
-
-  // Ensure the first non-comment line exists
-  if (line.empty()) {
-    std::cerr << "Error: Vorticity file contains no data after comments."
-              << std::endl;
-    return;
-  }
+  const int num_freezeout_cells = N - num_corona_cells_;
+  int num_comment_lines = 0;
 
   // Ensure that the number of corona cells has been set
-    if (num_corona_cells_ < 0) {
-        std::cerr << "Error: Number of corona cells not set in Vorticity."
-                << std::endl;
-        return;
-    }
+  if (num_corona_cells_ < 0) {
+    throw std::runtime_error(
+        "Error: Number of corona cells not set in Vorticity.");
+  }
 
   // Process corona cells (vorticity set to 0)
   for (int i = 0; i < num_corona_cells_; i++) {
-    if (line.empty() || !std::getline(file, line)) {
-      std::cerr
-          << "Error: Unexpected end of file while processing corona cells."
-          << std::endl;
-      return;
-    }
-
     // Initialize vorticity for this corona cell.
     // The constructor already sets all components to 0.
     surf[i].vorticity = std::make_unique<Vorticity>();
   }
 
+  // Skip comment lines in vorticity file (lines starting with '#')
+  while (std::getline(file, line)) {
+    if (!line.empty() && line[0] != '#') {
+      break;  // Found the start of data
+    }
+    num_comment_lines++;
+  }
+
+  // Ensure the first non-comment line exists
+  if (line.empty()) {
+    throw std::runtime_error(
+        "Error: Vorticity file contains no data after comments.");
+  }
+
   // Process freezeout cells (set the actual vorticity tensor values)
-  for (int i = 0; i < N; i++) {
-    if (line.empty() || !std::getline(file, line)) {
-      std::cerr
-          << "Error: Unexpected end of file while processing freezeout cells."
-          << std::endl;
-      return;
+  for (int i = 0; i < num_freezeout_cells; i++) {
+    // Check if the current line is valid
+    if (line.empty()) {
+      const int current_line = i + 1 + num_comment_lines;
+      throw std::runtime_error(
+          "Error: Encountered an empty line in the file \"" +
+          std::string(params::sVorticity) + "\" at line " +
+          std::to_string(current_line));
     }
 
     // Initialize vorticity for this freezeout cell
@@ -214,13 +211,24 @@ void Vorticity::set_vorticity_and_energy_in_surface_cells(gen::element* surf,
         surf[num_corona_cells_ + i].e = value;
       }
     }
+
+    // Read the next line for the next iteration, if not the last iteration
+    if (i < num_freezeout_cells - 1) {
+      if (!std::getline(file, line)) {
+        // Next line has already been read, therefore the iterator is i+2
+        const int current_line = i + 2 + num_comment_lines;
+        throw std::runtime_error("Error: Unexpected end in the file \"" +
+                                 std::string(params::sVorticity) +
+                                 "\" at line " + std::to_string(current_line));
+      }
+    }
   }
 
   // Check for unexpected extra lines
   if (std::getline(file, line)) {
-    std::cerr << "Warning: Extra lines detected in the vorticity file after "
-                 "processing all cells."
-              << std::endl;
+    throw std::runtime_error(
+        "Warning: Extra lines detected in the vorticity file after processing "
+        "all cells.");
   }
 
   // Close the file after processing
