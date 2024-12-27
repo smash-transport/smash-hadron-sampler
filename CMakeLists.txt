@@ -60,17 +60,20 @@ target_link_libraries(sampler ${SAMPLER_LIBRARIES})
 message(STATUS "BUILD_TESTING=${BUILD_TESTING}")
 
 if(BUILD_TESTING)
-  # library for unit tests
-  #add_library(sampler_static STATIC $<TARGET_OBJECTS:objlib>)
-  #set_target_properties(sampler_static PROPERTIES OUTPUT_NAME sampler)
+  # Create a directory for test executables
+  set(TEST_OUTPUT_DIR ${CMAKE_BINARY_DIR}/tests)
+  file(MAKE_DIRECTORY ${TEST_OUTPUT_DIR})
+
+  # Set runtime output directory for test executables
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${TEST_OUTPUT_DIR})
 
   # Add the executable for the gen test
   add_executable(gen tests/gen.cpp)
-
-  # Link the test executable with Virtest and any other necessary libraries
   target_link_libraries(gen objlib ${SAMPLER_LIBRARIES})
-
-  # Add the test to ctest
   add_test(NAME gen_test COMMAND gen)
-  #add_subdirectory(tests)
+
+  # Add the executable for the spin test
+  add_executable(spin tests/spin.cpp)
+  target_link_libraries(spin objlib ${SAMPLER_LIBRARIES})
+  add_test(NAME spin_test COMMAND spin)
 endif()
