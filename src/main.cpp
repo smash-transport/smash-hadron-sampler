@@ -40,6 +40,7 @@ int main(int argc, char **argv)
   // check input formats
   if (params::is_spin_sampling_on) {
     Vorticity::ensure_vorticity_file_exists_and_check_format();
+    Vorticity::ensuse_extended_freezeout_is_given();
     Vorticity::set_number_of_corona_cells();
   }
 

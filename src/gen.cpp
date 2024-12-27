@@ -8,6 +8,7 @@
 #include <limits>
 #include <cmath>
 #include <random>
+#include <stdexcept>
 
 #include "const.h"
 #include "gen.h"
@@ -105,12 +106,15 @@ void load(char *filename, int N)
 
   // Read the vorticity tensor from file and set it in all surface cells
   if (params::is_spin_sampling_on) {
-    Vorticity::set_vorticity_and_energy_in_surface_cells(surf, Nelem);
+    std::cout << "Setting vorticity tensor in all surface cells from file "
+              << params::sVorticity << std::endl;
+    Vorticity::set_vorticity_in_surface_cells(surf, Nelem);
  }
 
  // ---- reading loop
  string line ;
  istringstream instream ;
+ double temporary_energy_density = 0;
  cout << "1?: failbit=" << instream.fail() << endl ;
  for(int n=0; n<Nelem; n++){
    getline(fin, line) ;
@@ -123,6 +127,14 @@ void load(char *filename, int N)
       >>surf[n].T>>surf[n].mub>>surf[n].muq>>surf[n].mus ;
    for(int i=0; i<10; i++) instream>>surf[n].pi[i] ;
    instream>>surf[n].Pi ;
+
+   // If spin sampling is enabled, load the energy density from the
+   // extended freezeout surface
+   if (params::is_spin_sampling_on) {
+    instream>>temporary_energy_density;
+    surf[n].e = temporary_energy_density;
+   }
+
    /* Load the thermal vorticity tensor if spin sampling is switched on and
    *  vorticity tensor was printed to freezeout surface
    */
@@ -177,7 +189,7 @@ void load(char *filename, int N)
    }
    for(int i=0; i<10; i++) surf[n].pi[i] = _pi[i] ;
    } // end pi boost
-
+  }
   if(params::shear) dsigmaMax *= 2.0 ; // *2.0: jun17. default: *1.5
   else dsigmaMax *= 1.3 ;
 
@@ -187,7 +199,6 @@ void load(char *filename, int N)
  cout<<"failed elements = "<<nfail<<endl ;
  cout<<"mu_cut elements = "<<ncut<<endl ;
  // ---- prepare some stuff to calculate thermal densities
-}
 
  // Load SMASH hadron list
  smash::initialize_default_particles_and_decaymodes();
@@ -227,7 +238,6 @@ int generate()
  // Sigma meson needs to be excluded to generate correct multiplicities
  std::vector<smash::PdgCode> species_to_exclude{0x11, -0x11, 0x13, -0x13,
                                                 0x15, -0x15, 0x22, 0x9000221};
-
  for(int iel=0; iel<Nelem; iel++){
    // loop over all elements
    // ---> thermal densities, for each surface element
@@ -340,6 +350,15 @@ int generate()
 
    // Calculate and set the spin vector if spin sampling is enabled
    if (params::is_spin_sampling_on) {
+    if (!surf[iel].vorticity.has_value()) {
+      throw std::runtime_error("Vorticity tensor not set in surface element " +
+                               std::to_string(iel));
+    }
+    if (!surf[iel].e.has_value()) {
+      std::cout << "Value of energy density: " << surf[iel].e.value() << std::endl;
+      throw std::runtime_error("Energy density not set in surface element " +
+                               std::to_string(iel));
+    }
     spin::calculate_and_set_spin_vector(surf[iel], ievent, pList, npart);
    }
   } // coordinate accepted

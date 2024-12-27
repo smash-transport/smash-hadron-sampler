@@ -24,6 +24,10 @@ class Vorticity {
   // Check that the vorticity file exists
   static void ensure_vorticity_file_exists_and_check_format();
 
+  // Check that the freezeout is given in the extended format which contains
+  // the energy density
+  static void ensuse_extended_freezeout_is_given();
+
   // Set the number of corona cells in the freezeout surface
   static void set_number_of_corona_cells();
 
@@ -40,7 +44,7 @@ class Vorticity {
 
   // given the complete freezeout surface, this function sets the vorticity
   // tensor in all surface cells from the vorticity file
-  static void set_vorticity_and_energy_in_surface_cells(gen::element* surf,
+  static void set_vorticity_in_surface_cells(gen::element* surf,
                                                         int N);
 
   // return a component of the vorticity tensor as a 4x4 matrix

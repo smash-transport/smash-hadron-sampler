@@ -98,6 +98,43 @@ void Vorticity::ensure_vorticity_file_exists_and_check_format() {
   file.close();
 }
 
+void Vorticity::ensuse_extended_freezeout_is_given() {
+  std::ifstream surface_file(params::sSurface);
+  if (!surface_file.is_open()) {
+    throw std::runtime_error(std::string("Error opening file: ") +
+                             params::sVorticity);
+  }
+  std::string line;
+
+  while (std::getline(surface_file, line)) {
+    if (line[0] != '#') {
+      // Even though there are no comment lines in the vhlle output, we include
+      // it in case of potential header lines in the future.
+      std::istringstream iss(line);
+      std::vector<std::string> tokens;
+      std::string token;
+
+      while (iss >> token) {
+        tokens.push_back(token);
+      }
+      // Check for 29 columns in the freezeout file which corresponds to the
+      // extended output format
+      if (tokens.size() != 29) {
+        std::ostringstream error;
+        error
+            << "First data line in file " << params::sSurface
+            << " does not contain exactly 29 values. Found " << tokens.size()
+            << " values. Either the extended format was not used or the number "
+            << "of columns in the extended freezeout has changed.";
+        throw std::runtime_error(error.str());
+      }
+      break;
+    } else {
+      continue;
+    }
+  }
+}
+
 // Set the number of corona cells in Vorticity from
 // the second comment line of the vorticity file.
 void Vorticity::set_number_of_corona_cells() {
@@ -149,8 +186,7 @@ void Vorticity::set_number_of_corona_cells() {
 
 // Given the complete freezeout surface, this function sets the vorticity tensor
 // in all surface cells from the vorticity file.
-void Vorticity::set_vorticity_and_energy_in_surface_cells(gen::element* surf,
-                                                          int N) {
+void Vorticity::set_vorticity_in_surface_cells(gen::element* surf, int N) {
   // Read the vorticity file line by line
   std::ifstream file(params::sVorticity);
   std::string line;
@@ -169,20 +205,20 @@ void Vorticity::set_vorticity_and_energy_in_surface_cells(gen::element* surf,
     // Initialize vorticity for this corona cell.
     // The constructor already sets all components to 0.
     surf[i].vorticity = std::make_unique<Vorticity>();
+
+    // TODO: Set energy density in corona cells
   }
 
   // Skip comment lines in vorticity file (lines starting with '#')
   while (std::getline(file, line)) {
-    if (!line.empty() && line[0] != '#') {
+    if (line.empty()) {
+      throw std::runtime_error(
+          "Error: Unexpected empty line encountered in head of the vorticity "
+          "file.");
+    } else if (line[0] != '#') {
       break;  // Found the start of data
     }
     num_comment_lines++;
-  }
-
-  // Ensure the first non-comment line exists
-  if (line.empty()) {
-    throw std::runtime_error(
-        "Error: Vorticity file contains no data after comments.");
   }
 
   // Process freezeout cells (set the actual vorticity tensor values)
@@ -202,13 +238,10 @@ void Vorticity::set_vorticity_and_energy_in_surface_cells(gen::element* surf,
     // Parse and set the relevant components (16th to 32nd values)
     std::istringstream instream(line);
     double value;
-    for (int column = 0; column <= 32; column++) {
+    for (int column = 0; column <= 31; column++) {
       instream >> value;
       if (column >= 16 && column <= 31) {
         (**surf[num_corona_cells_ + i].vorticity)[column - 16] = value;
-      } else if (column == 32) {
-        // Set the energy density for this cell
-        surf[num_corona_cells_ + i].e = value;
       }
     }
 
