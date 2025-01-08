@@ -346,20 +346,11 @@ int generate()
    mom.Boost(vx,vy,vz) ;
    smash::FourVector momentum(mom.E(), mom.Px(), mom.Py(), mom.Pz());
    smash::FourVector position(surf[iel].tau*cosh(surf[iel].eta+etaShift), surf[iel].x, surf[iel].y, surf[iel].tau*sinh(surf[iel].eta+etaShift));
-   acceptParticle(ievent, &part, position, momentum) ;
+   smash::ParticleData* particle_ptr = acceptParticle(ievent, &part, position, momentum) ;
 
    // Calculate and set the spin vector if spin sampling is enabled
    if (params::is_spin_sampling_on) {
-    if (!surf[iel].vorticity.has_value()) {
-      throw std::runtime_error("Vorticity tensor not set in surface element " +
-                               std::to_string(iel));
-    }
-    if (!surf[iel].e.has_value()) {
-      std::cout << "Value of energy density: " << surf[iel].e.value() << std::endl;
-      throw std::runtime_error("Energy density not set in surface element " +
-                               std::to_string(iel));
-    }
-    spin::calculate_and_set_spin_vector(surf[iel], ievent, pList, npart);
+    spin::calculate_and_set_spin_vector(surf[iel], particle_ptr);
    }
   } // coordinate accepted
   } // events loop
@@ -370,7 +361,7 @@ int generate()
  delete fthermal ;
 }
 
-void acceptParticle(int ievent,
+smash::ParticleData* acceptParticle(int ievent,
                     const smash::ParticleTypePtr &ldef,
                     smash::FourVector position, smash::FourVector momentum) {
  int& npart1 = npart[ievent] ;
@@ -386,6 +377,8 @@ void acceptParticle(int ievent,
    exit(1) ;
  }
  if(npart1>NPartBuf){ cout<<"Error. Please increase gen::npartbuf\n"; exit(1);}
+
+ return new_particle;
 }
 
 // ################### end #################

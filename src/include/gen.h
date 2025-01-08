@@ -6,6 +6,7 @@
 #include <optional>
 
 #include "smash/particles.h"
+#include "smash/pdgcode.h"
 #include "smash/setup_particles_decaymodes.h"
 #include "vorticity.h"
 
@@ -51,8 +52,10 @@ struct element {
 // functions
 void load(char *filename, int N);
 int generate();
-void acceptParticle(int event, const smash::ParticleTypePtr &ldef,
-                    smash::FourVector position, smash::FourVector momentum);
+smash::ParticleData *acceptParticle(int event,
+                                    const smash::ParticleTypePtr &ldef,
+                                    smash::FourVector position,
+                                    smash::FourVector momentum);
 }  // namespace gen
 
 #endif  // INCLUDE_GEN_H_

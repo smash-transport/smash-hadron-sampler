@@ -17,10 +17,11 @@ namespace spin {
  */
 
 // Calculate theta from EQ. 42 in arXiv:2304.02276v2 which is needed to
-// calculate the full EQ. 60 afterwards.
+// calculate the full EQ. 60 afterwards. The momentum needs to be given with
+// upper indices (as calculated by the sampler), the function will consider
 std::array<double, 4> theta(const double mass,
                             const std::array<double, 16> &vorticity,
-                            const double (&p_lower_index)[4]) {
+                            const double (&p)[4]) {
   if (mass < small_value) {
     throw std::invalid_argument(
         "Theta cannot be calculated for massless particles.");
@@ -29,89 +30,87 @@ std::array<double, 4> theta(const double mass,
   auto at = [](int i, int j) { return (i * 4 + j); };
 
   // Here, we explicitely performed the contractions with the Levi-Civita tensor
+  // assuming that the vorticity tensor is antisymmetric (which canceled the
+  // initial factor of 1/2).
   const double theta0 =
-      (-1.0 / (2.0 * mass)) * (vorticity[at(2, 3)] * p_lower_index[1] +
-                               vorticity[at(3, 1)] * p_lower_index[2] +
-                               vorticity[at(1, 2)] * p_lower_index[3]);
+      (-1.0 / mass) * (vorticity[at(2, 3)] * p[1] + vorticity[at(3, 1)] * p[2] +
+                       vorticity[at(1, 2)] * p[3]);
 
   const double theta1 =
-      (-1.0 / (2.0 * mass)) * (vorticity[at(3, 2)] * p_lower_index[0] +
-                               vorticity[at(0, 3)] * p_lower_index[2] +
-                               vorticity[at(2, 0)] * p_lower_index[3]);
+      (-1.0 / mass) * (vorticity[at(3, 2)] * p[0] + vorticity[at(0, 3)] * p[2] +
+                       vorticity[at(2, 0)] * p[3]);
 
   const double theta2 =
-      (-1.0 / (2.0 * mass)) * (vorticity[at(1, 3)] * p_lower_index[0] +
-                               vorticity[at(3, 0)] * p_lower_index[1] +
-                               vorticity[at(0, 1)] * p_lower_index[3]);
+      (-1.0 / mass) * (vorticity[at(1, 3)] * p[0] + vorticity[at(3, 0)] * p[1] +
+                       vorticity[at(0, 1)] * p[3]);
 
   const double theta3 =
-      (-1.0 / (2.0 * mass)) * (vorticity[at(2, 1)] * p_lower_index[0] +
-                               vorticity[at(0, 2)] * p_lower_index[1] +
-                               vorticity[at(1, 0)] * p_lower_index[2]);
-  return {theta0, theta1, theta2, theta3};
+      (-1.0 / mass) * (vorticity[at(2, 1)] * p[0] + vorticity[at(0, 2)] * p[1] +
+                       vorticity[at(1, 0)] * p[2]);
+
+  // The additional minus sign is due to the position of the indicies of the
+  // vorticity tensor and the momentum which all have lower indices. As we only
+  // get quantities with upper indices from the sampler, we need to lower these
+  // indices with three metric tensors. Calculating the 0 component, the product
+  // of these three metric tensors gives a factor of (-1)^3 = -1, while for the
+  // spatial components, the product gives a factor of (-1)^2 = 1.
+  return {-theta0, theta1, theta2, theta3};
 }
 
+// Calculate and set the spin vector for a given particle
 void calculate_and_set_spin_vector(const gen::element &freezeout_element,
-                                   int index_event,
-                                   smash::ParticleData ***particle_list,
-                                   int *npart) {
+                                   smash::ParticleData *particle) {
   // Ensure that the optional values in the freezeout element are set
-  if (!freezeout_element.e || !freezeout_element.vorticity) {
-    throw std::runtime_error(
-        "Energy density or vorticity tensor is not set in the freezeout "
-        "element.");
+  if (!freezeout_element.vorticity.has_value()) {
+    throw std::runtime_error("Vorticity tensor not set in surface element.");
   }
-  // As gen::acceptParticle() increases the particle number in the corresponding
-  // event by 1, we need to subtract 1 to get the correct index of the particle.
-  const int index_particle = npart[index_event] - 1;
-  smash::ParticleData *particle = particle_list[index_event][index_particle];
+  if (!freezeout_element.e.has_value()) {
+    throw std::runtime_error("Energy density not set in surface element.");
+  }
   const int spin = particle->spin();
 
   if (spin == 0) {
-    const smash::FourVector spin_vec(0, 0, 0, 0);
+    const smash::FourVector spin_vec(0.0, 0.0, 0.0, 0.0);
     particle->set_spin_vector(spin_vec);
-  } else if (spin != 0) {
+  } else if (spin > 0) {
     const double energy_density = *freezeout_element.e;
     const double temperature = freezeout_element.T;
     const double mu = freezeout_element.mub;
     const std::array<double, 16> vorticity =
         (**freezeout_element.vorticity).get_vorticity();
-    // Momentum with lower index
-    double p_[4];
-    smash::FourVector four_momentum = particle->momentum();
-    for (int i = 0; i < 4; i++) {
-      p_[i] = four_momentum[i] * metric[i];
-    }
-    std::array<double, 4> theta_array =
-        theta(particle->pole_mass(), vorticity, p_);
+
+    double p[4] = {particle->momentum().x0(), particle->momentum().x1(),
+                   particle->momentum().x2(), particle->momentum().x3()};
+
+    const std::array<double, 4> theta_array =
+        theta(particle->pole_mass(), vorticity, p);
+
     const double theta_squared = four_vector_square(theta_array);
 
-    // Calculate the numerator and denominator parts with the spin sums
-    const int spin_degeneracy = spin + 1;
-
-    std::vector<double> numerator_vector;
-    std::vector<double> denominator_vector;
-
-    int array_index = 0;
-    // Calculate all terms of the sums in the numerator and denominator
-    // separately and store them in arrays
-    for (int k = -spin; k <= spin; k += 2) {
-      // Ensure that the loop index is within the array bounds
-      if (array_index < 0 || array_index >= spin_degeneracy) {
-        throw std::out_of_range("Array index is out of range.");
-      }
-      double exponential =
-          std::exp(exponent(k, energy_density, temperature, mu, theta_squared));
-      denominator_vector.push_back(1 /
-                                   (exponential - (spin % 2 == 0 ? 1 : -1)));
-      numerator_vector.push_back(k * 0.5 * denominator_vector[array_index]);
-      array_index++;
+    if (theta_squared > 0) {
+      throw std::runtime_error(
+          "theta_squared must be negative for valid spin vector calculation.");
     }
-    // Performing the sum over k in the numerator and denominator
-    const double numerator =
-        std::accumulate(numerator_vector.begin(), numerator_vector.end(), 0.0);
-    const double denominator = std::accumulate(denominator_vector.begin(),
-                                               denominator_vector.end(), 0.0);
+
+    double numerator = 0.0;
+    double denominator = 0.0;
+    // Sum all terms of in the numerator and denominator
+    for (int k = -spin; k <= spin; k += 2) {
+      double sum_index = k / 2.0;
+      double exponential = std::exp(
+          exponent(sum_index, energy_density, temperature, mu, theta_squared));
+      double denominator_term = 1 / (exponential - (spin % 2 == 0 ? 1 : -1));
+      double numerator_term = sum_index * denominator_term;
+
+      numerator += numerator_term;
+      denominator += denominator_term;
+    }
+
+    if (std::abs(denominator) < 1e-8) {
+      throw std::runtime_error(
+          "Denominator must be sufficiently negative for valid spin vector "
+          "calculation.");
+    }
 
     // Calculate the spin vector
     std::array<double, 4> spin_vector;

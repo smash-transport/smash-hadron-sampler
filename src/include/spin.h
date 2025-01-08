@@ -16,7 +16,7 @@ namespace spin {
  */
 
 // Calculate the square of a four-vector in Minkowski space
-inline double four_vector_square(std::array<double, 4> &four_vector) {
+inline double four_vector_square(const std::array<double, 4> &four_vector) {
   double result = 0.0;
   for (int i = 0; i < 4; i++) {
     result += metric[i] * four_vector[i] * four_vector[i];
@@ -44,9 +44,7 @@ inline double exponent(const double k, const double energy_density,
 }
 
 void calculate_and_set_spin_vector(const gen::element &freezeout_element,
-                                   int index_event,
-                                   smash::ParticleData ***particle_list,
-                                   int *npart);
+                                   smash::ParticleData *particle);
 
 }  // namespace spin
 #endif  // INCLUDE_SPIN_H_
