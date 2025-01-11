@@ -4,14 +4,16 @@ This sampler is meant to be applied in hybrid models, simulating heavy-ion colli
 
 When using the smash-hadron-sampler, please cite:
 - [I. Karpenko et al., Phys.Rev.C 91 (2015) 6, 064901](https://inspirehep.net/literature/1343339)
-- [A. Schäfer el al., arXiv:2112.08724](https://arxiv.org/abs/2112.08724).
+- [A. Schäfer et al., arXiv:2112.08724](https://arxiv.org/abs/2112.08724).
+
 
 ### Prerequisites:
 - [cmake](https://cmake.org) version &ge; 3.15.4
-- [SMASH](https://github.com/smash-transport/smash) version 3.1, as well as prerequisites therein
+- [SMASH](https://github.com/smash-transport/smash) version 3.2, as well as prerequisites therein
 - [ROOT](https://root.cern.ch) version &ge; 6.06
 
 Please note that only tagged versions are guaranteed to be compatible with SMASH.
+
 
 ### Install instructions:
 It is expected that the output of this sampler is used in combination with the SMASH transport model. We therefore assume SMASH was already compiled and is available to be used as an external library. All necessary prerequisites are also assumed to already be installed.
@@ -30,9 +32,9 @@ Execute the following commands to build the project:
 
     mkdir build
     cd build
-    cmake .. -DPythia_CONFIG_EXECUTABLE=[...]/pythia8310/bin/pythia8-config
+    cmake .. -DPythia_CONFIG_EXECUTABLE=[...]/pythia8312/bin/pythia8-config
     make
-where `[...]/pythia8310` is the path to the pythia directory to which also SMASH is coupled.
+where `[...]/pythia8312` is the path to the pythia directory to which SMASH is also coupled.
 
 In continuation, the executable `sampler` is created.
 
@@ -42,4 +44,28 @@ To run the sampler, execute the following command:
 
     ./sampler events NUM PATH_TO_CONFIG_FILE
 
-where `NUM` is a random number set by the user. It can be useful to run several instances of the sampler in parallel. `PATH_TO_CONFIG_FILE` provides the path to the configuration file. Therein the location of the freezeout hypersurface file, the path to the output directory and all other necessary parameters are set.
+where `NUM` is a random number set by the user. It can be useful to run several instances of the sampler in parallel. `PATH_TO_CONFIG_FILE` provides the path to the configuration file. Therein, the location of the freezeout hypersurface file, the path to the output directory, and all other necessary parameters can be specified.
+
+
+### Config file
+The repository provides a config file `config-example`.  
+:warning: Attention: In case this config file is used, the `surface` parameter has to be set to the location of the freezeout file (instead of _/path/to/freezeout/file_) and the `spectra_dir` parameter to the desired output path (instead of _/output/path_)!  
+
+The following lists **all possible config parameters** (to read some explanations entirely scroll to the right):
+
+Mandatory parameters:
+```
+surface                       Path to the freezeout hypersurface file that gets sampled.
+spectra_dir                   Path to the output directory.
+number_of_events              Number of events that are sampled.
+ecrit                         Critical energy density at which the hydro stopped in a particular cell and the freezeout hypersurface was constructed.
+```
+
+Optional parameters:
+```
+bulk                          Enables bulk viscosity if set to 1.   Default is 0 (false).
+shear                         Enables shear viscosity if set to 1.  Default is 0 (false).
+cs2                           Velocity of sound squared.            Default is 0.15.
+ratio_pressure_energydensity  Pressure divided by energy density.   Default is 0.15.
+createRootOutput              Enables ROOT output if set to 1.      Default is 0 (false).
+```
