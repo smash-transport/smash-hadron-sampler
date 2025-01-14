@@ -64,6 +64,7 @@ Example usage: `./sampler --config /path/to/config-example --num 1 --surface /pa
 
 ### Config file
 The repository provides a config file `config-example`.
+
 :warning: Attention: In case this config file is used, the `surface` parameter has to be set to the location of the freezeout file and the `output_dir` parameter to the desired output path, either in the config file itself (instead of _/path/to/freezeout/file_ and _/output/path_) or via the command line parameters mentioned above!
 
 The following lists **all possible config parameters**:

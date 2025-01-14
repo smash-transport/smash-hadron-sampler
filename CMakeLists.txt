@@ -5,23 +5,22 @@ include(CTest)
 # Tell cmake where to find modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
-
-# Determine System and set the relevant generic compiler flags accordingly (optimisation + warnings) 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -Wextra -Wmissing-declarations -Wpointer-arith -Wshadow -Wuninitialized -Winit-self -Wundef -Wcast-align -Wformat=2 -Wold-style-cast -Werror=switch -std=c++17")
-if(NOT (APPLE AND
-   CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "^arm" AND
-   CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" AND
-   CMAKE_CXX_COMPILER_VERSION VERSION_LESS "15"))
-     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")  
+# Determine System and set the relevant generic compiler flags accordingly
+# (optimisation + warnings)
+set(CMAKE_CXX_FLAGS
+    "${CMAKE_CXX_FLAGS} -W -Wall -Wextra -Wmissing-declarations -Wpointer-arith -Wshadow -Wuninitialized -Winit-self -Wundef -Wcast-align -Wformat=2 -Wold-style-cast -Werror=switch -std=c++17"
+)
+if(NOT
+   (APPLE
+    AND CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "^arm"
+    AND CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"
+    AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "15"))
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 endif()
-message(STATUS "CXX_FLAGS = " ${CMAKE_CXX_FLAGS})  
+message(STATUS "CXX_FLAGS = " ${CMAKE_CXX_FLAGS})
 
 # Collect all the cpp files
-set(sampler_src
-        src/gen.cpp
-        src/params.cpp
-        src/tree.cpp
-        )
+set(sampler_src src/gen.cpp src/params.cpp src/tree.cpp)
 
 # Create object library for the linker which contains pre-compiled cpp files
 add_library(objlib OBJECT ${sampler_src})
@@ -39,7 +38,9 @@ if(${SMASH_FOUND})
   if(DEFINED ENV{SMASH_DIR})
     include_directories($ENV{SMASH_DIR}/3rdparty)
   else()
-    message(FATAL_ERROR "Environment variable SMASH_DIR unset. Unable to include virtest.")
+    message(
+      FATAL_ERROR
+        "Environment variable SMASH_DIR unset. Unable to include virtest.")
   endif()
 endif(${SMASH_FOUND})
 
