@@ -47,11 +47,11 @@ void printParameters()
 {
   cout << "======= parameters ===========\n" ;
   cout << "surface = " << sSurface << endl ;
-  cout << "spectraDir = " << sSpectraDir << endl ;
-  cout << "numberOfEvents = " << NEVENTS << endl ;
+  cout << "spectra_dir = " << sSpectraDir << endl ;
+  cout << "number_of_events = " << NEVENTS << endl ;
   cout << "shear_visc_on = " << shear << endl ;
   cout << "bulk_visc_on = " << bulk << endl ;
-  cout << "e_critical = " << ecrit << endl ;
+  cout << "ecrit = " << ecrit << endl ;
   cout << "cs2 = " << cs2 << endl ;
   cout << "ratio_pressure_energydensity = " << ratio_pressure_energydensity << endl ;
   cout << "createRootOutput = " << createRootOutput << endl ;
