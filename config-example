@@ -1,5 +1,5 @@
 surface          /path/to/freezeout/file
-spectra_dir      /output/path
+output_dir       /output/path
 number_of_events 1000
 shear            1
 bulk             0

@@ -57,21 +57,21 @@ All possible command line parameters are:
     -s, --surface <file>        Optional parameter to overwrite the hypersurface freezeout
                                 file given by "surface" in the config file.
     -o, --output <directory>    Optional parameter to overwrite the output directory given
-                                by "spectra_dir" in the config file.
+                                by "output_dir" in the config file.
 
 Example usage: `./sampler --config /path/to/config-example --num 1 --surface /path/to/freezeout.dat --output /path/to/output/dir`
 
 
 ### Config file
-The repository provides a config file `config-example`.  
-:warning: Attention: In case this config file is used, the `surface` parameter has to be set to the location of the freezeout file and the `spectra_dir` parameter to the desired output path, either in the config file itself (instead of _/path/to/freezeout/file_ and _/output/path_) or via the command line parameters mentioned above!  
+The repository provides a config file `config-example`.
+:warning: Attention: In case this config file is used, the `surface` parameter has to be set to the location of the freezeout file and the `output_dir` parameter to the desired output path, either in the config file itself (instead of _/path/to/freezeout/file_ and _/output/path_) or via the command line parameters mentioned above!
 
 The following lists **all possible config parameters**:
 
 Mandatory parameters:
 
     surface                       Path to the freezeout hypersurface file that gets sampled.
-    spectra_dir                   Path to the output directory.
+    output_dir                    Path to the output directory.
     number_of_events              Number of events that are sampled.
     ecrit                         Critical energy density at which the hydro stopped in a
                                   particular cell and the freezeout hypersurface was constructed.
