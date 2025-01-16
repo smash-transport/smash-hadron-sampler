@@ -42,30 +42,45 @@ In continuation, the executable `sampler` is created.
 ### Execute the sampler
 To run the sampler, execute the following command:
 
-    ./sampler events NUM PATH_TO_CONFIG_FILE
+    ./sampler --config <file>
 
-where `NUM` is a random number set by the user. It can be useful to run several instances of the sampler in parallel. `PATH_TO_CONFIG_FILE` provides the path to the configuration file. Therein, the location of the freezeout hypersurface file, the path to the output directory, and all other necessary parameters can be specified.
+where `<file>` needs to be the path of the configuration file.
+In this config file the location of the freezeout hypersurface file, the path to the output directory, and all other necessary parameters can be specified.
+
+There are additional command line parameters with which the hypersurface freezeout file, the output directory, and a number prefix for parallel runs can be specified.
+All possible command line parameters are:
+
+    -c, --config <file>         Mandatory parameter to specify the config file.
+    -n, --num <integer>         Optional number to create a random seed, useful to run several
+                                instances of the sampler in parallel. The number is also the
+                                ROOT output filename.
+    -s, --surface <file>        Optional parameter to overwrite the hypersurface freezeout
+                                file given by "surface" in the config file.
+    -o, --output <directory>    Optional parameter to overwrite the output directory given
+                                by "output_dir" in the config file.
+
+Example usage: `./sampler --config /path/to/config-example --num 1 --surface /path/to/freezeout.dat --output /path/to/output/dir`
 
 
 ### Config file
-The repository provides a config file `config-example`.  
-:warning: Attention: In case this config file is used, the `surface` parameter has to be set to the location of the freezeout file (instead of _/path/to/freezeout/file_) and the `spectra_dir` parameter to the desired output path (instead of _/output/path_)!  
+The repository provides a config file `config-example`.
+:warning: Attention: In case this config file is used, the `surface` parameter has to be set to the location of the freezeout file and the `output_dir` parameter to the desired output path, either in the config file itself (instead of _/path/to/freezeout/file_ and _/output/path_) or via the command line parameters mentioned above!
 
-The following lists **all possible config parameters** (to read some explanations entirely scroll to the right):
+The following lists **all possible config parameters**:
 
 Mandatory parameters:
-```
-surface                       Path to the freezeout hypersurface file that gets sampled.
-spectra_dir                   Path to the output directory.
-number_of_events              Number of events that are sampled.
-ecrit                         Critical energy density at which the hydro stopped in a particular cell and the freezeout hypersurface was constructed.
-```
+
+    surface                       Path to the freezeout hypersurface file that gets sampled.
+    output_dir                    Path to the output directory.
+    number_of_events              Number of events that are sampled.
+    ecrit                         Critical energy density at which the hydro stopped in a
+                                  particular cell and the freezeout hypersurface was constructed.
+
 
 Optional parameters:
-```
-bulk                          Enables bulk viscosity if set to 1.   Default is 0 (false).
-shear                         Enables shear viscosity if set to 1.  Default is 0 (false).
-cs2                           Velocity of sound squared.            Default is 0.15.
-ratio_pressure_energydensity  Pressure divided by energy density.   Default is 0.15.
-createRootOutput              Enables ROOT output if set to 1.      Default is 0 (false).
-```
+
+    bulk                          Enables bulk viscosity if set to 1.   Default is 0 (false).
+    shear                         Enables shear viscosity if set to 1.  Default is 0 (false).
+    cs2                           Velocity of sound squared.            Default is 0.15.
+    ratio_pressure_energydensity  Pressure divided by energy density.   Default is 0.15.
+    createRootOutput              Enables ROOT output if set to 1.      Default is 0 (false).

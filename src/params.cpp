@@ -30,7 +30,7 @@ void readParams(char* filename)
 		istringstream sline (line) ;
 		sline >> parName >> parValue ;
 		if     (strcmp(parName,"surface")==0) strcpy(sSurface, parValue) ;
-		else if(strcmp(parName,"spectra_dir")==0) strcpy(sSpectraDir, parValue) ;
+		else if(strcmp(parName,"output_dir")==0) strcpy(sSpectraDir, parValue) ;
 		else if(strcmp(parName,"number_of_events")==0) NEVENTS = atoi(parValue) ;
 		else if(strcmp(parName,"shear")==0) shear = atoi(parValue) ;
 		else if(strcmp(parName,"bulk")==0) bulk = atoi(parValue) ;
@@ -47,11 +47,11 @@ void printParameters()
 {
   cout << "======= parameters ===========\n" ;
   cout << "surface = " << sSurface << endl ;
-  cout << "spectraDir = " << sSpectraDir << endl ;
-  cout << "numberOfEvents = " << NEVENTS << endl ;
+  cout << "output_dir = " << sSpectraDir << endl ;
+  cout << "number_of_events = " << NEVENTS << endl ;
   cout << "shear_visc_on = " << shear << endl ;
   cout << "bulk_visc_on = " << bulk << endl ;
-  cout << "e_critical = " << ecrit << endl ;
+  cout << "ecrit = " << ecrit << endl ;
   cout << "cs2 = " << cs2 << endl ;
   cout << "ratio_pressure_energydensity = " << ratio_pressure_energydensity << endl ;
   cout << "createRootOutput = " << createRootOutput << endl ;

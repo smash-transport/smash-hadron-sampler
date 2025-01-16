@@ -55,16 +55,16 @@ int main(int argc, char **argv)
  system(sbuffer) ;
 
  gen::generate() ; // one call for NEVENTS
- 
+
  // ROOT output disabled by default
  if (params::createRootOutput) {
- 
+
    // Initialize ROOT output
    sprintf(sbuffer, "%s/%i.root",sSpectraDir,prefix) ;
    TFile *outputFile = new TFile(sbuffer, "RECREATE");
    outputFile->cd();
    MyTree *treeIni = new MyTree(static_cast<const char*>("treeini")) ;
- 
+
    // Write ROOT output
    for(int iev=0; iev<NEVENTS; iev++){
    treeIni->fill(iev) ;
@@ -82,18 +82,41 @@ int main(int argc, char **argv)
  return 0;
 }
 
-
-int readCommandLine(int argc, char** argv)
-{
-	if(argc==1){cout << "NO PARAMETERS, exit" << endl ; exit(1) ;}
-	int prefix = 0 ;
-	if(strcmp(argv[1],"events")==0){
-	  prefix = atoi(argv[2]) ;
-	  cout << "events mode, prefix = " << prefix << endl ;
-	  params::readParams(argv[3]) ;
+int readCommandLine(int argc, char **argv) {
+  if (argc == 1) {
+    cout << "NO PARAMETERS, exit" << endl;
+    exit(1);
   }
-  else{cout << "unknown command-line switch: " << argv[1] << endl ; exit(1) ;}
-	return prefix ;
+  bool is_config_given = false;
+  int prefix = 0;
+  int iarg = 1;
+  while (iarg < argc - 1) {
+    if (strcmp(argv[iarg], "--num") == 0 || strcmp(argv[iarg], "-n") == 0) {
+      prefix = atoi(argv[iarg + 1]);
+      iarg += 2;
+    } else if (strcmp(argv[iarg], "--config") == 0 ||
+               strcmp(argv[iarg], "-c") == 0) {
+      params::readParams(argv[iarg + 1]);
+      is_config_given = true;
+      iarg += 2;
+    } else if (strcmp(argv[iarg], "--surface") == 0 ||
+               strcmp(argv[iarg], "-s") == 0) {
+      strcpy(sSurface, argv[iarg + 1]);
+      iarg += 2;
+    } else if (strcmp(argv[iarg], "--output") == 0 ||
+               strcmp(argv[iarg], "-o") == 0) {
+      strcpy(sSpectraDir, argv[iarg + 1]);
+      iarg += 2;
+    } else {
+      cout << "Unknown command line parameter: " << argv[iarg] << endl;
+      iarg++;
+    }
+  }
+  if (!is_config_given) {
+    cout << "ERROR: No config file provided." << endl;
+    exit(126);
+  }
+  return prefix;
 }
 
 
