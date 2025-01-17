@@ -17,7 +17,7 @@ Also possible, but for this project less relevant, is `Deprecated` for soon-to-b
 
 ## Unreleased
 
-* :left_right_arrow: Renamed config key `spectra_dir`, used to specify the output directory, to `output_dir`
+* :left_right_arrow: Renamed config key `spectra_dir`, used to specify the output directory, to `output_dir`.
 * :left_right_arrow: Changed the command line parameters used to run the sampler to clarify their usage.
 * :heavy_plus_sign: Added optional command line parameters to overwrite the `surface` and `output_dir` keys in the config file.
 * :sos: Fix problems with thread safety from ROOT objects

@@ -13,8 +13,8 @@ int getNlines(char *filename);
 int readCommandLine(int argc, char **argv);
 
 using params::NEVENTS;
-using params::sSpectraDir;
-using params::sSurface;
+using params::output_directory;
+using params::surface_file;
 
 int ranseed;
 
@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
   gen::rnd = random3;
 
   // ========== generator init
-  gen::load(sSurface, getNlines(sSurface));
+  gen::load(surface_file, getNlines(surface_file));
 
   // ========== trees & files
   time_t start, end;
@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
 
   //============= main task
   char sbuffer[255];
-  sprintf(sbuffer, "mkdir -p %s", sSpectraDir);
+  sprintf(sbuffer, "mkdir -p %s", output_directory);
   system(sbuffer);
 
   gen::generate(); // one call for NEVENTS
@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
   if (params::createRootOutput) {
 
     // Initialize ROOT output
-    sprintf(sbuffer, "%s/%i.root", sSpectraDir, prefix);
+    sprintf(sbuffer, "%s/%i.root", output_directory, prefix);
     TFile *outputFile = new TFile(sbuffer, "RECREATE");
     outputFile->cd();
     MyTree *treeIni = new MyTree(static_cast<const char *>("treeini"));
@@ -81,28 +81,28 @@ int main(int argc, char **argv) {
 
 int readCommandLine(int argc, char **argv) {
   if (argc == 1) {
-    cout << "NO PARAMETERS, exit" << endl;
+    cout << "ERROR: Missing command line parameters!" << endl;
     exit(1);
   }
   bool is_config_given = false;
   int prefix = 0;
   int iarg = 1;
   while (iarg < argc - 1) {
-    if (strcmp(argv[iarg], "--num") == 0 || strcmp(argv[iarg], "-n") == 0) {
-      prefix = atoi(argv[iarg + 1]);
-      iarg += 2;
-    } else if (strcmp(argv[iarg], "--config") == 0 ||
-               strcmp(argv[iarg], "-c") == 0) {
+    if (strcmp(argv[iarg], "--config") == 0 || strcmp(argv[iarg], "-c") == 0) {
       params::readParams(argv[iarg + 1]);
       is_config_given = true;
       iarg += 2;
-    } else if (strcmp(argv[iarg], "--surface") == 0 ||
-               strcmp(argv[iarg], "-s") == 0) {
-      strcpy(sSurface, argv[iarg + 1]);
+    } else if (strcmp(argv[iarg], "--num") == 0 ||
+               strcmp(argv[iarg], "-n") == 0) {
+      prefix = atoi(argv[iarg + 1]);
       iarg += 2;
     } else if (strcmp(argv[iarg], "--output") == 0 ||
                strcmp(argv[iarg], "-o") == 0) {
-      strcpy(sSpectraDir, argv[iarg + 1]);
+      strcpy(output_directory, argv[iarg + 1]);
+      iarg += 2;
+    } else if (strcmp(argv[iarg], "--surface") == 0 ||
+               strcmp(argv[iarg], "-s") == 0) {
+      strcpy(surface_file, argv[iarg + 1]);
       iarg += 2;
     } else {
       cout << "Unknown command line parameter: " << argv[iarg] << endl;
@@ -120,7 +120,7 @@ int readCommandLine(int argc, char **argv) {
 int getNlines(char *filename) {
   ifstream fin(filename);
   if (!fin) {
-    cout << "getNlines: cannot open file: " << filename << endl;
+    cout << "getNlines funtion: Cannot open file " << filename << endl;
     exit(1);
   }
   string line;
