@@ -87,8 +87,8 @@ Mandatory parameters:
     surface_file                  Path to the freezeout hypersurface file that gets sampled.
     output_dir                    Path to the output directory.
     number_of_events              Number of events that are sampled.
-    ecrit                         Critical energy density at which the hydro stopped in a
-                                  particular cell and the freezeout hypersurface was constructed.
+    ecrit                         Critical energy density at which the hydro stopped in a particular
+                                  cell and the freezeout hypersurface was constructed.
 
 
 Optional parameters:
@@ -98,6 +98,10 @@ Optional parameters:
     cs2                           Speed of sound squared.               Default is 0.15.
     ratio_pressure_energydensity  Pressure divided by energy density.   Default is 0.15.
     create_root_output            Enables ROOT output if set to 1.      Default is 0 (false).
+    hydro_coordinate_system       Coordinate system in which the position of the freeze-out
+                                  hypersurface elements from the hydro evolution are provided
+                                  (by space-time four-vectors). Possible coordinate systems
+                                  are 'tau-eta' (default) or 'cartesian'.
 
 
 > [!NOTE]

@@ -26,7 +26,7 @@ TRandom3 *rnd;
 smash::ParticleData ***pList; // particle arrays
 
 struct element {
-  double tau, x, y, eta;
+  double four_position[4];
   double u[4];
   double dsigma[4];
   double T, mub, muq, mus;
@@ -95,7 +95,7 @@ void load(const char *filename, int N) {
   }
   npart = new int[params::number_of_events];
 
-  cout << "Read " << N << " lines from '" << filename << "'\n";
+  cout << "Reading " << N << " lines from '" << filename << "'\n";
   ifstream fin(filename);
   if (!fin) {
     cout << "cannot read file " << filename << endl;
@@ -112,7 +112,8 @@ void load(const char *filename, int N) {
     instream.str(line);
     instream.seekg(0);
     instream.clear(); // does not work with gcc 4.1 otherwise
-    instream >> surf[n].tau >> surf[n].x >> surf[n].y >> surf[n].eta >>
+    instream >> surf[n].four_position[0] >> surf[n].four_position[1] >>
+        surf[n].four_position[2] >> surf[n].four_position[3] >>
         surf[n].dsigma[0] >> surf[n].dsigma[1] >> surf[n].dsigma[2] >>
         surf[n].dsigma[3] >> surf[n].u[0] >> surf[n].u[1] >> surf[n].u[2] >>
         surf[n].u[3] >> surf[n].T >> surf[n].mub >> surf[n].muq >> surf[n].mus;
@@ -138,8 +139,8 @@ void load(const char *filename, int N) {
         surf[n].dsigma[2] * surf[n].u[2] + surf[n].dsigma[3] * surf[n].u[3];
     vEffOld += dvEffOld;
     if (dvEffOld < 0.0) {
-      // cout<<"!!! dvOld!=dV " << dvEffOld <<"  " << dV << "  " << surf[n].tau
-      // <<endl ;
+      // cout << "!!! dvOld!=dV " << dvEffOld <<"  " << dV << "  "
+      // << surf[n].four_position[0] << endl ;
       nfail++;
     }
     // if(nfail==100) exit(1) ;
@@ -376,20 +377,43 @@ void generate() {
         } while (rval > W); // end fast momentum generation
         if (niter > nmaxiter)
           nmaxiter = niter;
-        // additional random smearing over eta
-        const double etaF = 0.5 * log((surf[iel].u[0] + surf[iel].u[3]) /
-                                      (surf[iel].u[0] - surf[iel].u[3]));
-        const double etaShift = params::deta * (-0.5 + rnd->Rndm());
-        const double vx = surf[iel].u[1] / surf[iel].u[0] * cosh(etaF) /
-                          cosh(etaF + etaShift);
-        const double vy = surf[iel].u[2] / surf[iel].u[0] * cosh(etaF) /
-                          cosh(etaF + etaShift);
-        const double vz = tanh(etaF + etaShift);
+        const double x = surf[iel].four_position[1];
+        const double y = surf[iel].four_position[2];
+        double t = 0, z = 0, vx = 0, vy = 0, vz = 0;
+        /* The deta_dz is an estimate of spatial extent based on the volume of
+         * the respective freezeout hypersurface element which is used as a
+         * smearing parameter in eta or z direction (depending on the hydro
+         * coordinate system).
+         * Note: No smearing in x and y direction implemented at the moment.
+         */
+        params::deta_dz = std::cbrt(dvEff);
+        double smearing_eta_z = params::deta_dz * (-0.5 + rnd->Rndm());
+        if (params::hydro_coordinate_system == "tau-eta") {
+          smearing_eta_z /=
+              (surf[iel].four_position[0] * cosh(surf[iel].four_position[3]));
+          // additional random smearing over eta
+          const double etaF = 0.5 * log((surf[iel].u[0] + surf[iel].u[3]) /
+                                        (surf[iel].u[0] - surf[iel].u[3]));
+          vx = surf[iel].u[1] / surf[iel].u[0] * cosh(etaF) /
+               cosh(etaF + smearing_eta_z);
+          vy = surf[iel].u[2] / surf[iel].u[0] * cosh(etaF) /
+               cosh(etaF + smearing_eta_z);
+          vz = tanh(etaF + smearing_eta_z);
+          t = surf[iel].four_position[0] *
+              cosh(surf[iel].four_position[3] + smearing_eta_z);
+          z = surf[iel].four_position[0] *
+              sinh(surf[iel].four_position[3] + smearing_eta_z);
+        } else if (params::hydro_coordinate_system == "cartesian") {
+          vx = surf[iel].u[1] / surf[iel].u[0];
+          vy = surf[iel].u[2] / surf[iel].u[0];
+          vz = surf[iel].u[3] / surf[iel].u[0];
+          t = surf[iel].four_position[0];
+          z = surf[iel].four_position[3] + smearing_eta_z;
+        }
+
         mom.Boost(vx, vy, vz);
         smash::FourVector momentum(mom.E(), mom.Px(), mom.Py(), mom.Pz());
-        smash::FourVector position(
-            surf[iel].tau * cosh(surf[iel].eta + etaShift), surf[iel].x,
-            surf[iel].y, surf[iel].tau * sinh(surf[iel].eta + etaShift));
+        smash::FourVector position(t, x, y, z);
         acceptParticle(ievent, &part, position, momentum);
       } // coordinate accepted
     }   // events loop
