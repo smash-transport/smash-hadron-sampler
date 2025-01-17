@@ -1,9 +1,9 @@
 #include <TFile.h>
 #include <TROOT.h>
 #include <TRandom3.h>
+#include <chrono>
 #include <fstream>
 #include <string>
-#include <chrono>
 
 #include "build_metadata.h"
 #include "gen.h"
@@ -27,7 +27,10 @@ int main(int argc, char **argv) {
   int prefix = readCommandLine(argc, argv);
   params::printParameters();
   const auto time0 = std::chrono::system_clock::now();
-  const int ranseed = std::chrono::duration_cast<std::chrono::seconds>(time0.time_since_epoch()).count() + prefix * 16;
+  const int ranseed =
+      std::chrono::duration_cast<std::chrono::seconds>(time0.time_since_epoch())
+          .count() +
+      prefix * 16;
 
   TRandom3 *random3 = new TRandom3();
   random3->SetSeed(ranseed);
@@ -68,7 +71,8 @@ int main(int argc, char **argv) {
 
   cout << "Event generation done\n";
   const auto end_time = std::chrono::steady_clock::now();
-  const auto execution_time = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
+  const auto execution_time =
+      std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
   cout << "Execution time = " << execution_time.count() << " [sec]" << endl;
   return 0;
 }

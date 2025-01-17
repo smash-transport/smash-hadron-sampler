@@ -4,7 +4,7 @@
 #include <string>
 
 namespace params {
-extern std::string surface_file, output_directory;
+extern std::string surface_file, output_directory, hydro_coordinate_system;
 extern bool bulk_viscosity_enabled, create_root_output, shear_viscosity_enabled;
 extern int NEVENTS;
 extern double dx, dy, deta;

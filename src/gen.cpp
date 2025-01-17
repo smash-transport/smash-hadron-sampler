@@ -26,7 +26,7 @@ TRandom3 *rnd;
 smash::ParticleData ***pList; // particle arrays
 
 struct element {
-  double tau, x, y, eta;
+  double pos[4];
   double u[4];
   double dsigma[4];
   double T, mub, muq, mus;
@@ -112,10 +112,11 @@ void load(const char *filename, int N) {
     instream.str(line);
     instream.seekg(0);
     instream.clear(); // does not work with gcc 4.1 otherwise
-    instream >> surf[n].tau >> surf[n].x >> surf[n].y >> surf[n].eta >>
-        surf[n].dsigma[0] >> surf[n].dsigma[1] >> surf[n].dsigma[2] >>
-        surf[n].dsigma[3] >> surf[n].u[0] >> surf[n].u[1] >> surf[n].u[2] >>
-        surf[n].u[3] >> surf[n].T >> surf[n].mub >> surf[n].muq >> surf[n].mus;
+    instream >> surf[n].pos[0] >> surf[n].pos[1] >> surf[n].pos[2] >>
+        surf[n].pos[3] >> surf[n].dsigma[0] >> surf[n].dsigma[1] >>
+        surf[n].dsigma[2] >> surf[n].dsigma[3] >> surf[n].u[0] >>
+        surf[n].u[1] >> surf[n].u[2] >> surf[n].u[3] >> surf[n].T >>
+        surf[n].mub >> surf[n].muq >> surf[n].mus;
     for (int i = 0; i < 10; i++)
       instream >> surf[n].pi[i];
     instream >> surf[n].Pi;
@@ -138,8 +139,8 @@ void load(const char *filename, int N) {
         surf[n].dsigma[2] * surf[n].u[2] + surf[n].dsigma[3] * surf[n].u[3];
     vEffOld += dvEffOld;
     if (dvEffOld < 0.0) {
-      // cout<<"!!! dvOld!=dV " << dvEffOld <<"  " << dV << "  " << surf[n].tau
-      // <<endl ;
+      // cout << "!!! dvOld!=dV " << dvEffOld <<"  " << dV << "  "
+      // << surf[n].pos[0] << endl ;
       nfail++;
     }
     // if(nfail==100) exit(1) ;
@@ -376,20 +377,41 @@ void generate() {
         } while (rval > W); // end fast momentum generation
         if (niter > nmaxiter)
           nmaxiter = niter;
-        // additional random smearing over eta
-        const double etaF = 0.5 * log((surf[iel].u[0] + surf[iel].u[3]) /
-                                      (surf[iel].u[0] - surf[iel].u[3]));
-        const double etaShift = params::deta * (-0.5 + rnd->Rndm());
-        const double vx = surf[iel].u[1] / surf[iel].u[0] * cosh(etaF) /
-                          cosh(etaF + etaShift);
-        const double vy = surf[iel].u[2] / surf[iel].u[0] * cosh(etaF) /
-                          cosh(etaF + etaShift);
-        const double vz = tanh(etaF + etaShift);
+        const double x = surf[iel].pos[1];
+        const double y = surf[iel].pos[2];
+        double t = 0, z = 0, vx = 0, vy = 0, vz = 0;
+        if (params::hydro_coordinate_system == "tau-eta") {
+          // additional random smearing over eta
+          const double etaF = 0.5 * log((surf[iel].u[0] + surf[iel].u[3]) /
+                                        (surf[iel].u[0] - surf[iel].u[3]));
+          const double etaShift = params::deta * (-0.5 + rnd->Rndm());
+          vx = surf[iel].u[1] / surf[iel].u[0] * cosh(etaF) /
+               cosh(etaF + etaShift);
+          vy = surf[iel].u[2] / surf[iel].u[0] * cosh(etaF) /
+               cosh(etaF + etaShift);
+          vz = tanh(etaF + etaShift);
+          t = surf[iel].pos[0] * cosh(surf[iel].pos[3] + etaShift);
+          z = surf[iel].pos[0] * sinh(surf[iel].pos[3] + etaShift);
+        } else if (params::hydro_coordinate_system == "cartesian") {
+          const double smearing_z_coordinate =
+              std::pow(dvEff, 1. / 3.) * (-0.5 + rnd->Rndm());
+          vx = surf[iel].u[1] / surf[iel].u[0];
+          vy = surf[iel].u[2] / surf[iel].u[0];
+          vz = surf[iel].u[3] / surf[iel].u[0];
+          t = surf[iel].pos[0];
+          z = surf[iel].pos[3] + smearing_z_coordinate;
+        } else {
+          throw std::invalid_argument(
+              std::string("Only 'tau-eta' (default) or 'Cartesian' are "
+                          "supported as coordinate systems for the hydro "
+                          "evolution. Provided was '") +
+              params::hydro_coordinate_system +
+              std::string("'. Please check your config file."));
+        }
+
         mom.Boost(vx, vy, vz);
         smash::FourVector momentum(mom.E(), mom.Px(), mom.Py(), mom.Pz());
-        smash::FourVector position(
-            surf[iel].tau * cosh(surf[iel].eta + etaShift), surf[iel].x,
-            surf[iel].y, surf[iel].tau * sinh(surf[iel].eta + etaShift));
+        smash::FourVector position(t, x, y, z);
         acceptParticle(ievent, &part, position, momentum);
       } // coordinate accepted
     }   // events loop
