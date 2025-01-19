@@ -1,0 +1,25 @@
+#
+# NOTE! Don't add files that are generated in specific
+# subdirectories here. Add them in the ".gitignore" file
+# in that subdirectory instead.
+#
+#
+# Top-level build directory
+#
+*~
+build*
+cmake*
+.directory
+.push_default
+*.diff
+*.orig
+*.rej
+.DS_Store
+.vscode
+.cproject
+.project
+.settings/
+__pycache__/
+
+# Convenience directory for your own files that should not be tracked
+tmp
