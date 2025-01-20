@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <regex>
 
 #include "gen.h"
 #include "params.h"
@@ -26,6 +27,7 @@ void Vorticity::ensure_vorticity_file_exists_and_check_format() {
 
   // Read and validate the first three comment lines
   while (comment_lines_read < 3 && std::getline(file, line)) {
+    // Check if the line is a comment line
     if (line.empty() || line[0] != '#') {
       std::ostringstream error;
       error << "Line " << (comment_lines_read + 1) << " in file "
@@ -33,27 +35,40 @@ void Vorticity::ensure_vorticity_file_exists_and_check_format() {
             << " is not a valid comment line. Expected a line starting with "
                "'#'.\n"
             << "Found: " << line;
-      throw std::runtime_error(error.str());
+      throw std::invalid_argument(error.str());
+    }
+
+    // Check the second comment line for the expected format
+    if (comment_lines_read == 1) {
+      std::regex regex("# Number of corona cells: \\d+");
+      if (!std::regex_match(line, regex)) {
+        std::ostringstream error;
+        error << "Second comment line in file " << params::sVorticity
+              << " does not match the expected format.\n"
+              << "Found: " << line << "\n"
+              << "Expected: '# Number of corona cells: <integer>'";
+        throw std::domain_error(error.str());
+      }
+    }
+
+    // Check if the third line matches the expected format
+    if (comment_lines_read == 2) {
+      const std::string expected_third_line =
+          "#  τ  x  y  η  dΣ[0]  dΣ[1]  dΣ[2]  dΣ[3]  u[0]  u[1]  u[2]  u[3]  "
+          "T  μB  μQ  μS  ∂₀β₀  ∂₀β₁  ∂₀β₂  ∂₀β₃  ∂₁β₀  ∂₁β₁  ∂₁β₂  ∂₁β₃  "
+          "∂₂β₀  ∂₂β₁  ∂₂β₂  ∂₂β₃  ∂₃β₀  ∂₃β₁  ∂₃β₂  ∂₃β₃  ϵ";
+
+      if (line != expected_third_line) {
+        std::ostringstream error;
+        error << "Third comment line in file " << params::sVorticity
+              << " does not match the expected format.\n"
+              << "Found: " << line << "\n"
+              << "Expected: " << expected_third_line;
+        throw std::domain_error(error.str());
+      }
     }
 
     comment_lines_read++;
-  }
-
-  if (comment_lines_read == 3) {
-    // Check if the third line matches the expected format
-    const std::string expected_third_line =
-        "#  τ  x  y  η  dΣ[0]  dΣ[1]  dΣ[2]  dΣ[3]  u[0]  u[1]  u[2]  u[3]  "
-        "T  μB  μQ  μS  ∂₀β₀  ∂₀β₁  ∂₀β₂  ∂₀β₃  ∂₁β₀  ∂₁β₁  ∂₁β₂  ∂₁β₃  "
-        "∂₂β₀  ∂₂β₁  ∂₂β₂  ∂₂β₃  ∂₃β₀  ∂₃β₁  ∂₃β₂  ∂₃β₃  ϵ";
-
-    if (line != expected_third_line) {
-      std::ostringstream error;
-      error << "Third comment line in file " << params::sVorticity
-            << " does not match the expected format.\n"
-            << "Found: " << line << "\n"
-            << "Expected: " << expected_third_line;
-      throw std::runtime_error(error.str());
-    }
   }
 
   // Ensure that exactly 3 comment lines were read
@@ -61,7 +76,7 @@ void Vorticity::ensure_vorticity_file_exists_and_check_format() {
     std::ostringstream error;
     error << "File " << params::sVorticity
           << " does not contain the expected 3 comment lines at the beginning.";
-    throw std::runtime_error(error.str());
+    throw std::invalid_argument(error.str());
   }
 
   // Validate the first data line (fourth line)
@@ -69,7 +84,7 @@ void Vorticity::ensure_vorticity_file_exists_and_check_format() {
     if (line.empty() || line[0] == '#') {
       std::ostringstream error;
       error << "First data line (line 4) in file " << params::sVorticity
-            << " is empty or incorrectly marked as a comment.";
+            << " is empty or a comment line. Only 3 comment lines are expected";
       throw std::runtime_error(error.str());
     }
 
@@ -86,7 +101,7 @@ void Vorticity::ensure_vorticity_file_exists_and_check_format() {
       error << "First data line in file " << params::sVorticity
             << " does not contain exactly 33 values. Found " << tokens.size()
             << " values.";
-      throw std::runtime_error(error.str());
+      throw std::length_error(error.str());
     }
   } else {
     std::ostringstream error;
@@ -98,7 +113,7 @@ void Vorticity::ensure_vorticity_file_exists_and_check_format() {
   file.close();
 }
 
-void Vorticity::ensuse_extended_freezeout_is_given() {
+void Vorticity::ensure_extended_freezeout_is_given() {
   std::ifstream surface_file(params::sSurface);
   if (!surface_file.is_open()) {
     throw std::runtime_error(std::string("Error opening file: ") +

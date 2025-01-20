@@ -72,6 +72,11 @@ if(BUILD_TESTING)
   target_link_libraries(gen objlib ${SAMPLER_LIBRARIES})
   add_test(NAME gen_test COMMAND gen)
 
+  # Add the executable for the vorticity test
+  add_executable(vorticity tests/vorticity.cpp)
+  target_link_libraries(vorticity objlib ${SAMPLER_LIBRARIES})
+  add_test(NAME vorticity_test COMMAND vorticity)
+
   # Add the executable for the spin test
   add_executable(spin tests/spin.cpp)
   target_link_libraries(spin objlib ${SAMPLER_LIBRARIES})
