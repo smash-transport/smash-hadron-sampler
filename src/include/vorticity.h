@@ -26,7 +26,7 @@ class Vorticity {
 
   // Check that the freezeout is given in the extended format which contains
   // the energy density
-  static void ensuse_extended_freezeout_is_given();
+  static void ensure_extended_freezeout_is_given();
 
   // Set the number of corona cells in the freezeout surface
   static void set_number_of_corona_cells();
