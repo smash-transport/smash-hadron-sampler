@@ -40,7 +40,7 @@ In continuation, the executable `sampler` is created.
 
 
 ### Execute the sampler
-To run the sampler, execute the following command:
+To run the sampler, execute the following command in the `build` directory:
 
     ./sampler --config <file>
 
@@ -54,12 +54,12 @@ All possible command line parameters are:
     -n, --num <integer>         Optional number to create a random seed, useful to run several
                                 instances of the sampler in parallel. The number is also the
                                 ROOT output filename.
-    -s, --surface <file>        Optional parameter to overwrite the hypersurface freezeout
-                                file given by "surface" in the config file.
     -o, --output <directory>    Optional parameter to overwrite the output directory given
                                 by "output_dir" in the config file.
+    -s, --surface <file>        Optional parameter to overwrite the hypersurface freezeout
+                                file given by "surface" in the config file.
 
-Example usage: `./sampler --config /path/to/config-example --num 1 --surface /path/to/freezeout.dat --output /path/to/output/dir`
+Example usage: `./sampler --config /path/to/config-example --num 1 --output /path/to/output/dir --surface /path/to/freezeout.dat`
 
 
 ### Config file
@@ -82,6 +82,6 @@ Optional parameters:
 
     bulk                          Enables bulk viscosity if set to 1.   Default is 0 (false).
     shear                         Enables shear viscosity if set to 1.  Default is 0 (false).
-    cs2                           Velocity of sound squared.            Default is 0.15.
+    cs2                           Speed of sound squared.               Default is 0.15.
     ratio_pressure_energydensity  Pressure divided by energy density.   Default is 0.15.
     createRootOutput              Enables ROOT output if set to 1.      Default is 0 (false).

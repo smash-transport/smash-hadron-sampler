@@ -11,7 +11,7 @@
 
 void write_oscar_output() {
   // initialize Oscar output
-  const std::filesystem::path OutputPath = params::sSpectraDir;
+  const std::filesystem::path OutputPath = params::output_directory;
   std::unique_ptr<smash::OutputInterface> OscarOutput = create_oscar_output(
       "Oscar2013", "Particles", OutputPath, smash::OutputParameters());
 

@@ -87,7 +87,7 @@ double *cumulantDensity; // particle densities (thermal). Seems to be redundant,
 double totalDensity;     // sum of all thermal densities
 
 // ######## load the elements
-void load(char *filename, int N) {
+void load(const char *filename, int N) {
   ROOT::EnableThreadSafety();
   double vEff = 0.0, vEffOld = 0.0, dvEff, dvEffOld;
   int nfail = 0, ncut = 0;
@@ -172,7 +172,7 @@ void load(char *filename, int N) {
     // ########################
     // pi^{mu nu} boost to fluid rest frame
     // ########################
-    if (params::shear) {
+    if (params::shear_viscosity_enabled) {
       double _pi[10], boostMatrix[4][4];
       fillBoostMatrix(-surf[n].u[1] / surf[n].u[0],
                       -surf[n].u[2] / surf[n].u[0],
@@ -189,7 +189,7 @@ void load(char *filename, int N) {
         surf[n].pi[i] = _pi[i];
     } // end pi boost
   }
-  if (params::shear)
+  if (params::shear_viscosity_enabled)
     dsigmaMax *= 2.0; // *2.0: jun17. default: *1.5
   else
     dsigmaMax *= 1.3;
@@ -343,7 +343,7 @@ int generate() {
                surf[iel].dsigma[3] * mom.Pz()) /
               mom.E();
           double WviscFactor = 1.0;
-          if (params::shear) {
+          if (params::shear_viscosity_enabled) {
             const double feq =
                 C_Feq /
                 (exp((sqrt(p * p + mass * mass) - muf) / surf[iel].T) - stat);
@@ -359,16 +359,16 @@ int generate() {
                  (params::ecrit +
                   params::ecrit * params::ratio_pressure_energydensity));
           }
-          if (params::bulk) {
+          if (params::bulk_viscosity_enabled) {
             const double feq =
                 C_Feq /
                 (exp((sqrt(p * p + mass * mass) - muf) / surf[iel].T) - stat);
             WviscFactor -=
                 (1.0 + stat * feq) * surf[iel].Pi *
                 (mass * mass / (3 * mom.E()) -
-                 mom.E() * (1.0 / 3.0 - params::cs2)) /
-                (15 * (1.0 / 3.0 - params::cs2) * (1.0 / 3.0 - params::cs2) *
-                 surf[iel].T *
+                 mom.E() * (1.0 / 3.0 - params::speed_of_sound_squared)) /
+                (15 * (1.0 / 3.0 - params::speed_of_sound_squared) *
+                 (1.0 / 3.0 - params::speed_of_sound_squared) * surf[iel].T *
                  (params::ecrit +
                   params::ecrit * params::ratio_pressure_energydensity));
           }

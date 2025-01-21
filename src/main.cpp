@@ -2,6 +2,7 @@
 #include <TROOT.h>
 #include <TRandom3.h>
 #include <fstream>
+#include <string>
 
 #include "gen.h"
 #include "oscaroutput.h"
@@ -9,18 +10,12 @@
 #include "tree.h"
 
 using namespace std;
-int getNlines(char *filename);
+int getNlines(const char *filename);
 int readCommandLine(int argc, char **argv);
 
 using params::NEVENTS;
-using params::sSpectraDir;
-using params::sSurface;
-
-int ranseed;
-
-extern "C" {
-void getranseedcpp_(int *seed) { *seed = ranseed; }
-}
+using params::output_directory;
+using params::surface_file;
 
 // ########## MAIN block ##################
 
@@ -31,7 +26,7 @@ int main(int argc, char **argv) {
   params::printParameters();
   time_t time0;
   time(&time0);
-  ranseed = time0 + prefix * 16;
+  int ranseed = time0 + prefix * 16;
 
   TRandom3 *random3 = new TRandom3();
   random3->SetSeed(ranseed);
@@ -39,16 +34,15 @@ int main(int argc, char **argv) {
   gen::rnd = random3;
 
   // ========== generator init
-  gen::load(sSurface, getNlines(sSurface));
+  gen::load(surface_file.c_str(), getNlines(surface_file.c_str()));
 
   // ========== trees & files
   time_t start, end;
   time(&start);
 
   //============= main task
-  char sbuffer[255];
-  sprintf(sbuffer, "mkdir -p %s", sSpectraDir);
-  system(sbuffer);
+  std::string make_output_directory = "mkdir -p " + output_directory;
+  system(make_output_directory.c_str());
 
   gen::generate(); // one call for NEVENTS
 
@@ -56,8 +50,9 @@ int main(int argc, char **argv) {
   if (params::createRootOutput) {
 
     // Initialize ROOT output
-    sprintf(sbuffer, "%s/%i.root", sSpectraDir, prefix);
-    TFile *outputFile = new TFile(sbuffer, "RECREATE");
+    std::string root_output_file =
+        output_directory + "/" + std::to_string(prefix) + ".root";
+    TFile *outputFile = new TFile(root_output_file.c_str(), "RECREATE");
     outputFile->cd();
     MyTree *treeIni = new MyTree(static_cast<const char *>("treeini"));
 
@@ -72,7 +67,7 @@ int main(int argc, char **argv) {
   // Write Oscar output
   write_oscar_output();
 
-  cout << "event generation done\n";
+  cout << "Event generation done\n";
   time(&end);
   float diff2 = difftime(end, start);
   cout << "Execution time = " << diff2 << " [sec]" << endl;
@@ -81,28 +76,28 @@ int main(int argc, char **argv) {
 
 int readCommandLine(int argc, char **argv) {
   if (argc == 1) {
-    cout << "NO PARAMETERS, exit" << endl;
+    cout << "ERROR: Missing command line parameters!" << endl;
     exit(1);
   }
   bool is_config_given = false;
   int prefix = 0;
   int iarg = 1;
   while (iarg < argc - 1) {
-    if (strcmp(argv[iarg], "--num") == 0 || strcmp(argv[iarg], "-n") == 0) {
-      prefix = atoi(argv[iarg + 1]);
-      iarg += 2;
-    } else if (strcmp(argv[iarg], "--config") == 0 ||
-               strcmp(argv[iarg], "-c") == 0) {
+    if (strcmp(argv[iarg], "--config") == 0 || strcmp(argv[iarg], "-c") == 0) {
       params::readParams(argv[iarg + 1]);
       is_config_given = true;
       iarg += 2;
-    } else if (strcmp(argv[iarg], "--surface") == 0 ||
-               strcmp(argv[iarg], "-s") == 0) {
-      strcpy(sSurface, argv[iarg + 1]);
+    } else if (strcmp(argv[iarg], "--num") == 0 ||
+               strcmp(argv[iarg], "-n") == 0) {
+      prefix = atoi(argv[iarg + 1]);
       iarg += 2;
     } else if (strcmp(argv[iarg], "--output") == 0 ||
                strcmp(argv[iarg], "-o") == 0) {
-      strcpy(sSpectraDir, argv[iarg + 1]);
+      output_directory = argv[iarg + 1];
+      iarg += 2;
+    } else if (strcmp(argv[iarg], "--surface") == 0 ||
+               strcmp(argv[iarg], "-s") == 0) {
+      surface_file = argv[iarg + 1];
       iarg += 2;
     } else {
       cout << "Unknown command line parameter: " << argv[iarg] << endl;
@@ -117,10 +112,10 @@ int readCommandLine(int argc, char **argv) {
 }
 
 // auxiliary function to get the number of lines
-int getNlines(char *filename) {
+int getNlines(const char *filename) {
   ifstream fin(filename);
   if (!fin) {
-    cout << "getNlines: cannot open file: " << filename << endl;
+    cout << "getNlines function error: Cannot open file " << filename << endl;
     exit(1);
   }
   string line;

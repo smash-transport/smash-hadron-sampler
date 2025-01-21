@@ -10,45 +10,46 @@ using namespace std;
 
 namespace params {
 
-char sSurface[255], sSpectraDir[255];
-bool bulk{false}, createRootOutput{false}, shear{false};
+std::string surface_file{"unset"}, output_directory{"unset"};
+bool bulk_viscosity_enabled{false}, createRootOutput{false},
+    shear_viscosity_enabled{false};
 int NEVENTS;
 double dx{0}, dy{0}, deta{0.05};
-double ecrit, cs2{0.15}, ratio_pressure_energydensity{0.15};
+double ecrit, speed_of_sound_squared{0.15}, ratio_pressure_energydensity{0.15};
 // double Temp, mu_b, mu_q, mu_s ;
 
 // ############ reading and processing the parameters
 
-void readParams(char *filename) {
-  char parName[255], parValue[255];
-  ifstream fin(filename);
+void readParams(const std::string &filename) {
+  std::string parName, parValue;
+  ifstream fin(filename.c_str());
   if (!fin.is_open()) {
-    cout << "cannot open parameters file " << filename << endl;
+    cout << "ERROR: Cannot open config file " << filename << endl;
     exit(1);
   }
   while (fin.good()) {
-    string line;
+    std::string line;
     getline(fin, line);
     istringstream sline(line);
     sline >> parName >> parValue;
-    if (strcmp(parName, "surface") == 0)
-      strcpy(sSurface, parValue);
-    else if (strcmp(parName, "output_dir") == 0)
-      strcpy(sSpectraDir, parValue);
-    else if (strcmp(parName, "number_of_events") == 0)
-      NEVENTS = atoi(parValue);
-    else if (strcmp(parName, "shear") == 0)
-      shear = atoi(parValue);
-    else if (strcmp(parName, "bulk") == 0)
-      bulk = atoi(parValue);
-    else if (strcmp(parName, "ecrit") == 0)
-      ecrit = atof(parValue);
-    else if (strcmp(parName, "cs2") == 0)
-      cs2 = atof(parValue);
-    else if (strcmp(parName, "ratio_pressure_energydensity") == 0)
-      ratio_pressure_energydensity = atof(parValue);
-    else if (strcmp(parName, "createRootOutput") == 0)
-      createRootOutput = atoi(parValue);
+    if (parName == "surface")
+      surface_file = parValue;
+    else if (parName == "output_dir")
+      output_directory = parValue;
+    else if (parName == "number_of_events")
+      NEVENTS = std::stoi(parValue);
+    else if (parName == "shear")
+      shear_viscosity_enabled = std::stoi(parValue);
+    else if (parName == "bulk")
+      bulk_viscosity_enabled = std::stoi(parValue);
+    else if (parName == "ecrit")
+      ecrit = std::stod(parValue);
+    else if (parName == "cs2")
+      speed_of_sound_squared = std::stod(parValue);
+    else if (parName == "ratio_pressure_energydensity")
+      ratio_pressure_energydensity = std::stod(parValue);
+    else if (parName == "createRootOutput")
+      createRootOutput = std::stoi(parValue);
     else if (parName[0] == '!')
       cout << "CCC " << sline.str() << endl;
     else
@@ -58,13 +59,13 @@ void readParams(char *filename) {
 
 void printParameters() {
   cout << "======= parameters ===========\n";
-  cout << "surface = " << sSurface << endl;
-  cout << "output_dir = " << sSpectraDir << endl;
+  cout << "surface = " << surface_file << endl;
+  cout << "output_dir = " << output_directory << endl;
   cout << "number_of_events = " << NEVENTS << endl;
-  cout << "shear_visc_on = " << shear << endl;
-  cout << "bulk_visc_on = " << bulk << endl;
+  cout << "shear_visc_on = " << shear_viscosity_enabled << endl;
+  cout << "bulk_visc_on = " << bulk_viscosity_enabled << endl;
   cout << "ecrit = " << ecrit << endl;
-  cout << "cs2 = " << cs2 << endl;
+  cout << "cs2 = " << speed_of_sound_squared << endl;
   cout << "ratio_pressure_energydensity = " << ratio_pressure_energydensity
        << endl;
   cout << "createRootOutput = " << createRootOutput << endl;
