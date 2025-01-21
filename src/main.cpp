@@ -17,12 +17,6 @@ using params::NEVENTS;
 using params::output_directory;
 using params::surface_file;
 
-int ranseed;
-
-extern "C" {
-void getranseedcpp_(int *seed) { *seed = ranseed; }
-}
-
 // ########## MAIN block ##################
 
 int main(int argc, char **argv) {
@@ -32,7 +26,7 @@ int main(int argc, char **argv) {
   params::printParameters();
   time_t time0;
   time(&time0);
-  ranseed = time0 + prefix * 16;
+  int ranseed = time0 + prefix * 16;
 
   TRandom3 *random3 = new TRandom3();
   random3->SetSeed(ranseed);
@@ -73,7 +67,7 @@ int main(int argc, char **argv) {
   // Write Oscar output
   write_oscar_output();
 
-  cout << "event generation done\n";
+  cout << "Event generation done\n";
   time(&end);
   float diff2 = difftime(end, start);
   cout << "Execution time = " << diff2 << " [sec]" << endl;
@@ -121,7 +115,7 @@ int readCommandLine(int argc, char **argv) {
 int getNlines(const char *filename) {
   ifstream fin(filename);
   if (!fin) {
-    cout << "getNlines funtion: Cannot open file " << filename << endl;
+    cout << "getNlines function error: Cannot open file " << filename << endl;
     exit(1);
   }
   string line;
