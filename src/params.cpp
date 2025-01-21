@@ -10,7 +10,7 @@ using namespace std;
 
 namespace params {
 
-char surface_file[255], output_directory[255];
+std::string surface_file{"unset"}, output_directory{"unset"};
 bool bulk_viscosity_enabled{false}, createRootOutput{false},
     shear_viscosity_enabled{false};
 int NEVENTS;
@@ -20,36 +20,36 @@ double ecrit, speed_of_sound_squared{0.15}, ratio_pressure_energydensity{0.15};
 
 // ############ reading and processing the parameters
 
-void readParams(char *filename) {
-  char parName[255], parValue[255];
-  ifstream fin(filename);
+void readParams(const std::string &filename) {
+  std::string parName, parValue;
+  ifstream fin(filename.c_str());
   if (!fin.is_open()) {
     cout << "ERROR: Cannot open config file " << filename << endl;
     exit(1);
   }
   while (fin.good()) {
-    string line;
+    std::string line;
     getline(fin, line);
     istringstream sline(line);
     sline >> parName >> parValue;
-    if (strcmp(parName, "surface") == 0)
-      strcpy(surface_file, parValue);
-    else if (strcmp(parName, "output_dir") == 0)
-      strcpy(output_directory, parValue);
-    else if (strcmp(parName, "number_of_events") == 0)
-      NEVENTS = atoi(parValue);
-    else if (strcmp(parName, "shear") == 0)
-      shear_viscosity_enabled = atoi(parValue);
-    else if (strcmp(parName, "bulk") == 0)
-      bulk_viscosity_enabled = atoi(parValue);
-    else if (strcmp(parName, "ecrit") == 0)
-      ecrit = atof(parValue);
-    else if (strcmp(parName, "cs2") == 0)
-      speed_of_sound_squared = atof(parValue);
-    else if (strcmp(parName, "ratio_pressure_energydensity") == 0)
-      ratio_pressure_energydensity = atof(parValue);
-    else if (strcmp(parName, "createRootOutput") == 0)
-      createRootOutput = atoi(parValue);
+    if (parName == "surface")
+      surface_file = parValue;
+    else if (parName == "output_dir")
+      output_directory = parValue;
+    else if (parName == "number_of_events")
+      NEVENTS = std::stoi(parValue);
+    else if (parName == "shear")
+      shear_viscosity_enabled = std::stoi(parValue);
+    else if (parName == "bulk")
+      bulk_viscosity_enabled = std::stoi(parValue);
+    else if (parName == "ecrit")
+      ecrit = std::stod(parValue);
+    else if (parName == "cs2")
+      speed_of_sound_squared = std::stod(parValue);
+    else if (parName == "ratio_pressure_energydensity")
+      ratio_pressure_energydensity = std::stod(parValue);
+    else if (parName == "createRootOutput")
+      createRootOutput = std::stoi(parValue);
     else if (parName[0] == '!')
       cout << "CCC " << sline.str() << endl;
     else

@@ -87,7 +87,7 @@ double *cumulantDensity; // particle densities (thermal). Seems to be redundant,
 double totalDensity;     // sum of all thermal densities
 
 // ######## load the elements
-void load(char *filename, int N) {
+void load(const char *filename, int N) {
   ROOT::EnableThreadSafety();
   double vEff = 0.0, vEffOld = 0.0, dvEff, dvEffOld;
   int nfail = 0, ncut = 0;

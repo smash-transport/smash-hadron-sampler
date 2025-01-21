@@ -19,7 +19,7 @@ extern int *npart;
 const int NPartBuf = 30000; // dimension of particle buffer for each event
 
 // functions
-void load(char *filename, int N);
+void load(const char *filename, int N);
 int generate();
 } // namespace gen
 
