@@ -20,6 +20,32 @@ const double C_Feq = (pow(0.5 / M_PI / hbarC, 3));
 // #  also, pre-BOOSTED dsigma is used                      #
 // ##########################################################
 
+namespace gen {
+
+int Nelem;
+double *ntherm, dvMax, dsigmaMax;
+TRandom3 *rnd;
+int NPART;
+// const int NPartBuf = 10000 ;
+smash::ParticleData ***pList; // particle arrays
+
+struct element {
+  double tau, x, y, eta;
+  double u[4];
+  double dsigma[4];
+  double T, mub, muq, mus;
+  double pi[10];
+  double Pi;
+};
+
+element *surf;
+int *npart; // number of generated particles in each event
+
+const double c1 = pow(1. / 2. / hbarC / TMath::Pi(), 3.0);
+double *cumulantDensity; // particle densities (thermal). Seems to be redundant,
+                         // but needed for fast generation
+double totalDensity;     // sum of all thermal densities
+
 // active Lorentz boost
 void fillBoostMatrix(double vx, double vy, double vz, double boostMatrix[4][4])
 // here in boostMatrix [0]=t, [1]=x, [2]=y, [3]=z
@@ -59,32 +85,6 @@ int index44(const int &i, const int &j) {
   else
     return (j * (j + 1)) / 2 + i;
 }
-
-namespace gen {
-
-int Nelem;
-double *ntherm, dvMax, dsigmaMax;
-TRandom3 *rnd;
-int NPART;
-// const int NPartBuf = 10000 ;
-smash::ParticleData ***pList; // particle arrays
-
-struct element {
-  double tau, x, y, eta;
-  double u[4];
-  double dsigma[4];
-  double T, mub, muq, mus;
-  double pi[10];
-  double Pi;
-};
-
-element *surf;
-int *npart; // number of generated particles in each event
-
-const double c1 = pow(1. / 2. / hbarC / TMath::Pi(), 3.0);
-double *cumulantDensity; // particle densities (thermal). Seems to be redundant,
-                         // but needed for fast generation
-double totalDensity;     // sum of all thermal densities
 
 // ######## load the elements
 void load(const char *filename, int N) {
@@ -228,7 +228,7 @@ double ffthermal(double *x, double *par) {
   return x[0] * x[0] / (exp((sqrt(x[0] * x[0] + mass * mass) - mu) / T) - stat);
 }
 
-int generate() {
+void generate() {
   ROOT::EnableThreadSafety();
   const double gmumu[4] = {1., -1., -1., -1.};
   TF1 *fthermal = new TF1("fthermal", ffthermal, 0.0, 10.0, 4);
@@ -404,7 +404,6 @@ int generate() {
            << endl;
   } // loop over all elements
   cout << "therm_failed elements: " << ntherm_fail << endl;
-  return npart[0];
   delete fthermal;
 }
 

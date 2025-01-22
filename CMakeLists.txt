@@ -20,7 +20,7 @@ endif()
 message(STATUS "CXX_FLAGS = " ${CMAKE_CXX_FLAGS})
 
 # Collect all the cpp files
-set(sampler_src src/gen.cpp src/params.cpp src/tree.cpp)
+set(sampler_src src/gen.cpp src/oscaroutput.cpp src/params.cpp src/tree.cpp)
 
 # Create object library for the linker which contains pre-compiled cpp files
 add_library(objlib OBJECT ${sampler_src})
