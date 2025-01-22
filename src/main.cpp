@@ -111,7 +111,7 @@ int readCommandLine(int argc, char **argv) {
   return prefix;
 }
 
-// auxiliary function to get the number of lines
+// auxiliary function to get the number of lines of the freezeout data file
 int getNlines(const char *filename) {
   ifstream fin(filename);
   if (!fin) {
@@ -119,11 +119,10 @@ int getNlines(const char *filename) {
     exit(1);
   }
   string line;
-  int nlines = 0;
-  while (fin.good()) {
-    getline(fin, line);
-    nlines++;
+  int number_of_lines = 0;
+  while (getline(fin, line)) {
+    number_of_lines++;
   };
   fin.close();
-  return nlines - 1;
+  return number_of_lines;
 }
