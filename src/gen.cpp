@@ -11,9 +11,6 @@
 
 using namespace std;
 
-#define _USE_MATH_DEFINES
-const double C_Feq = (pow(0.5 / M_PI / hbarC, 3));
-
 // ##########################################################
 // #  this version works with arbitrary T/mu distribution   #
 // #  on freezeout hypersurface (May'2012)                  #
@@ -23,10 +20,9 @@ const double C_Feq = (pow(0.5 / M_PI / hbarC, 3));
 namespace gen {
 
 int Nelem;
+int NPART;
 double *ntherm, dvMax, dsigmaMax;
 TRandom3 *rnd;
-int NPART;
-// const int NPartBuf = 10000 ;
 smash::ParticleData ***pList; // particle arrays
 
 struct element {
@@ -39,9 +35,7 @@ struct element {
 };
 
 element *surf;
-int *npart; // number of generated particles in each event
-
-const double c1 = pow(1. / 2. / hbarC / TMath::Pi(), 3.0);
+int *npart;              // number of generated particles in each event
 double *cumulantDensity; // particle densities (thermal). Seems to be redundant,
                          // but needed for fast generation
 double totalDensity;     // sum of all thermal densities
