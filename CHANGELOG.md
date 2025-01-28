@@ -29,6 +29,7 @@ Also possible, but for this project less relevant, is `Deprecated` for soon-to-b
 * :left_right_arrow: Changed the command line parameters used to run the sampler to clarify their usage (see README.md for detailed info on options and usage)
 * :heavy_plus_sign: Added optional command line parameters to overwrite the `surface` and `output_dir` keys in the config file (see README.md for detailed info on options and usage)
 * :heavy_plus_sign: Added sampling of freezeout hypersurface data given in Cartesian coordinates (addtional to sampling in tau-eta coordinates). Coordinates of freezeout data specifiable via new config key `hydro_coordinate_system`
+* :heavy_plus_sign: Added option to provide transversal smearing (in x and y direction) that can be enabled by using the new config key `transversal_smearing` (bool, default is 0 (disabled))
 * :sos: Fix problems with thread safety from ROOT objects
 
 

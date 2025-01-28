@@ -130,12 +130,13 @@ int readCommandLine(int argc, char **argv) {
 
 // auxiliary function to get the number of lines of the freezeout data file
 int getNlines(const char *filename) {
-  ifstream fin(filename);
+  std::ifstream fin(filename);
   if (!fin) {
-    cout << "getNlines function error: Cannot open file " << filename << endl;
+    std::cerr << "ERROR: getNlines function cannot open freezeout file "
+              << filename << std::endl;
     exit(1);
   }
-  string line;
+  std::string line;
   int number_of_lines = 0;
   while (getline(fin, line)) {
     number_of_lines++;

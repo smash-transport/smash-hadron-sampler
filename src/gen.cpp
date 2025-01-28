@@ -377,9 +377,17 @@ void generate() {
         } while (rval > W); // end fast momentum generation
         if (niter > nmaxiter)
           nmaxiter = niter;
-        const double x = surf[iel].pos[1];
-        const double y = surf[iel].pos[2];
+        /* The smearing_estimate_xyz is an estimate of spatial extent based on
+         * the volume of the respective freezeout hypersurface element
+         */
+        const double smearing_estimate_xyz = std::pow(dvEff, 1. / 3.);
+        double x = surf[iel].pos[1];
+        double y = surf[iel].pos[2];
         double t = 0, z = 0, vx = 0, vy = 0, vz = 0;
+        if (params::transversal_smearing_enabled) {
+          x += smearing_estimate_xyz * (-0.5 + rnd->Rndm());
+          y += smearing_estimate_xyz * (-0.5 + rnd->Rndm());
+        }
         if (params::hydro_coordinate_system == "tau-eta") {
           // additional random smearing over eta
           const double etaF = 0.5 * log((surf[iel].u[0] + surf[iel].u[3]) /
@@ -394,7 +402,7 @@ void generate() {
           z = surf[iel].pos[0] * sinh(surf[iel].pos[3] + etaShift);
         } else if (params::hydro_coordinate_system == "cartesian") {
           const double smearing_z_coordinate =
-              std::pow(dvEff, 1. / 3.) * (-0.5 + rnd->Rndm());
+              smearing_estimate_xyz * (-0.5 + rnd->Rndm());
           vx = surf[iel].u[1] / surf[iel].u[0];
           vy = surf[iel].u[2] / surf[iel].u[0];
           vz = surf[iel].u[3] / surf[iel].u[0];

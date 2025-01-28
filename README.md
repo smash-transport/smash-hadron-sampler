@@ -76,8 +76,8 @@ Mandatory parameters:
     surface_file                  Path to the freezeout hypersurface file that gets sampled.
     output_dir                    Path to the output directory.
     number_of_events              Number of events that are sampled.
-    ecrit                         Critical energy density at which the hydro stopped in a
-                                  particular cell and the freezeout hypersurface was constructed.
+    ecrit                         Critical energy density at which the hydro stopped in a particular
+                                  cell and the freezeout hypersurface was constructed.
 
 
 Optional parameters:
@@ -90,6 +90,7 @@ Optional parameters:
     hydro_coordinate_system       Coordinate system in which the freezeout hypersurface data from
                                   the hydro evolution is provided. Possible coordinate systems are
                                   tau-eta (default) or Cartesian.
+    transversal_smearing          Enables smearing in x and y direction if set to 1. Default is 0 (false).
 
 
 > [!TIP]
