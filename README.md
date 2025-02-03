@@ -59,11 +59,11 @@ All possible command line parameters are:
     -o, --output <directory>    Optional parameter to overwrite the output directory given
                                 by "output_dir" in the config file.
     -s, --surface <file>        Optional parameter to overwrite the hypersurface freezeout
-                                file given by "surface" in the config file.
+                                file given by "surface_file" in the config file.
 
 Example usage:
 
-    ./sampler --config /path/to/config-example --num 1 --output /path/to/output/dir --surface /path/to/freezeout.dat
+    ./sampler -c /path/to/config-example --num 1 --output /path/to/output/dir -s /path/to/freezeout.dat
 
 
 ## Config file
@@ -72,7 +72,7 @@ The following lists **all possible config parameters**:
 
 Mandatory parameters:
 
-    surface                       Path to the freezeout hypersurface file that gets sampled.
+    surface_file                  Path to the freezeout hypersurface file that gets sampled.
     output_dir                    Path to the output directory.
     number_of_events              Number of events that are sampled.
     ecrit                         Critical energy density at which the hydro stopped in a
@@ -85,10 +85,10 @@ Optional parameters:
     shear                         Enables shear viscosity if set to 1.  Default is 0 (false).
     cs2                           Speed of sound squared.               Default is 0.15.
     ratio_pressure_energydensity  Pressure divided by energy density.   Default is 0.15.
-    createRootOutput              Enables ROOT output if set to 1.      Default is 0 (false).
+    create_root_output            Enables ROOT output if set to 1.      Default is 0 (false).
 
 
 > [!TIP]
 > The repository provides an example config file named `config-example`.
 
-In case this example config file is used, the `surface` parameter has to be set to the location of the freezeout file and the `output_dir` parameter to the desired output path, either in the config file itself (instead of _/path/to/freezeout/file_ and _/output/path_) or via the command line parameters mentioned above!
+In case this example config file is used, the `surface_file` parameter has to be set to the location of the freezeout file and the `output_dir` parameter to the desired output path, either in the config file itself (instead of _/path/to/freezeout/file_ and _/output/path_) or via the command line parameters mentioned above!

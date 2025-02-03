@@ -1,5 +1,3 @@
-#include <cstdlib>
-#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -11,7 +9,7 @@ using namespace std;
 namespace params {
 
 std::string surface_file{"unset"}, output_directory{"unset"};
-bool bulk_viscosity_enabled{false}, createRootOutput{false},
+bool bulk_viscosity_enabled{false}, create_root_output{false},
     shear_viscosity_enabled{false};
 int NEVENTS;
 double dx{0}, dy{0}, deta{0.05};
@@ -32,7 +30,7 @@ void readParams(const std::string &filename) {
     getline(fin, line);
     istringstream sline(line);
     sline >> parName >> parValue;
-    if (parName == "surface")
+    if (parName == "surface_file")
       surface_file = parValue;
     else if (parName == "output_dir")
       output_directory = parValue;
@@ -48,8 +46,8 @@ void readParams(const std::string &filename) {
       speed_of_sound_squared = std::stod(parValue);
     else if (parName == "ratio_pressure_energydensity")
       ratio_pressure_energydensity = std::stod(parValue);
-    else if (parName == "createRootOutput")
-      createRootOutput = std::stoi(parValue);
+    else if (parName == "create_root_output")
+      create_root_output = std::stoi(parValue);
     else if (parName[0] == '!')
       cout << "CCC " << sline.str() << endl;
     else
@@ -59,7 +57,7 @@ void readParams(const std::string &filename) {
 
 void printParameters() {
   cout << "======= parameters ===========\n";
-  cout << "surface = " << surface_file << endl;
+  cout << "surface_file = " << surface_file << endl;
   cout << "output_dir = " << output_directory << endl;
   cout << "number_of_events = " << NEVENTS << endl;
   cout << "shear_visc_on = " << shear_viscosity_enabled << endl;
@@ -68,7 +66,7 @@ void printParameters() {
   cout << "cs2 = " << speed_of_sound_squared << endl;
   cout << "ratio_pressure_energydensity = " << ratio_pressure_energydensity
        << endl;
-  cout << "createRootOutput = " << createRootOutput << endl;
+  cout << "create_root_output = " << create_root_output << endl;
   cout << "======= end parameters =======\n";
 }
 
