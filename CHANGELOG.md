@@ -17,6 +17,7 @@ Also possible, but for this project less relevant, is `Deprecated` for soon-to-b
 
 ## Unreleased
 
+* :left_right_arrow: Renamed config key `surface`, used to specify the freezeout surface file, to `surface_file` to clarify key.
 * :left_right_arrow: Renamed config key `createRootOutput`, used to enable ROOT output, to `create_root_output` to unify naming convention.
 * :left_right_arrow: Renamed config key `spectra_dir`, used to specify the output directory, to `output_dir`.
 * :left_right_arrow: Changed the command line parameters used to run the sampler to clarify their usage.

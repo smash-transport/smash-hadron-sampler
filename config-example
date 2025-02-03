@@ -1,4 +1,4 @@
-surface          /path/to/freezeout/file
+surface_file     /path/to/freezeout/file
 output_dir       /output/path
 number_of_events 1000
 shear            1

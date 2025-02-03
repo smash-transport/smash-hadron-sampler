@@ -30,7 +30,7 @@ void readParams(const std::string &filename) {
     getline(fin, line);
     istringstream sline(line);
     sline >> parName >> parValue;
-    if (parName == "surface")
+    if (parName == "surface_file")
       surface_file = parValue;
     else if (parName == "output_dir")
       output_directory = parValue;
@@ -57,7 +57,7 @@ void readParams(const std::string &filename) {
 
 void printParameters() {
   cout << "======= parameters ===========\n";
-  cout << "surface = " << surface_file << endl;
+  cout << "surface_file = " << surface_file << endl;
   cout << "output_dir = " << output_directory << endl;
   cout << "number_of_events = " << NEVENTS << endl;
   cout << "shear_visc_on = " << shear_viscosity_enabled << endl;
