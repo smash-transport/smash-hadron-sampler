@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
   gen::generate(); // one call for NEVENTS
 
   // ROOT output disabled by default
-  if (params::createRootOutput) {
+  if (params::create_root_output) {
 
     // Initialize ROOT output
     std::string root_output_file =

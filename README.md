@@ -85,7 +85,7 @@ Optional parameters:
     shear                         Enables shear viscosity if set to 1.  Default is 0 (false).
     cs2                           Speed of sound squared.               Default is 0.15.
     ratio_pressure_energydensity  Pressure divided by energy density.   Default is 0.15.
-    createRootOutput              Enables ROOT output if set to 1.      Default is 0 (false).
+    create_root_output            Enables ROOT output if set to 1.      Default is 0 (false).
 
 
 > [!TIP]
