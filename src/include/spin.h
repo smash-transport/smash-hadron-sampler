@@ -43,6 +43,15 @@ inline double exponent(const double k, const double energy_density,
   return (energy_density - mu) / temperature - k * sqrt(-theta_squared);
 }
 
+// Calculate either the Fermi or Bose distribution given the spin of the particle
+inline double fermi_bose_distribution(const int spin, const double argument){
+  if (spin % 2 == 0) {
+    return 1.0 / (std::exp(argument) - 1.0);
+  } else {
+    return 1.0 / (std::exp(argument) + 1.0);
+  }
+}
+
 void calculate_and_set_spin_vector(const gen::element &freezeout_element,
                                    smash::ParticleData *particle);
 

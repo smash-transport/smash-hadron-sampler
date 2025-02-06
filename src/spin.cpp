@@ -67,6 +67,7 @@ void calculate_and_set_spin_vector(const gen::element &freezeout_element,
   if (!freezeout_element.e.has_value()) {
     throw std::runtime_error("Energy density not set in surface element.");
   }
+  const double tiny_value = 1e-8;
   const int spin = particle->spin();
 
   if (spin == 0) {
@@ -92,38 +93,57 @@ void calculate_and_set_spin_vector(const gen::element &freezeout_element,
           "theta_squared must be negative for valid spin vector calculation.");
     }
 
-    double numerator = 0.0;
-    double denominator = 0.0;
-    // Sum all terms of in the numerator and denominator
-    for (int k = -spin; k <= spin; k += 2) {
-      double sum_index = k / 2.0;
-      double exponential = std::exp(
-          exponent(sum_index, energy_density, temperature, mu, theta_squared));
-      double denominator_term = 1 / (exponential - (spin % 2 == 0 ? 1 : -1));
-      double numerator_term = sum_index * denominator_term;
+    // If \sqrt{-theta^2} is sufficiently small, we will use the approximation
+    // given right after Eq. (61) in arXiv:2304.02276v2. This prevents division
+    // by zero for corona cells in which the vorticity tensor is zero.
+    if (std::abs(std::sqrt(-theta_squared)) < tiny_value) {
+      const double distribution_argument = (energy_density - mu) / temperature;
+      const double factor =
+          ((spin / 2.) * ((spin / 2.) + 1.)) / 3. +
+          (1 + (spin % 2 == 0 ? 1 : -1) *
+                   fermi_bose_distribution(spin, distribution_argument));
 
-      numerator += numerator_term;
-      denominator += denominator_term;
+      smash::FourVector spin_vec(0.0, 0.0, 0.0, 0.0);
+      for (int i = 0; i < 4; i++) {
+        spin_vec[i] = theta_array[i] * factor;
+      }
+      // Set the spin vector in the particle data
+      particle->set_spin_vector(spin_vec);
+
+    } else {
+      double numerator = 0.0;
+      double denominator = 0.0;
+      // Sum all terms of in the numerator and denominator
+      for (int k = -spin; k <= spin; k += 2) {
+        double sum_index = k / 2.0;
+        double exponential = std::exp(exponent(sum_index, energy_density,
+                                               temperature, mu, theta_squared));
+        double denominator_term = 1 / (exponential - (spin % 2 == 0 ? 1 : -1));
+        double numerator_term = sum_index * denominator_term;
+
+        numerator += numerator_term;
+        denominator += denominator_term;
+      }
+
+      if (std::abs(denominator) < 1e-8) {
+        throw std::runtime_error(
+            "Denominator must be sufficiently negative for valid spin vector "
+            "calculation.");
+      }
+
+      // Calculate the spin vector
+      std::array<double, 4> spin_vector;
+      for (int i = 0; i < 4; i++) {
+        spin_vector[i] = (theta_array[i] * numerator) /
+                         (std::sqrt(-theta_squared) * denominator);
+      }
+
+      const smash::FourVector spin_vec(spin_vector[0], spin_vector[1],
+                                       spin_vector[2], spin_vector[3]);
+
+      // Set the spin vector in the particle data
+      particle->set_spin_vector(spin_vec);
     }
-
-    if (std::abs(denominator) < 1e-8) {
-      throw std::runtime_error(
-          "Denominator must be sufficiently negative for valid spin vector "
-          "calculation.");
-    }
-
-    // Calculate the spin vector
-    std::array<double, 4> spin_vector;
-    for (int i = 0; i < 4; i++) {
-      spin_vector[i] = (theta_array[i] * numerator) /
-                       (std::sqrt(-theta_squared) * denominator);
-    }
-
-    const smash::FourVector spin_vec(spin_vector[0], spin_vector[1],
-                                     spin_vector[2], spin_vector[3]);
-
-    // Set the spin vector in the particle data
-    particle->set_spin_vector(spin_vec);
   } else {
     throw std::runtime_error("Spin of particle is invalid or unset.");
   }
