@@ -60,6 +60,7 @@ In this config file the location of the freezeout hypersurface file, the path to
 There are additional command line parameters with which the freezeout hypersurface file, the output directory, and a number prefix for parallel runs can be specified.
 All possible command line parameters are:
 
+    -h, --help                  Print overview of command line options.
     -c, --config <file>         Mandatory parameter to specify the config file.
     -n, --num <integer>         Optional number to create a random seed, useful to run several
                                 instances of the sampler in parallel. The number is also the
@@ -68,6 +69,7 @@ All possible command line parameters are:
                                 by "output_dir" in the config file.
     -s, --surface <file>        Optional parameter to overwrite the freezeout hypersurface
                                 file given by "surface_file" in the config file.
+    -q, --quiet                 Suppress the disclaimer and config parameters print-out.
     --version                   Print version of the sampler executable.
 
 Example usage:

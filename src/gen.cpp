@@ -95,7 +95,7 @@ void load(const char *filename, int N) {
   }
   npart = new int[params::number_of_events];
 
-  cout << "reading " << N << " lines from  " << filename << "\n";
+  cout << "Read " << N << " lines from '" << filename << "'\n";
   ifstream fin(filename);
   if (!fin) {
     cout << "cannot read file " << filename << endl;
