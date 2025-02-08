@@ -89,11 +89,11 @@ void load(const char *filename, int N) {
   Nelem = N;
   surf = new element[Nelem];
 
-  pList = new smash::ParticleData **[params::NEVENTS];
-  for (int i = 0; i < params::NEVENTS; i++) {
+  pList = new smash::ParticleData **[params::number_of_events];
+  for (int i = 0; i < params::number_of_events; i++) {
     pList[i] = new smash::ParticleData *[NPartBuf];
   }
-  npart = new int[params::NEVENTS];
+  npart = new int[params::number_of_events];
 
   cout << "reading " << N << " lines from  " << filename << "\n";
   ifstream fin(filename);
@@ -227,7 +227,7 @@ void generate() {
   const double gmumu[4] = {1., -1., -1., -1.};
   TF1 *fthermal = new TF1("fthermal", ffthermal, 0.0, 10.0, 4);
   TLorentzVector mom;
-  for (int iev = 0; iev < params::NEVENTS; iev++)
+  for (int iev = 0; iev < params::number_of_events; iev++)
     npart[iev] = 0;
   int nmaxiter = 0;
   int ntherm_fail = 0;
@@ -292,7 +292,7 @@ void generate() {
     double rval, dvEff = 0., W;
     // dvEff = dsigma_mu * u^mu
     dvEff = surf[iel].dsigma[0];
-    for (int ievent = 0; ievent < params::NEVENTS; ievent++) {
+    for (int ievent = 0; ievent < params::number_of_events; ievent++) {
       // ---- number of particles to generate
       int nToGen = 0;
       if (dvEff * totalDensity < 0.01) {

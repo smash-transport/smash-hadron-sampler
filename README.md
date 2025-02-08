@@ -1,9 +1,15 @@
 # SMASH Hadron Sampler
 
-This sampler is meant to be applied in hybrid models, simulating heavy-ion collisions in the high temperature or baryon-density region. More precisely it provides an interface between the macroscopic hydrodynamic evolution of the fireball and the hadronic afterburner. During the hydrodynamic evolution a hypersurface of constant energy density (the switching energy density) is created. Each element on the hypersurface needs then be transformed into a list of particles with properties loosely provided by the macroscopic properties of the hypersurface elements. This process of particlization is performed by means of the hadron sampler provided within this project. It is designed to couple the [3+1D viscous hydrodynamic code vhlle](https://github.com/yukarpenko/vhlle) to the [hadronic transport model SMASH](https://smash-transport.github.io). For details about the sampling algorithm, please consult [I. Karpenko et al., Phys. Rev. C 91 (2015) 6, 064901](https://inspirehep.net/literature/1343339).
+This sampler is meant to be applied in hybrid models, simulating heavy-ion collisions in the high temperature or baryon-density region.
+More precisely it provides an interface between the macroscopic hydrodynamic evolution of the fireball and the hadronic afterburner.
+During the hydrodynamic evolution a hypersurface of constant energy density (the switching energy density) is created.
+Each element on the hypersurface needs then be transformed into a list of particles with properties loosely provided by the macroscopic properties of the hypersurface elements.
+This process of particlization is performed by means of the hadron sampler provided within this project.
+It is designed to couple the [3+1D viscous hydrodynamic code vhlle](https://github.com/yukarpenko/vhlle) to the [hadronic transport model SMASH](https://smash-transport.github.io).
+For details about the sampling algorithm, please consult [I. Karpenko et al., Phys. Rev. C 91 (2015) 6, 064901](https://inspirehep.net/literature/1343339).
 
 > [!NOTE]
-> Please cite the following two papers when using the SMASH hadron sampler:
+> Please cite the following two papers when using the SMASH-hadron-sampler:
 > - [I. Karpenko et al., Phys. Rev. C 91 (2015) 6, 064901](https://inspirehep.net/literature/1343339)
 > - [A. Schäfer et al., arXiv:2112.08724](https://arxiv.org/abs/2112.08724)
 
@@ -18,8 +24,10 @@ This sampler is meant to be applied in hybrid models, simulating heavy-ion colli
 
 
 ## Install instructions
-It is expected that the output of this sampler is used in combination with the SMASH transport model. We therefore assume SMASH was already compiled and is available to be used as an external library. All necessary prerequisites are also assumed to already be installed.
-If not, install instructions can be found [here](https://github.com/smash-transport/smash/blob/main/README.md).
+It is expected that the output of this sampler is used in combination with the SMASH transport model.
+We therefore assume SMASH was already compiled and is available to be used as an external library.
+All necessary prerequisites are also assumed to already be installed.
+If not, install instructions can be found [here](https://github.com/smash-transport/smash/blob/main/INSTALL.md).
 
 To compile the project, first set the environment variable to the smash directory:
 
@@ -49,7 +57,7 @@ To run the sampler, execute the following command in the `build` directory:
 where `<file>` needs to be the path of the configuration file.
 In this config file the location of the freezeout hypersurface file, the path to the output directory, and all other necessary parameters can be specified.
 
-There are additional command line parameters with which the hypersurface freezeout file, the output directory, and a number prefix for parallel runs can be specified.
+There are additional command line parameters with which the freezeout hypersurface file, the output directory, and a number prefix for parallel runs can be specified.
 All possible command line parameters are:
 
     -c, --config <file>         Mandatory parameter to specify the config file.
@@ -58,7 +66,7 @@ All possible command line parameters are:
                                 ROOT output filename.
     -o, --output <directory>    Optional parameter to overwrite the output directory given
                                 by "output_dir" in the config file.
-    -s, --surface <file>        Optional parameter to overwrite the hypersurface freezeout
+    -s, --surface <file>        Optional parameter to overwrite the freezeout hypersurface
                                 file given by "surface_file" in the config file.
     --version                   Print version of the sampler executable.
 
@@ -88,6 +96,9 @@ Optional parameters:
     ratio_pressure_energydensity  Pressure divided by energy density.   Default is 0.15.
     create_root_output            Enables ROOT output if set to 1.      Default is 0 (false).
 
+
+> [!NOTE]
+> Lines in the config file can be commented out by using an exclamation point in the beginning of a line (e.g., `! This is a comment`).
 
 > [!TIP]
 > The repository provides an example config file named `config-example`.
