@@ -6,7 +6,7 @@ project(
 set(SAMPLER_VERSION "${SMASH-hadron-sampler_VERSION}")
 # If the following set() command is not commented out, the codebase is marked as
 # dirty (for development on the way to next release)
-#set(SAMPLER_VERSION "${SAMPLER_VERSION}-next")
+set(SAMPLER_VERSION "${SAMPLER_VERSION}-next")
 
 include(CTest)
 
