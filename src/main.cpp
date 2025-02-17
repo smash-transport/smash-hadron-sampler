@@ -7,6 +7,7 @@
 #include "oscaroutput.h"
 #include "params.h"
 #include "tree.h"
+#include "build_metadata.h"
 
 using namespace std ;
 int getNlines(char *filename) ;
@@ -86,13 +87,28 @@ int readCommandLine(int argc, char** argv)
 	  prefix = atoi(argv[2]) ;
 	  cout << "events mode, prefix = " << prefix << endl ;
 	  params::readParams(argv[3]) ;
-    }else if(strcmp(argv[1],"fmax")==0){
+  }else if(strcmp(argv[1],"fmax")==0){
 	  if(static_cast<int>(argv[2][0]<58)){
 		prefix = atoi(argv[2]) ;
 		cout << "fmax mode, prefix = " << prefix << endl ;
 		params::readParams(argv[3]) ;
 	  }else
 	  params::readParams(argv[2]) ;
+  } else if (strcmp(argv[1], "--version")==0) {
+    std::printf(
+        "%s\n"
+#ifdef GIT_BRANCH
+        "Branch   : %s\n"
+#endif
+        "System   : %s\nCompiler : %s %s\n"
+        "Date     : %s\n",
+        SAMPLER_VERSION,
+#ifdef GIT_BRANCH
+        GIT_BRANCH,
+#endif
+        CMAKE_SYSTEM, CMAKE_CXX_COMPILER_ID, CMAKE_CXX_COMPILER_VERSION,
+        BUILD_DATE);
+    std::exit(EXIT_SUCCESS);
 	}else{cout << "unknown command-line switch: " << argv[1] << endl ; exit(1) ;}
 	return prefix ;
 }
