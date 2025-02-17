@@ -4,6 +4,7 @@
 #include <fstream>
 #include <string>
 
+#include "build_metadata.h"
 #include "gen.h"
 #include "oscaroutput.h"
 #include "params.h"
@@ -99,6 +100,20 @@ int readCommandLine(int argc, char **argv) {
                strcmp(argv[iarg], "-s") == 0) {
       surface_file = argv[iarg + 1];
       iarg += 2;
+    } else if (strcmp(argv[1], "--version") == 0) {
+      std::printf("%s\n"
+#ifdef GIT_BRANCH
+                  "Branch   : %s\n"
+#endif
+                  "System   : %s\nCompiler : %s %s\n"
+                  "Date     : %s\n",
+                  SAMPLER_VERSION,
+#ifdef GIT_BRANCH
+                  GIT_BRANCH,
+#endif
+                  CMAKE_SYSTEM, CMAKE_CXX_COMPILER_ID,
+                  CMAKE_CXX_COMPILER_VERSION, BUILD_DATE);
+      std::exit(EXIT_SUCCESS);
     } else {
       cout << "Unknown command line parameter: " << argv[iarg] << endl;
       iarg++;

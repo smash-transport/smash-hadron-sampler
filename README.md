@@ -60,6 +60,7 @@ All possible command line parameters are:
                                 by "output_dir" in the config file.
     -s, --surface <file>        Optional parameter to overwrite the hypersurface freezeout
                                 file given by "surface_file" in the config file.
+    --version                   Print version of the sampler executable.
 
 Example usage:
 
