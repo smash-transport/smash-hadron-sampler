@@ -15,7 +15,7 @@ For details about the sampling algorithm, please consult [I. Karpenko et al., Ph
 
 
 ## Prerequisites
-- [cmake](https://cmake.org) version &ge; 3.15.4
+- [cmake](https://cmake.org) version &ge; 3.16 or higher
 - [SMASH](https://github.com/smash-transport/smash) version 3.2, as well as prerequisites therein
 - [ROOT](https://root.cern.ch) version &ge; 6.06
 
