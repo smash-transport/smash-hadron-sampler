@@ -35,7 +35,7 @@ Also possible, but for this project less relevant, is `Deprecated` for soon-to-b
 ## SMASH-hadron-sampler-3.1.1
 Date: 2025-02-17
 
-* :heavy_plus_sign: Fix that introduces the command line options `./sampler --version` to get the version of the sampler executable
+* :heavy_plus_sign: Fix that introduces the command line option `./sampler --version` to get the version of the sampler executable
 
 [Link to diff from previous version](https://github.com/smash-transport/smash-hadron-sampler/compare/SMASH-hadron-sampler-3.1...SMASH-hadron-sampler-3.1.1)
 
