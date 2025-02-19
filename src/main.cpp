@@ -3,6 +3,7 @@
 #include <TRandom3.h>
 #include <fstream>
 #include <string>
+#include <chrono>
 
 #include "build_metadata.h"
 #include "gen.h"
@@ -25,9 +26,8 @@ int main(int argc, char **argv) {
   // command-line parameters
   int prefix = readCommandLine(argc, argv);
   params::printParameters();
-  time_t time0;
-  time(&time0);
-  int ranseed = time0 + prefix * 16;
+  auto time0 = chrono::high_resolution_clock::now();
+  int ranseed = chrono::duration_cast<chrono::seconds>(time0.time_since_epoch()).count() + prefix * 16;
 
   TRandom3 *random3 = new TRandom3();
   random3->SetSeed(ranseed);
@@ -38,8 +38,7 @@ int main(int argc, char **argv) {
   gen::load(surface_file.c_str(), getNlines(surface_file.c_str()));
 
   // ========== trees & files
-  time_t start, end;
-  time(&start);
+  auto start = chrono::high_resolution_clock::now();
 
   //============= main task
   std::string make_output_directory = "mkdir -p " + output_directory;
@@ -49,7 +48,6 @@ int main(int argc, char **argv) {
 
   // ROOT output disabled by default
   if (params::create_root_output) {
-
     // Initialize ROOT output
     std::string root_output_file =
         output_directory + "/" + std::to_string(prefix) + ".root";
@@ -69,9 +67,9 @@ int main(int argc, char **argv) {
   write_oscar_output();
 
   cout << "Event generation done\n";
-  time(&end);
-  float diff2 = difftime(end, start);
-  cout << "Execution time = " << diff2 << " [sec]" << endl;
+  auto end = chrono::high_resolution_clock::now();
+  chrono::duration<float> diff2 = end - start;
+  cout << "Execution time = " << diff2.count() << " [sec]" << endl;
   return 0;
 }
 
