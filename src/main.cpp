@@ -26,8 +26,8 @@ int main(int argc, char **argv) {
   // command-line parameters
   int prefix = readCommandLine(argc, argv);
   params::printParameters();
-  auto time0 = chrono::high_resolution_clock::now();
-  int ranseed = chrono::duration_cast<chrono::seconds>(time0.time_since_epoch()).count() + prefix * 16;
+  const auto time0 = std::chrono::system_clock::now();
+  const int ranseed = std::chrono::duration_cast<std::chrono::seconds>(time0.time_since_epoch()).count() + prefix * 16;
 
   TRandom3 *random3 = new TRandom3();
   random3->SetSeed(ranseed);
@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
   gen::load(surface_file.c_str(), getNlines(surface_file.c_str()));
 
   // ========== trees & files
-  auto start = chrono::high_resolution_clock::now();
+  const auto start_time = std::chrono::steady_clock::now();
 
   //============= main task
   std::string make_output_directory = "mkdir -p " + output_directory;
@@ -67,9 +67,9 @@ int main(int argc, char **argv) {
   write_oscar_output();
 
   cout << "Event generation done\n";
-  auto end = chrono::high_resolution_clock::now();
-  chrono::duration<float> diff2 = end - start;
-  cout << "Execution time = " << diff2.count() << " [sec]" << endl;
+  const auto end_time = std::chrono::steady_clock::now();
+  const auto execution_time = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
+  cout << "Execution time = " << execution_time.count() << " [sec]" << endl;
   return 0;
 }
 
