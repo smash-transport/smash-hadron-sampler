@@ -3,6 +3,7 @@
 #include <TRandom3.h>
 #include <fstream>
 #include <string>
+#include <chrono>
 
 #include "build_metadata.h"
 #include "gen.h"
@@ -25,9 +26,8 @@ int main(int argc, char **argv) {
   // command-line parameters
   int prefix = readCommandLine(argc, argv);
   params::printParameters();
-  time_t time0;
-  time(&time0);
-  int ranseed = time0 + prefix * 16;
+  const auto time0 = std::chrono::system_clock::now();
+  const int ranseed = std::chrono::duration_cast<std::chrono::seconds>(time0.time_since_epoch()).count() + prefix * 16;
 
   TRandom3 *random3 = new TRandom3();
   random3->SetSeed(ranseed);
@@ -38,8 +38,7 @@ int main(int argc, char **argv) {
   gen::load(surface_file.c_str(), getNlines(surface_file.c_str()));
 
   // ========== trees & files
-  time_t start, end;
-  time(&start);
+  const auto start_time = std::chrono::steady_clock::now();
 
   //============= main task
   std::string make_output_directory = "mkdir -p " + output_directory;
@@ -49,7 +48,6 @@ int main(int argc, char **argv) {
 
   // ROOT output disabled by default
   if (params::create_root_output) {
-
     // Initialize ROOT output
     std::string root_output_file =
         output_directory + "/" + std::to_string(prefix) + ".root";
@@ -69,9 +67,9 @@ int main(int argc, char **argv) {
   write_oscar_output();
 
   cout << "Event generation done\n";
-  time(&end);
-  float diff2 = difftime(end, start);
-  cout << "Execution time = " << diff2 << " [sec]" << endl;
+  const auto end_time = std::chrono::steady_clock::now();
+  const auto execution_time = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
+  cout << "Execution time = " << execution_time.count() << " [sec]" << endl;
   return 0;
 }
 
