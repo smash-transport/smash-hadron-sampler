@@ -1,4 +1,7 @@
-cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
+# Minimum cmake version this is tested on
+cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
+
+# The name, version and language of the project
 project(
   SMASH-hadron-sampler
   VERSION "3.1.1"
@@ -8,7 +11,10 @@ set(SAMPLER_VERSION "${SMASH-hadron-sampler_VERSION}")
 # dirty (for development on the way to next release)
 set(SAMPLER_VERSION "${SAMPLER_VERSION}-next")
 
-include(CTest)
+# Fail if cmake is called in the source directory
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
+  message(FATAL_ERROR "You don't want to configure in the source directory!")
+endif()
 
 # Tell cmake where to find modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
@@ -98,6 +104,9 @@ if(ROOT_FOUND)
 endif()
 
 target_link_libraries(sampler ${SAMPLER_LIBRARIES})
+
+# enable standard CTest
+include(CTest)
 
 message(STATUS "BUILD_TESTING=${BUILD_TESTING}")
 
