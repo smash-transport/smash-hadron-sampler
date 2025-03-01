@@ -15,6 +15,8 @@ int number_of_events;
 double dx{0}, dy{0}, deta{0.05};
 double ecrit, speed_of_sound_squared{0.15}, ratio_pressure_energydensity{0.15};
 // double Temp, mu_b, mu_q, mu_s ;
+std::vector<std::string> comments_in_config_file,
+    unknown_parameters_in_config_file;
 
 /// Read and process configuration file parameters
 void read_configuration_file(const std::string &filename) {
@@ -22,7 +24,7 @@ void read_configuration_file(const std::string &filename) {
   std::ifstream fin(filename.c_str());
   if (!fin.is_open()) {
     std::cerr << "ERROR: Cannot open config file " << filename << std::endl;
-    exit(1);
+    std::exit(1);
   }
   while (fin.good()) {
     std::string line;
@@ -48,11 +50,18 @@ void read_configuration_file(const std::string &filename) {
     } else if (parName == "create_root_output") {
       create_root_output = std::stoi(parValue);
     } else if (parName[0] == '!') {
-      std::cout << "Comment in config: '" << sline.str() << "'" << std::endl;
+      comments_in_config_file.push_back(line);
     } else {
-      std::cout << "Unknown config parameter: '" << sline.str() << "'"
-                << std::endl;
+      unknown_parameters_in_config_file.push_back(line);
     }
+  }
+}
+
+/// Auxiliary function to print comments and unknown parameters in config file
+void print_comments_and_unknown_parameters_of_config_file(
+    std::vector<std::string> comments_or_unknowns_in_config_file) {
+  for (auto &element : comments_or_unknowns_in_config_file) {
+    std::cout << "'" << element << "'" << std::endl;
   }
 }
 
@@ -76,8 +85,22 @@ void print_config_parameters() {
             << "create_root_output:           " << create_root_output << "\n"
             << "# -------------------------------------------------------"
                "-----------------------"
-            << "\n"
-            << "\n";
+            << "\n\n";
+
+  if (!comments_in_config_file.empty()) {
+    std::cout << "Comments in configuration file:" << std::endl;
+    print_comments_and_unknown_parameters_of_config_file(
+        comments_in_config_file);
+    std::cout << "\n";
+  }
+  if (!unknown_parameters_in_config_file.empty()) {
+    std::cout << "Unknown parameters in config configuration file that will "
+                 "not be considered:"
+              << std::endl;
+    print_comments_and_unknown_parameters_of_config_file(
+        unknown_parameters_in_config_file);
+    std::cout << "\n";
+  }
 }
 
 } // namespace params
