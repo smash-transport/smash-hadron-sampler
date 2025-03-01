@@ -48,7 +48,7 @@ void fillBoostMatrix(double vx, double vy, double vz, double boostMatrix[4][4])
   const double v2 = vx * vx + vy * vy + vz * vz;
   const double gamma = 1.0 / sqrt(1.0 - v2);
   if (std::isinf(gamma) || std::isnan(gamma)) {
-    cout << "boost vector invalid; exiting\n";
+    std::cout << "boost vector invalid; exiting\n";
     exit(1);
   }
   boostMatrix[0][0] = gamma;
@@ -95,10 +95,10 @@ void load(const char *filename, int N) {
   }
   npart = new int[params::number_of_events];
 
-  cout << "Reading " << N << " lines from '" << filename << "'\n";
+  std::cout << "Reading " << N << " lines from '" << filename << "'\n";
   ifstream fin(filename);
   if (!fin) {
-    cout << "cannot read file " << filename << endl;
+    std::cout << "cannot read file " << filename << std::endl;
     exit(1);
   }
   dvMax = 0.;
@@ -106,7 +106,7 @@ void load(const char *filename, int N) {
   // ---- reading loop
   string line;
   istringstream instream;
-  cout << "1?: failbit=" << instream.fail() << endl;
+  std::cout << "1?: failbit=" << instream.fail() << std::endl;
   for (int n = 0; n < Nelem; n++) {
     getline(fin, line);
     instream.str(line);
@@ -130,7 +130,7 @@ void load(const char *filename, int N) {
     }
 
     if (instream.fail()) {
-      cout << "reading failed at line " << n << "; exiting\n";
+      std::cout << "reading failed at line " << n << "; exiting\n";
       exit(1);
     }
     // calculate in the old way
@@ -189,11 +189,11 @@ void load(const char *filename, int N) {
   else
     dsigmaMax *= 1.3;
 
-  cout << "..done.\n";
-  cout << "Veff = " << vEff << "  dvMax = " << dvMax << endl;
-  cout << "Veff(old) = " << vEffOld << endl;
-  cout << "failed elements = " << nfail << endl;
-  cout << "mu_cut elements = " << ncut << endl;
+  std::cout << "..done.\n";
+  std::cout << "Veff = " << vEff << "  dvMax = " << dvMax << std::endl;
+  std::cout << "Veff(old) = " << vEffOld << std::endl;
+  std::cout << "failed elements = " << nfail << std::endl;
+  std::cout << "mu_cut elements = " << ncut << std::endl;
   // ---- prepare some stuff to calculate thermal densities
 
   // Load SMASH hadron list
@@ -207,8 +207,8 @@ void load(const char *filename, int N) {
 
   // NPART = total number of hadron states
   NPART = database.size();
-  cout << "NPART=" << NPART << endl;
-  cout << "dsigmaMax=" << dsigmaMax << endl;
+  std::cout << "NPART=" << NPART << std::endl;
+  std::cout << "dsigmaMax=" << dsigmaMax << "\n\n";
   cumulantDensity = new double[NPART];
 }
 
@@ -322,7 +322,8 @@ void generate() {
                            part.strangeness() * surf[iel].mus +
                            part.charge() * surf[iel].muq;
         if (muf >= mass)
-          cout << " ^^ muf = " << muf << "  " << part.pdgcode() << endl;
+          std::cout << " ^^ muf = " << muf << "  " << part.pdgcode()
+                    << std::endl;
         fthermal->SetParameters(surf[iel].T, muf, mass, stat);
         // const double dfMax = part->GetFMax() ;
         int niter = 0; // number of iterations, for debug purposes
@@ -417,11 +418,16 @@ void generate() {
         acceptParticle(ievent, &part, position, momentum);
       } // coordinate accepted
     }   // events loop
-    if (iel % (Nelem / 50) == 0)
-      cout << round(iel / (Nelem * 0.01)) << " % done, maxiter= " << nmaxiter
-           << endl;
+    if (iel % (Nelem / 50) == 0) {
+      int progress_in_percent = round(iel / (Nelem * 0.01));
+      std::printf("[%3i%%] done\t(maxiter: %10i)\n", progress_in_percent,
+                  nmaxiter);
+      std::fflush(stdout);
+    }
   } // loop over all elements
-  cout << "therm_failed elements: " << ntherm_fail << endl;
+  std::cout << "\nThermodynamically failed elements: " << ntherm_fail
+            << "\n(caused by negative temperatures or if the sum\n"
+               "of thermal densities is below 0 or above 100)\n\n";
   delete fthermal;
 }
 
@@ -436,12 +442,12 @@ void acceptParticle(int ievent, const smash::ParticleTypePtr &ldef,
   pList[ievent][npart1] = new_particle;
   npart1++;
   if (std::isinf(momentum.x0()) || std::isnan(momentum.x0())) {
-    cout << "acceptPart nan: known, coord=" << position << endl;
-    exit(1);
+    std::cout << "acceptPart nan: known, coord=" << position << std::endl;
+    std::exit(1);
   }
   if (npart1 > NPartBuf) {
-    cout << "Error. Please increase gen::npartbuf\n";
-    exit(1);
+    std::cerr << "ERROR: Please increase gen::NPartBuf\n";
+    std::exit(1);
   }
 }
 
