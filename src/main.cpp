@@ -107,6 +107,13 @@ int main(int argc, char *argv[]) {
   if (!command_line_output_dir.empty()) {
     params::output_directory = command_line_output_dir;
   }
+  if (params::surface_file == "unset" || params::output_directory == "unset") {
+    std::cerr << "ERROR: Config key 'surface_file' or 'output_dir' not set. "
+                 "Please check your configuration file and the provided "
+                 "command line arguments."
+              << std::endl;
+    std::exit(1);
+  }
 
   if (!suppress_disclaimer_and_parameter_printout) {
     print_disclaimer();
@@ -170,7 +177,7 @@ int getNlines(const char *filename) {
   if (!fin) {
     std::cerr << "ERROR: getNlines function cannot open freezeout file "
               << filename << std::endl;
-    exit(1);
+    std::exit(1);
   }
   std::string line;
   int number_of_lines = 0;
