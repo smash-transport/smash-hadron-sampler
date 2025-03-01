@@ -56,12 +56,12 @@ void readParams(const std::string &filename) {
       }
       if (hydro_coordinate_system != "tau-eta" &&
           hydro_coordinate_system != "cartesian") {
-        throw std::invalid_argument(
-            std::string("Only 'tau-eta' (default) or 'Cartesian' are supported "
-                        "as coordinate systems for the hydro evolution. "
-                        "Provided was '") +
-            hydro_coordinate_system +
-            std::string("'. Please update the config and try again."));
+        std::cerr << "ERROR: Only 'tau-eta' (default) or 'Cartesian' are "
+                     "supported as coordinate\n"
+                     "       systems for the hydro evolution. Provided was '"
+                  << hydro_coordinate_system
+                  << "'.\n       Please update the config and try again.\n";
+        std::exit(1);
       }
     } else if (parName == "transversal_smearing") {
       transversal_smearing_enabled = std::stoi(parValue);

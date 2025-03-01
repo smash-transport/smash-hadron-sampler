@@ -408,13 +408,6 @@ void generate() {
           vz = surf[iel].u[3] / surf[iel].u[0];
           t = surf[iel].pos[0];
           z = surf[iel].pos[3] + smearing_z_coordinate;
-        } else {
-          throw std::invalid_argument(
-              std::string("Only 'tau-eta' (default) or 'Cartesian' are "
-                          "supported as coordinate systems for the hydro "
-                          "evolution. Provided was '") +
-              params::hydro_coordinate_system +
-              std::string("'. Please check your config file."));
         }
 
         mom.Boost(vx, vy, vz);
