@@ -207,8 +207,8 @@ void load(const char *filename, int N) {
 
   // NPART = total number of hadron states
   NPART = database.size();
-  cout << "NPART=" << NPART << endl;
-  cout << "dsigmaMax=" << dsigmaMax << endl;
+  std::cout << "NPART=" << NPART << std::endl;
+  std::cout << "dsigmaMax=" << dsigmaMax << "\n\n";
   cumulantDensity = new double[NPART];
 }
 
@@ -416,11 +416,15 @@ void generate() {
         acceptParticle(ievent, &part, position, momentum);
       } // coordinate accepted
     }   // events loop
-    if (iel % (Nelem / 50) == 0)
-      cout << round(iel / (Nelem * 0.01)) << " % done, maxiter= " << nmaxiter
-           << endl;
+    if (iel % (Nelem / 50) == 0) {
+      int progress_in_percent = round(iel / (Nelem * 0.01));
+      std::printf("[%3i%%] done\t(maxiter: %10i)\n", progress_in_percent, nmaxiter);
+      std::fflush(stdout);
+    }
   } // loop over all elements
-  cout << "therm_failed elements: " << ntherm_fail << endl;
+  std::cout << "\nThermodynamically failed elements: " << ntherm_fail
+            << "\n(caused by negative temperatures or if the sum\n"
+               "of thermal densities is below 0 or above 100)\n\n";
   delete fthermal;
 }
 
@@ -435,12 +439,12 @@ void acceptParticle(int ievent, const smash::ParticleTypePtr &ldef,
   pList[ievent][npart1] = new_particle;
   npart1++;
   if (std::isinf(momentum.x0()) || std::isnan(momentum.x0())) {
-    cout << "acceptPart nan: known, coord=" << position << endl;
-    exit(1);
+    std::cout << "acceptPart nan: known, coord=" << position << std::endl;
+    std::exit(1);
   }
   if (npart1 > NPartBuf) {
-    cout << "Error. Please increase gen::npartbuf\n";
-    exit(1);
+    std::cerr << "ERROR: Please increase gen::NPartBuf\n";
+    std::exit(1);
   }
 }
 
