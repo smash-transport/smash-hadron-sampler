@@ -1,9 +1,11 @@
 #include <TFile.h>
 #include <TROOT.h>
 #include <TRandom3.h>
-#include <fstream>
-#include <string>
 #include <chrono>
+#include <filesystem>
+#include <fstream>
+#include <getopt.h>
+#include <string>
 
 #include "build_metadata.h"
 #include "gen.h"
@@ -13,92 +15,66 @@
 
 using namespace std;
 int getNlines(const char *filename);
-int readCommandLine(int argc, char **argv);
+void print_disclaimer();
+void usage(const int exit_status, const std::string &program_name);
 
-using params::NEVENTS;
+using params::number_of_events;
 using params::output_directory;
 using params::surface_file;
 
-// ########## MAIN block ##################
+/**
+ * Main program
+ * samples hadrons from freezeout hypersurface
+ *
+ * Does command line parsing
+ *
+ * \param[in] argc Number of arguments on command-line
+ * \param[in] argv List of arguments on command-line
+ * \return Either 0 or EXIT_FAILURE.
+ */
+int main(int argc, char *argv[]) {
+  constexpr option long_options[] = {{"config", required_argument, 0, 'c'},
+                                     {"help", no_argument, 0, 'h'},
+                                     {"num", required_argument, 0, 'n'},
+                                     {"output", required_argument, 0, 'o'},
+                                     {"surface", required_argument, 0, 's'},
+                                     {"quiet", no_argument, 0, 'q'},
+                                     {"version", no_argument, 0, 0},
+                                     {nullptr, 0, 0, 0}};
 
-int main(int argc, char **argv) {
-  ROOT::EnableThreadSafety();
-  // command-line parameters
-  int prefix = readCommandLine(argc, argv);
-  params::printParameters();
-  const auto time0 = std::chrono::system_clock::now();
-  const int ranseed = std::chrono::duration_cast<std::chrono::seconds>(time0.time_since_epoch()).count() + prefix * 16;
+  // strip any path to program_name
+  const std::string program_name =
+      std::filesystem::path(argv[0]).filename().native();
 
-  TRandom3 *random3 = new TRandom3();
-  random3->SetSeed(ranseed);
-  cout << "Random seed = " << ranseed << endl;
-  gen::rnd = random3;
+  std::string num{"0"};
+  std::string configuration, command_line_output_dir{""},
+      command_line_surface_file{""};
+  bool suppress_disclaimer_and_parameter_printout = false;
 
-  // ========== generator init
-  gen::load(surface_file.c_str(), getNlines(surface_file.c_str()));
-
-  // ========== trees & files
-  const auto start_time = std::chrono::steady_clock::now();
-
-  //============= main task
-  std::string make_output_directory = "mkdir -p " + output_directory;
-  system(make_output_directory.c_str());
-
-  gen::generate(); // one call for NEVENTS
-
-  // ROOT output disabled by default
-  if (params::create_root_output) {
-    // Initialize ROOT output
-    std::string root_output_file =
-        output_directory + "/" + std::to_string(prefix) + ".root";
-    TFile *outputFile = new TFile(root_output_file.c_str(), "RECREATE");
-    outputFile->cd();
-    MyTree *treeIni = new MyTree(static_cast<const char *>("treeini"));
-
-    // Write ROOT output
-    for (int iev = 0; iev < NEVENTS; iev++) {
-      treeIni->fill(iev);
-    } // end events loop
-    outputFile->Write();
-    outputFile->Close();
-  }
-
-  // Write Oscar output
-  write_oscar_output();
-
-  cout << "Event generation done\n";
-  const auto end_time = std::chrono::steady_clock::now();
-  const auto execution_time = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
-  cout << "Execution time = " << execution_time.count() << " [sec]" << endl;
-  return 0;
-}
-
-int readCommandLine(int argc, char **argv) {
-  if (argc == 1) {
-    cout << "ERROR: Missing command line parameters!" << endl;
-    exit(1);
-  }
-  bool is_config_given = false;
-  int prefix = 0;
-  int iarg = 1;
-  while (iarg < argc - 1) {
-    if (strcmp(argv[iarg], "--config") == 0 || strcmp(argv[iarg], "-c") == 0) {
-      params::readParams(argv[iarg + 1]);
-      is_config_given = true;
-      iarg += 2;
-    } else if (strcmp(argv[iarg], "--num") == 0 ||
-               strcmp(argv[iarg], "-n") == 0) {
-      prefix = atoi(argv[iarg + 1]);
-      iarg += 2;
-    } else if (strcmp(argv[iarg], "--output") == 0 ||
-               strcmp(argv[iarg], "-o") == 0) {
-      output_directory = argv[iarg + 1];
-      iarg += 2;
-    } else if (strcmp(argv[iarg], "--surface") == 0 ||
-               strcmp(argv[iarg], "-s") == 0) {
-      surface_file = argv[iarg + 1];
-      iarg += 2;
-    } else if (strcmp(argv[1], "--version") == 0) {
+  // parse command-line arguments
+  int option;
+  while ((option = getopt_long(argc, argv, "c:hn:o:s:q", long_options,
+                               nullptr)) != -1) {
+    switch (option) {
+    case 'c':
+      configuration = optarg;
+      break;
+    case 'h':
+      usage(EXIT_SUCCESS, program_name);
+      break;
+    case 'n':
+      num = optarg;
+      break;
+    case 'o':
+      command_line_output_dir = optarg;
+      break;
+    case 's':
+      command_line_surface_file = optarg;
+      break;
+    case 'q':
+      suppress_disclaimer_and_parameter_printout = true;
+      break;
+    case 0: // --version case
       std::printf("%s\n"
 #ifdef GIT_BRANCH
                   "Branch   : %s\n"
@@ -112,30 +88,162 @@ int readCommandLine(int argc, char **argv) {
                   CMAKE_SYSTEM, CMAKE_CXX_COMPILER_ID,
                   CMAKE_CXX_COMPILER_VERSION, BUILD_DATE);
       std::exit(EXIT_SUCCESS);
-    } else {
-      cout << "Unknown command line parameter: " << argv[iarg] << endl;
-      iarg++;
+    default:
+      usage(EXIT_FAILURE, program_name);
     }
   }
-  if (!is_config_given) {
-    cout << "ERROR: No config file provided." << endl;
-    exit(126);
+
+  // Abort if there are unhandled arguments left.
+  if (optind < argc) {
+    std::cout << "\n"
+              << argv[0] << ": invalid argument -- '" << argv[optind] << "'\n";
+    usage(EXIT_FAILURE, program_name);
   }
-  return prefix;
+
+  params::read_configuration_file(configuration);
+  if (!command_line_surface_file.empty()) {
+    params::surface_file = command_line_surface_file;
+  }
+  if (!command_line_output_dir.empty()) {
+    params::output_directory = command_line_output_dir;
+  }
+  if (params::surface_file == "unset" || params::output_directory == "unset") {
+    std::cerr << "ERROR: Config key 'surface_file' or 'output_dir' not set. "
+                 "Please check your configuration file and the provided "
+                 "command line arguments."
+              << std::endl;
+    std::exit(1);
+  }
+
+  if (!suppress_disclaimer_and_parameter_printout) {
+    print_disclaimer();
+    params::print_config_parameters();
+  }
+
+  ROOT::EnableThreadSafety();
+  const auto time0 = std::chrono::system_clock::now();
+  const int ranseed =
+      std::chrono::duration_cast<std::chrono::seconds>(time0.time_since_epoch())
+          .count() +
+      std::stoi(num) * 16;
+
+  TRandom3 *random3 = new TRandom3();
+  random3->SetSeed(ranseed);
+  std::cout << "Random seed:  " << ranseed << std::endl;
+  gen::rnd = random3;
+
+  // ========== generator init
+  gen::load(surface_file.c_str(), getNlines(surface_file.c_str()));
+
+  // ========== trees & files
+  const auto start_time = std::chrono::steady_clock::now();
+
+  //============= main task
+  std::string make_output_directory = "mkdir -p " + output_directory;
+  system(make_output_directory.c_str());
+
+  gen::generate(); // one call for number_of_events
+
+  // ROOT output disabled by default
+  if (params::create_root_output) {
+    // Initialize ROOT output
+    std::string root_output_file = output_directory + "/" + num + ".root";
+    TFile *outputFile = new TFile(root_output_file.c_str(), "RECREATE");
+    outputFile->cd();
+    MyTree *treeIni = new MyTree(static_cast<const char *>("treeini"));
+
+    // Write ROOT output
+    for (int iev = 0; iev < number_of_events; iev++) {
+      treeIni->fill(iev);
+    } // end events loop
+    outputFile->Write();
+    outputFile->Close();
+  }
+
+  // Write Oscar output
+  write_oscar_output();
+
+  const auto end_time = std::chrono::steady_clock::now();
+  const auto execution_time =
+      std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
+  std::cout << "Event generation done (execution time: "
+            << execution_time.count() << " [sec])." << std::endl;
+  return 0;
 }
 
-// auxiliary function to get the number of lines of the freezeout data file
+/// Function to get the number of lines in the freezeout data file
 int getNlines(const char *filename) {
-  ifstream fin(filename);
+  std::ifstream fin(filename);
   if (!fin) {
-    cout << "getNlines function error: Cannot open file " << filename << endl;
-    exit(1);
+    std::cerr << "ERROR: getNlines function cannot open freezeout file "
+              << filename << std::endl;
+    std::exit(1);
   }
-  string line;
+  std::string line;
   int number_of_lines = 0;
   while (getline(fin, line)) {
     number_of_lines++;
   };
   fin.close();
   return number_of_lines;
+}
+
+/// Print the disclaimer.
+void print_disclaimer() {
+  std::cout
+      << "###################################################################"
+      << "#############"
+      << "\n"
+      << "\n"
+      << " This is SMASH-hadron-sampler version: " << SAMPLER_VERSION << "\n"
+      << "\n"
+      << " Distributed under the GNU General Public License 3.0"
+      << " (GPLv3 or later)."
+      << "\n"
+      << " See LICENSE file for details."
+      << "\n"
+      << "\n"
+      << " Please cite the following papers when using the SMASH-hadron-sampler"
+      << "\n"
+      << "      [1] I. Karpenko et al., Phys. Rev. C 91 (2015) 6, 064901"
+      << "\n"
+      << "      [2] A. Schäfer et al., arXiv:2112.08724"
+      << "\n"
+      << "\n"
+      << " Report issues via GitHub at"
+      << "\n"
+      << " https://github.com/smash-transport/smash-hadron-sampler"
+      << "\n"
+      << "\n"
+      << "###################################################################"
+      << "#############"
+      << "\n"
+      << "\n";
+}
+
+/**
+ * Prints usage information and exits the program
+ *
+ * \param[out] exit_status Exit status to return
+ * \param[in] program_name Name of the program
+ *
+ * usage() is called when either the `--help` or `-h` command line
+ * options are given to the program; in this case, the exit status is
+ * EXIT_SUCCESS, or when an unknown option is given; in this case,
+ * the exit status is EXIT_FAIL.
+ */
+void usage(const int exit_status, const std::string &program_name) {
+  std::printf("\nUsage: %s [option]\n\n", program_name.c_str());
+  std::printf(
+      "  -h, --help              print this help message and exit\n"
+      "\n"
+      "  -c, --config <file>     path to input configuration file\n"
+      "  -n, --num <int>         specify integer to create random seed "
+      "(default: 0)\n"
+      "  -o, --output <dir>      override output directory config value\n"
+      "  -s, --surface <dir>     override hypersurface freezeout config value\n"
+      "\n"
+      "  -q, --quiet             suppress disclaimer print-out\n"
+      "  --version               print version of sampler executable\n\n");
+  std::exit(exit_status);
 }

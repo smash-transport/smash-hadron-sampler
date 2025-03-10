@@ -13,7 +13,7 @@ void write_oscar_output() {
   std::unique_ptr<smash::OutputInterface> OscarOutput = create_oscar_output(
       "Oscar2013", "Particles", OutputPath, smash::OutputParameters());
 
-  for (int iev = 0; iev < params::NEVENTS; iev++) {
+  for (int iev = 0; iev < params::number_of_events; iev++) {
     // Create Particles oject which contains the full particle list of each
     // event
     std::unique_ptr<smash::Particles> particles =
