@@ -1,74 +1,106 @@
-#include <cstdlib>
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <sstream>
-#include <cstring>
 
 #include "params.h"
 
-using namespace std ;
+using namespace std;
 
-namespace params{
+namespace params {
 
-char sSurface [255], sSpectraDir [255];
-bool weakContribution ;
-bool rescatter ;
-bool shear ;
-bool bulk ;
-//double Temp, mu_b, mu_q, mu_s ;
-int NEVENTS ;
-double NBINS, QMAX ;
-double dx, dy, deta ;
-double ecrit ;
-double cs2=0.15;
-double ratio_pressure_energydensity=0.15;
+std::string surface_file{"unset"}, output_directory{"unset"};
+bool bulk_viscosity_enabled{false}, create_root_output{false},
+    shear_viscosity_enabled{false};
+int number_of_events;
+double dx{0}, dy{0}, deta{0.05};
+double ecrit, speed_of_sound_squared{0.15}, ratio_pressure_energydensity{0.15};
+// double Temp, mu_b, mu_q, mu_s ;
+std::vector<std::string> comments_in_config_file,
+    unknown_parameters_in_config_file;
 
-// ############ reading and processing the parameters
-
-void readParams(char* filename)
-{
-	char parName [255], parValue [255] ;
-	ifstream fin(filename) ;
-	if(!fin.is_open()) { cout << "cannot open parameters file " << filename << endl ; exit(1) ; }
-	while(fin.good()){
-		string line ;
-		getline(fin, line) ;
-		istringstream sline (line) ;
-		sline >> parName >> parValue ;
-		if     (strcmp(parName,"surface")==0) strcpy(sSurface, parValue) ;
-		else if(strcmp(parName,"spectra_dir")==0) strcpy(sSpectraDir, parValue) ;
-		else if(strcmp(parName,"Nbins")==0) NBINS = atoi(parValue) ;
-		else if(strcmp(parName,"q_max")==0) QMAX = atof(parValue) ;
-		else if(strcmp(parName,"number_of_events")==0) NEVENTS = atoi(parValue) ;
-		else if(strcmp(parName,"rescatter")==0) rescatter = atoi(parValue) ;
-		else if(strcmp(parName,"weakContribution")==0) weakContribution = atoi(parValue) ;
-		else if(strcmp(parName,"shear")==0) shear = atoi(parValue) ;
-		else if(strcmp(parName,"bulk")==0) bulk = atoi(parValue) ;
-		else if(strcmp(parName,"ecrit")==0) ecrit = atof(parValue) ;
-		else if(strcmp(parName,"cs2")==0) cs2 = atof(parValue) ;
-		else if(strcmp(parName,"ratio_pressure_energydensity")==0) ratio_pressure_energydensity = atof(parValue) ;
-		else if(parName[0]=='!') cout << "CCC " << sline.str() << endl ;
-		else cout << "UUU " << sline.str() << endl ;
-	}
- deta=0.05 ; dx=dy=0.0 ; // TODO!
+/// Read and process configuration file parameters
+void read_configuration_file(const std::string &filename) {
+  std::string parName, parValue;
+  std::ifstream fin(filename.c_str());
+  if (!fin.is_open()) {
+    std::cerr << "ERROR: Cannot open config file " << filename << std::endl;
+    std::exit(1);
+  }
+  while (fin.good()) {
+    std::string line;
+    getline(fin, line);
+    std::istringstream sline(line);
+    sline >> parName >> parValue;
+    if (parName == "surface_file") {
+      surface_file = parValue;
+    } else if (parName == "output_dir") {
+      output_directory = parValue;
+    } else if (parName == "number_of_events") {
+      number_of_events = std::stoi(parValue);
+    } else if (parName == "shear") {
+      shear_viscosity_enabled = std::stoi(parValue);
+    } else if (parName == "bulk") {
+      bulk_viscosity_enabled = std::stoi(parValue);
+    } else if (parName == "ecrit") {
+      ecrit = std::stod(parValue);
+    } else if (parName == "cs2") {
+      speed_of_sound_squared = std::stod(parValue);
+    } else if (parName == "ratio_pressure_energydensity") {
+      ratio_pressure_energydensity = std::stod(parValue);
+    } else if (parName == "create_root_output") {
+      create_root_output = std::stoi(parValue);
+    } else if (parName[0] == '!') {
+      comments_in_config_file.push_back(line);
+    } else {
+      unknown_parameters_in_config_file.push_back(line);
+    }
+  }
 }
 
-void printParameters()
-{
-  cout << "====== parameters ======\n" ;
-  cout << "surface = " << sSurface << endl ;
-  cout << "spectraDir = " << sSpectraDir << endl ;
-  cout << "numberOfEvents = " << NEVENTS << endl ;
-  cout << "isRescatter = " << rescatter << endl ;
-  cout << "weakContribution = " << weakContribution << endl ;
-  cout << "shear_visc_on = " << shear << endl ;
-  cout << "bulk_visc_on = " << bulk << endl ;
-  cout << "e_critical = " << ecrit << endl ;
-  cout << "Nbins = " << NBINS << endl ;
-  cout << "q_max = " << QMAX << endl ;
-  cout << "cs2 = " << cs2 << endl ;
-  cout << "ratio_pressure_energydensity = " << ratio_pressure_energydensity << endl ;
-  cout << "======= end parameters =======\n" ;
+/// Auxiliary function to print comments and unknown parameters in config file
+void print_comments_and_unknown_parameters_of_config_file(
+    std::vector<std::string> comments_or_unknowns_in_config_file) {
+  for (auto &element : comments_or_unknowns_in_config_file) {
+    std::cout << "'" << element << "'" << std::endl;
+  }
 }
 
+/// Print config parameters to terminal
+void print_config_parameters() {
+  std::cout << "# ---------------------- parameters used for sampler run "
+               "-----------------------"
+            << "\n"
+            << "surface_file:                 " << surface_file << "\n"
+            << "output_dir:                   " << output_directory << "\n"
+            << "number_of_events:             " << number_of_events << "\n"
+            << "shear:                        " << shear_viscosity_enabled
+            << "\n"
+            << "bulk:                         " << bulk_viscosity_enabled
+            << "\n"
+            << "ecrit:                        " << ecrit << "\n"
+            << "cs2:                          " << speed_of_sound_squared
+            << "\n"
+            << "ratio_pressure_energydensity: " << ratio_pressure_energydensity
+            << "\n"
+            << "create_root_output:           " << create_root_output << "\n"
+            << "# -------------------------------------------------------"
+               "-----------------------"
+            << "\n\n";
+
+  if (!comments_in_config_file.empty()) {
+    std::cout << "Comments in configuration file:" << std::endl;
+    print_comments_and_unknown_parameters_of_config_file(
+        comments_in_config_file);
+    std::cout << "\n";
+  }
+  if (!unknown_parameters_in_config_file.empty()) {
+    std::cout << "Unknown parameters in config configuration file that will "
+                 "not be considered:"
+              << std::endl;
+    print_comments_and_unknown_parameters_of_config_file(
+        unknown_parameters_in_config_file);
+    std::cout << "\n";
+  }
 }
+
+} // namespace params
