@@ -23,7 +23,7 @@ Also possible, but for this project less relevant, is `Deprecated` for soon-to-b
 
 ## Unreleased
 
-## SMASH-hadron-sampler-3.1.1
+## SMASH-hadron-sampler-3.2
 Date: 2025-03-10
 
 * :left_right_arrow: Renamed config key `surface`, used to specify the freezeout surface file, to `surface_file` to clarify key
