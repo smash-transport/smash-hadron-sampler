@@ -23,12 +23,17 @@ Also possible, but for this project less relevant, is `Deprecated` for soon-to-b
 
 ## Unreleased
 
+## SMASH-hadron-sampler-3.2
+Date: 2025-03-10
+
 * :left_right_arrow: Renamed config key `surface`, used to specify the freezeout surface file, to `surface_file` to clarify key
 * :left_right_arrow: Renamed config key `spectra_dir`, used to specify the output directory, to `output_dir`
 * :left_right_arrow: ROOT output is now disabled by default, it can be enabled in the config by setting `create_root_output` parameter to 1
 * :left_right_arrow: Changed the command line parameters used to run the sampler to clarify their usage (see README.md for detailed info on options and usage)
 * :heavy_plus_sign: Added optional command line parameters to overwrite the `surface` and `output_dir` keys in the config file (see README.md for detailed info on options and usage)
 * :sos: Fix problems with thread safety from ROOT objects
+
+[Link to diff from previous version](https://github.com/smash-transport/smash-hadron-sampler/compare/SMASH-hadron-sampler-3.1.1...SMASH-hadron-sampler-3.2)
 
 
 ## SMASH-hadron-sampler-3.1.1
