@@ -22,12 +22,13 @@ For details about the sampling algorithm, please consult [I. Karpenko et al., Ph
 > [!IMPORTANT]
 > Only tagged versions are guaranteed to be compatible with SMASH.
 
+The minimum requirement regarding the [SMASH transport approach](https://github.com/smash-transport/smash) is that it can be used as a library.
+Detailed install instructions how to compile SMASH are provided in SMASH'S [README.md](https://github.com/smash-transport/smash/blob/main/README.md) and [INSTALL.md](https://github.com/smash-transport/smash/blob/main/INSTALL.md) files.
+If the output of the sampler is expected to be fed into SMASH for particle propagation after the sampling (Afterburner), then SMASH needs to be compiled entirely &ndash; not just as a library.
+
 
 ## Install instructions
-It is expected that the output of this sampler is used in combination with the SMASH transport model.
-We therefore assume SMASH was already compiled and is available to be used as an external library.
-All necessary prerequisites are also assumed to already be installed.
-If not, install instructions can be found [here](https://github.com/smash-transport/smash/blob/main/INSTALL.md).
+Before getting started with the sampler installation, please check that all prerequisites are satisfied and needed software ready to be used.
 
 To compile the project, first set the environment variable to the smash directory:
 
