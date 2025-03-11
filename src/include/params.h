@@ -22,7 +22,7 @@ extern double ecrit, cs2, ratio_pressure_energydensity;
  *
  * **Default Value:** False
  */
-extern bool is_spin_sampling_on;
+extern bool is_spin_sampling_on, vorticity_output_enabled;
 
 /**
  * Helper function to get the directory part of a file path.

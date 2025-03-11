@@ -16,7 +16,7 @@ bool weakContribution ;
 bool rescatter ;
 bool shear ;
 bool bulk ;
-bool is_spin_sampling_on;
+bool is_spin_sampling_on, vorticity_output_enabled;
 //double Temp, mu_b, mu_q, mu_s ;
 int NEVENTS ;
 double NBINS, QMAX ;
@@ -66,6 +66,7 @@ void readParams(char* filename)
 		else if(strcmp(parName,"cs2")==0) cs2 = atof(parValue) ;
 		else if(strcmp(parName,"ratio_pressure_energydensity")==0) ratio_pressure_energydensity = atof(parValue) ;
 		else if(strcmp(parName, "sample_spin") == 0) is_spin_sampling_on = atoi(parValue);
+		else if(strcmp(parName, "vorticity_vector") == 0) vorticity_output_enabled = atoi(parValue);
 		else if(parName[0]=='!') cout << "CCC " << sline.str() << endl ;
 		else cout << "UUU " << sline.str() << endl ;
 	}
@@ -101,6 +102,7 @@ void printParameters()
   cout << "cs2 = " << cs2 << endl ;
   cout << "ratio_pressure_energydensity = " << ratio_pressure_energydensity << endl ;
   cout << "sample_spin = " << is_spin_sampling_on << endl ;
+  cout << "vorticity_vector = " << vorticity_output_enabled << endl ;
   cout << "======= end parameters =======\n" ;
 }
 

@@ -28,7 +28,7 @@ inline double four_vector_square(const std::array<double, 4> &four_vector) {
 // calculate the full EQ. 60 afterwards.
 std::array<double, 4> theta(const double mass,
                             const std::array<double, 16> &vorticity,
-                            const double (&p_lower_index)[4]);
+                            const std::array<double, 4> &p);
 
 // Calculate the exponent of exp(...) in EQ. (60) from arXiv:2304.02276v2
 inline double exponent(const double k, const double energy_density,
@@ -43,8 +43,9 @@ inline double exponent(const double k, const double energy_density,
   return (energy_density - mu) / temperature - k * sqrt(-theta_squared);
 }
 
-// Calculate either the Fermi or Bose distribution given the spin of the particle
-inline double fermi_bose_distribution(const int spin, const double argument){
+// Calculate either the Fermi or Bose distribution given the spin of the
+// particle
+inline double fermi_bose_distribution(const int spin, const double argument) {
   if (spin % 2 == 0) {
     return 1.0 / (std::exp(argument) - 1.0);
   } else {
@@ -52,7 +53,11 @@ inline double fermi_bose_distribution(const int spin, const double argument){
   }
 }
 
-void calculate_and_set_spin_vector(const gen::element &freezeout_element,
+void add_entry_to_theta_storage(const smash::ParticleData *particle,
+                                const std::array<double, 16> &vorticity);
+
+void calculate_and_set_spin_vector(const int index_event,
+                                   const gen::element &freezeout_element,
                                    smash::ParticleData *particle);
 
 }  // namespace spin

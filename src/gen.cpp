@@ -76,6 +76,7 @@ TRandom3 *rnd ;
 int NPART ;
 //const int NPartBuf = 10000 ;
 smash::ParticleData ***pList ; // particle arrays
+std::unique_ptr<std::vector<std::vector<ThetaStruct>>> thetaStorage = nullptr;
 
 element *surf;
 int *npart;               // number of generated particles in each event
@@ -216,6 +217,20 @@ void load(char *filename, int N)
  cumulantDensity = new double [NPART] ;
 }
 
+void enable_vorticity_storage() {
+  // Allocate memory for the vorticity vector for each sampled particle
+  // if spin sampling and vorticity output are enabled in the config
+  if (params::is_spin_sampling_on && params::vorticity_output_enabled) {
+    thetaStorage = std::make_unique<std::vector<std::vector<ThetaStruct>>>(
+        params::NEVENTS);
+  } else if (!params::is_spin_sampling_on && params::vorticity_output_enabled) {
+    throw std::runtime_error(
+        "Vorticity output is enabled but spin sampling is not. "
+        "Enable spin sampling in the config file by adding "
+        " the line 'sample_spin 1'.");
+  }
+}
+
 double ffthermal(double *x, double *par)
 {
   double &T = par[0] ;
@@ -350,7 +365,7 @@ int generate()
 
    // Calculate and set the spin vector if spin sampling is enabled
    if (params::is_spin_sampling_on) {
-    spin::calculate_and_set_spin_vector(surf[iel], particle_ptr);
+    spin::calculate_and_set_spin_vector(ievent, surf[iel], particle_ptr);
    }
   } // coordinate accepted
   } // events loop

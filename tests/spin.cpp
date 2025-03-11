@@ -2,8 +2,8 @@
 
 #include <array>
 #include <cmath>
-#include <random>
 #include <iomanip>
+#include <random>
 
 #include "gen.h"
 #include "smash/pdgcode.h"
@@ -73,10 +73,11 @@ TEST(theta_valid_values) {
   const std::array<double, 16> vorticity = {0.0,  1.0,  2.0,  3.0,  -1.0, 0.0,
                                             4.0,  5.0,  -2.0, -4.0, 0.0,  6.0,
                                             -3.0, -5.0, -6.0, 0.0};
-  const double p_lower_index[4] = {1.0, 2.0, 3.0, 4.0};
+  const std::array<double, 4> p = {1.0, 2.0, 3.0, 4.0};
   // Manually calculated values for theta
-  const double expected_theta_array[4] = {26.0, 10.0, -6.0, 6.0};
-  const auto theta_array = theta(mass, vorticity, p_lower_index);
+  const double expected_theta_array[4] = {26.0 * hbarC, 10.0 * hbarC,
+                                          -6.0 * hbarC, 6.0 * hbarC};
+  const auto theta_array = theta(mass, vorticity, p);
   // Perform checks
   VERIFY(theta_array.size() == 4);
   VERIFY(expect_near(theta_array[0], expected_theta_array[0], 1e-9));
@@ -89,10 +90,11 @@ TEST(theta_valid_values) {
   const std::array<double, 16> vorticity2 = {0.0,  1.9,  -5.1, 3.7, -1.9, 0.0,
                                              -6.3, -4.9, 5.1,  6.3, 0.0,  -5.6,
                                              -3.7, 4.9,  5.6,  0.0};
-  const double p_lower_index2[4] = {2.8, -1.3, 3.4, -4.1};
-  const double expected_theta_array2[4] = {55.3, -8.16666666667, 18.5555555556,
-                                           -19.7888888889};
-  const auto theta_array2 = theta(mass2, vorticity2, p_lower_index2);
+  const std::array<double, 4> p2 = {2.8, -1.3, 3.4, -4.1};
+  const double expected_theta_array2[4] = {55.3 * hbarC, -8.16666666667 * hbarC,
+                                           18.5555555556 * hbarC,
+                                           -19.7888888889 * hbarC};
+  const auto theta_array2 = theta(mass2, vorticity2, p2);
   // Perform checks
   VERIFY(theta_array2.size() == 4);
   VERIFY(expect_near(theta_array2[0], expected_theta_array2[0], 1e-9));
@@ -109,7 +111,7 @@ TEST(theta_tensor_structure) {
   // However, this test performs the contractions with the metric tensor
   // explicitely to ensure that the tensor structure is correct.
   const double mass = 0.55;
-  const double p[4] = {5.5, 2.2, 3.3, 1.1};
+  const std::array<double, 4> p = {5.5, 2.2, 3.3, 1.1};
   const std::array<double, 16> vorticity = {0.0,  1.7,  2.1,  3.4,  -1.7, 0.0,
                                             4.4,  5.9,  -2.1, -4.4, 0.0,  6.3,
                                             -3.4, -5.9, -6.3, 0.0};
@@ -130,7 +132,7 @@ TEST(theta_tensor_structure) {
           for (int alpha = 0; alpha < 4; alpha++) {
             for (int beta = 0; beta < 4; beta++) {
               for (int gamma = 0; gamma < 4; gamma++) {
-                theta_expected[mu] +=
+                theta_expected[mu] += hbarC *
                     (-1.0 / (2.0 * mass)) * levi_civita(mu, nu, rho, sigma) *
                     g[nu][alpha] * g[rho][beta] * vorticity[at(alpha, beta)] *
                     g[sigma][gamma] * p[gamma];
@@ -154,10 +156,10 @@ TEST(theta_invalid_mass) {
   const std::array<double, 16> vorticity = {0.0,  1.0,  2.0,  3.0,  -1.0, 0.0,
                                             4.0,  5.0,  -2.0, -4.0, 0.0,  6.0,
                                             -3.0, -5.0, -6.0, 0.0};
-  const double p_lower_index[4] = {1.0, 2.0, 3.0, 4.0};
+  const std::array<double, 4> p = {1.0, 2.0, 3.0, 4.0};
   // Expect an invalid argument exception
   try {
-    theta(mass, vorticity, p_lower_index);
+    theta(mass, vorticity, p);
     std::cout << "theta unexpectedly passed with massless particle"
               << std::endl;
   } catch (std::invalid_argument &e) {
@@ -273,14 +275,15 @@ TEST(spin_vector_valid_values) {
       std::sqrt(pion->pole_mass() * pion->pole_mass() + 0.11 * 0.11 +
                 0.22 * 0.22 + 0.33 * 0.33),
       0.11, 0.22, 0.33};
-  const double proton_mom[4] = {
+  const std::array<double, 4> proton_mom = {
       std::sqrt(proton->pole_mass() * proton->pole_mass() + 0.11 * 0.11 +
                 0.22 * 0.22 + 0.33 * 0.33),
       0.11, 0.22, 0.33};
-  const double rho_mom[4] = {std::sqrt(rho->pole_mass() * rho->pole_mass() +
-                                       0.11 * 0.11 + 0.22 * 0.22 + 0.33 * 0.33),
-                             0.11, 0.22, 0.33};
-  const double delta_plus_mom[4] = {
+  const std::array<double, 4> rho_mom = {
+      std::sqrt(rho->pole_mass() * rho->pole_mass() + 0.11 * 0.11 +
+                0.22 * 0.22 + 0.33 * 0.33),
+      0.11, 0.22, 0.33};
+  const std::array<double, 4> delta_plus_mom = {
       std::sqrt(delta_plus->pole_mass() * delta_plus->pole_mass() +
                 0.11 * 0.11 + 0.22 * 0.22 + 0.33 * 0.33),
       0.11, 0.22, 0.33};
@@ -328,7 +331,7 @@ TEST(spin_vector_valid_values) {
          std::isnan(pion->spin_vector()[3]));
 
   // Calculate and set the spin vector for the pion
-  calculate_and_set_spin_vector(surf_element, pion);
+  calculate_and_set_spin_vector(0, surf_element, pion);
 
   // Perform checks
   VERIFY(expect_near(pion->spin_vector()[0], 0.0, 1e-9));
@@ -344,7 +347,7 @@ TEST(spin_vector_valid_values) {
          std::isnan(proton->spin_vector()[3]));
 
   // Calculate and set the spin vector for the proton
-  calculate_and_set_spin_vector(surf_element, proton);
+  calculate_and_set_spin_vector(0, surf_element, proton);
 
   // Calculate the expected values for the spin vector
   std::array<double, 4> theta_vector =
@@ -381,7 +384,7 @@ TEST(spin_vector_valid_values) {
       std::isnan(rho->spin_vector()[2]) && std::isnan(rho->spin_vector()[3]));
 
   // Calculate and set the spin vector for the rho
-  calculate_and_set_spin_vector(surf_element, rho);
+  calculate_and_set_spin_vector(0, surf_element, rho);
 
   // Calculate the expected values for the spin vector
   theta_vector = theta(rho->pole_mass(),
@@ -389,7 +392,7 @@ TEST(spin_vector_valid_values) {
   theta_squared = spin::four_vector_square(theta_vector);
 
   denominator_1 =
-      1 / (std::exp(exponent(-1.0, 1.7, 4.3, 0.7, theta_squared)) + 1);
+      1 / (std::exp(exponent(-1.0, 1.7, 4.3, 0.7, theta_squared)) - 1);
   denominator_2 =
       1 / (std::exp(exponent(0.0, 1.7, 4.3, 0.7, theta_squared)) - 1);
   double denominator_3 =
@@ -421,7 +424,7 @@ TEST(spin_vector_valid_values) {
          std::isnan(delta_plus->spin_vector()[3]));
 
   // Calculate and set the spin vector for the delta plus
-  calculate_and_set_spin_vector(surf_element, delta_plus);
+  calculate_and_set_spin_vector(0, surf_element, delta_plus);
 
   // Calculate the expected values for the spin vector
   theta_vector =

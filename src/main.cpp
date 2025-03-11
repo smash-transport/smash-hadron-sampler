@@ -9,7 +9,6 @@
 #include "tree.h"
 
 using namespace std ;
-void check_input_formats(char *filename);
 int getNlines(char *filename) ;
 int readCommandLine(int argc, char** argv) ;
 
@@ -42,6 +41,7 @@ int main(int argc, char **argv)
     Vorticity::ensure_vorticity_file_exists_and_check_format();
     Vorticity::ensure_extended_freezeout_is_given();
     Vorticity::set_number_of_corona_cells();
+    gen::enable_vorticity_storage();
   }
 
   TRandom3* random3 = new TRandom3();
@@ -78,6 +78,11 @@ int main(int argc, char **argv)
 
  // Write Oscar output
  write_oscar_output();
+
+ // Write vorticity vector to file
+ if(params::vorticity_output_enabled){
+  save_vorticity_vectors_to_file();
+ }
 
  cout << "event generation done\n" ;
  time(&end); float diff2 = difftime(end, start);

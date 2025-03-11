@@ -17,6 +17,15 @@ class Particle;
 int index44(const int &i, const int &j);
 
 namespace gen {
+
+// This struct is only used if vorticity_output_enabled is set to true in the
+// config file. It is used to store the vorticity vector and the corresponding
+// coordinates for each sampled particle.
+struct ThetaStruct {
+  std::array<double, 4> coordinates;
+  std::array<double, 4> vorticity_vector;
+};
+
 // typedef std::vector<Particle*> ParticleList ; // TODO in far future
 //  data
 extern TRandom3 *rnd;
@@ -27,6 +36,10 @@ const int NPartBuf = 30000;  // dimension of particle buffer for each event
 // creating aliases for Vorticity and energy density
 using OptionalVorticity = std::optional<std::unique_ptr<Vorticity>>;
 using OptionalEnergy = std::optional<double>;
+
+// If vorticity_vector == 1 in the config, thetaStorage will be used to store
+// the vorticity vector for each sampled particle
+extern std::unique_ptr<std::vector<std::vector<ThetaStruct>>> thetaStorage;
 
 // Define the structure of the elements of the freeze-out surface
 struct element {
@@ -51,6 +64,10 @@ struct element {
 
 // functions
 void load(char *filename, int N);
+
+// Allocate memory for the vorticity vector for each sampled particle
+void enable_vorticity_storage();
+
 int generate();
 smash::ParticleData *acceptParticle(int event,
                                     const smash::ParticleTypePtr &ldef,
