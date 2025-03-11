@@ -44,8 +44,7 @@ class Vorticity {
 
   // given the complete freezeout surface, this function sets the vorticity
   // tensor in all surface cells from the vorticity file
-  static void set_vorticity_in_surface_cells(gen::element* surf,
-                                                        int N);
+  static void set_vorticity_in_surface_cells(gen::element* surf, int N);
 
   // return a component of the vorticity tensor as a 4x4 matrix
   reference at(int i, int j) { return vorticity_[i * 4 + j]; }

@@ -2,14 +2,15 @@
 
 #include <fstream>
 #include <iostream>
+#include <regex>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <regex>
 
 #include "gen.h"
 #include "params.h"
+#include "vorticity.h"
 
 int Vorticity::num_corona_cells_ = -1;
 
@@ -54,7 +55,7 @@ void Vorticity::ensure_vorticity_file_exists_and_check_format() {
     // Check if the third line matches the expected format
     if (comment_lines_read == 2) {
       const std::string expected_third_line =
-          "#  τ  x  y  η  dΣ[0]  dΣ[1]  dΣ[2]  dΣ[3]  u[0]  u[1]  u[2]  u[3]  "
+          "# τ  x  y  η  dΣ[0]  dΣ[1]  dΣ[2]  dΣ[3]  u[0]  u[1]  u[2]  u[3]  "
           "T  μB  μQ  μS  ∂₀β₀  ∂₀β₁  ∂₀β₂  ∂₀β₃  ∂₁β₀  ∂₁β₁  ∂₁β₂  ∂₁β₃  "
           "∂₂β₀  ∂₂β₁  ∂₂β₂  ∂₂β₃  ∂₃β₀  ∂₃β₁  ∂₃β₂  ∂₃β₃  ϵ";
 
