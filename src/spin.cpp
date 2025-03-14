@@ -140,7 +140,7 @@ void calculate_and_set_spin_vector(const int index_event,
     if (std::abs(std::sqrt(-theta_squared)) < tiny_value) {
       const double distribution_argument = (energy_density - mu) / temperature;
       const double factor =
-          ((spin / 2.) * ((spin / 2.) + 1.)) / 3. +
+          (((spin / 2.) * ((spin / 2.) + 1.)) / 3.) *
           (1 + (spin % 2 == 0 ? 1 : -1) *
                    fermi_bose_distribution(spin, distribution_argument));
 
