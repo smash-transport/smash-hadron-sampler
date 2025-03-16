@@ -283,3 +283,24 @@ void Vorticity::set_vorticity_in_surface_cells(gen::element* surf, int N) {
   // Close the file after processing
   file.close();
 }
+
+// Boost the vorticity tensor to the fluid rest frame with the given boost matrix
+void Vorticity::boost_vorticity_to_fluid_rest_frame(
+    const double (&boostMatrix)[4][4]) {
+  // Create a copy of the vorticity tensor
+  std::array<double, 16> vorticity_copy = vorticity_;
+
+  // Boost the vorticity tensor to the fluid rest frame
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      double vorticity_ij = 0.0;
+      for (int k = 0; k < 4; k++) {
+        for (int l = 0; l < 4; l++) {
+          vorticity_ij += vorticity_copy[k * 4 + l] * boostMatrix[i][k] *
+                          boostMatrix[j][l];
+        }
+      }
+      vorticity_[i * 4 + j] = vorticity_ij;
+    }
+  }
+}

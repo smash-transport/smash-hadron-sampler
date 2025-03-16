@@ -175,12 +175,15 @@ void load(char *filename, int N)
    if(dvMax<dvEff) dvMax = dvEff ;
    // maximal value of the weight max(W) = max(dsigma_0+|\vec dsigma_i|)   for equilibrium DFs
    if(dsigma.T()+dsigma.Rho()>dsigmaMax) dsigmaMax = dsigma.T()+dsigma.Rho() ;
-   // ########################
-   // pi^{mu nu} boost to fluid rest frame
-   // ########################
-   if(params::shear){
-   double _pi[10], boostMatrix[4][4] ;
+
+   // ####################################################
+   //  boost pi^{mu nu} and vorticity to fluid rest frame
+   // ####################################################
+   double boostMatrix[4][4];
    fillBoostMatrix(-surf[n].u[1]/surf[n].u[0],-surf[n].u[2]/surf[n].u[0],-surf[n].u[3]/surf[n].u[0], boostMatrix) ;
+
+   if(params::shear){
+   double _pi[10];
    for(int i=0; i<4; i++)
    for(int j=i; j<4; j++){
      _pi[index44(i,j)] = 0.0 ;
@@ -190,6 +193,14 @@ void load(char *filename, int N)
    }
    for(int i=0; i<10; i++) surf[n].pi[i] = _pi[i] ;
    } // end pi boost
+
+   // boost vorticity tensor to fluid rest frame
+   if (params::is_spin_sampling_on) {
+    if (!surf[n].vorticity.has_value()) {
+        throw std::runtime_error("Error: Vorticity is not set for element " + std::to_string(n));
+    }
+    (*surf[n].vorticity)->boost_vorticity_to_fluid_rest_frame(boostMatrix);
+   }
   }
   if(params::shear) dsigmaMax *= 2.0 ; // *2.0: jun17. default: *1.5
   else dsigmaMax *= 1.3 ;
