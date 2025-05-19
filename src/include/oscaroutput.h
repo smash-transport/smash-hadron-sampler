@@ -1,11 +1,11 @@
 #ifndef INCLUDE_OSCAROUTPUT_H_
 #define INCLUDE_OSCAROUTPUT_H_
 
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <memory>
 #include <array>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <vector>
 
 #include "gen.h"
 #include "params.h"
@@ -27,8 +27,8 @@ void write_oscar_output() {
         "t",  "x",   "y",  "z",      "mass",  "p0",    "px",    "py",
         "pz", "pdg", "ID", "charge", "spin0", "spinx", "spiny", "spinz"};
     out_params.quantities.insert({"Particles", particle_quantities});
-    OscarOutput = create_oscar_output("ASCIICustom", "Particles", OutputPath,
-                                      out_params);
+    OscarOutput =
+        create_oscar_output("ASCIICustom", "Particles", OutputPath, out_params);
   } else {
     OscarOutput = create_oscar_output("Oscar2013", "Particles", OutputPath,
                                       smash::OutputParameters());
@@ -65,33 +65,34 @@ void save_vorticity_vectors_to_file() {
   std::ofstream outFile(file_path);
 
   if (!outFile) {
-      std::cerr << "Error: Could not open file " << file_path << std::endl;
-      return;
+    std::cerr << "Error: Could not open file " << file_path << std::endl;
+    return;
   }
 
   // Write header
   outFile << "#  t  x  y  z  θ₁  θ₂  θ₃  θ₄\n";
 
   // Iterate over events
-  for (size_t event_index = 0; event_index < gen::thetaStorage->size(); ++event_index) {
-      const auto& event = (*gen::thetaStorage)[event_index];
+  for (size_t event_index = 0; event_index < gen::thetaStorage->size();
+       ++event_index) {
+    const auto& event = (*gen::thetaStorage)[event_index];
 
-      // Write event start line
-      outFile << "# event " << event_index << " out " << event.size() << "\n";
+    // Write event start line
+    outFile << "# event " << event_index << " out " << event.size() << "\n";
 
-      // Write each ThetaStruct in the event
-      for (const auto& entry : event) {
-          for (double coord : entry.coordinates) {
-              outFile << coord << " ";
-          }
-          for (double vort : entry.vorticity_vector) {
-              outFile << vort << " ";
-          }
-          outFile << "\n";
+    // Write each ThetaStruct in the event
+    for (const auto& entry : event) {
+      for (double coord : entry.coordinates) {
+        outFile << coord << " ";
       }
+      for (double vort : entry.vorticity_vector) {
+        outFile << vort << " ";
+      }
+      outFile << "\n";
+    }
 
-      // Write event end line
-      outFile << "# event " << event_index << " end\n";
+    // Write event end line
+    outFile << "# event " << event_index << " end\n";
   }
 
   outFile.close();

@@ -5,25 +5,26 @@ include(CTest)
 # Tell cmake where to find modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
-
-# Determine System and set the relevant generic compiler flags accordingly (optimisation + warnings) 
+# Determine System and set the relevant generic compiler flags accordingly (optimisation + warnings)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -Wextra -Wmissing-declarations -Wpointer-arith -Wshadow -Wuninitialized -Winit-self -Wundef -Wcast-align -Wformat=2 -Wold-style-cast -Werror=switch -std=c++17")
-if(NOT (APPLE AND
-   CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "^arm" AND
-   CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" AND
-   CMAKE_CXX_COMPILER_VERSION VERSION_LESS "15"))
-     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")  
+
+if(NOT(APPLE AND
+  CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "^arm" AND
+  CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" AND
+  CMAKE_CXX_COMPILER_VERSION VERSION_LESS "15"))
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 endif()
-message(STATUS "CXX_FLAGS = " ${CMAKE_CXX_FLAGS})  
+
+message(STATUS "CXX_FLAGS = " ${CMAKE_CXX_FLAGS})
 
 # Collect all the cpp files
 set(sampler_src
-        src/gen.cpp
-        src/params.cpp
-        src/tree.cpp
-        src/spin.cpp
-        src/vorticity.cpp
-        )
+  src/gen.cpp
+  src/params.cpp
+  src/tree.cpp
+  src/spin.cpp
+  src/vorticity.cpp
+)
 
 # Create object library for the linker which contains pre-compiled cpp files
 add_library(objlib OBJECT ${sampler_src})
@@ -35,9 +36,11 @@ include_directories(src/include)
 set(SAMPLER_LIBRARIES "")
 
 find_package(SMASH)
+
 if(${SMASH_FOUND})
   set(SAMPLER_LIBRARIES ${SAMPLER_LIBRARIES} ${SMASH_LIBRARIES})
   include_directories(${SMASH_INCLUDE_DIR})
+
   if(DEFINED ENV{SMASH_DIR})
     include_directories($ENV{SMASH_DIR}/3rdparty)
   else()
@@ -47,12 +50,13 @@ else()
   message(FATAL_ERROR "SMASH could not be found.")
 endif()
 
-
 find_package(ROOT 5.34)
+
 if(ROOT_FOUND)
   set(SAMPLER_LIBRARIES ${SAMPLER_LIBRARIES} ${ROOT_LIBRARIES})
   include_directories(SYSTEM "${ROOT_INCLUDE_DIR}")
-  #target_link_libraries(sampler aws-cpp-sdk-s3 aws-cpp-sdk-core)
+
+  # target_link_libraries(sampler aws-cpp-sdk-s3 aws-cpp-sdk-core)
 endif()
 
 target_link_libraries(sampler ${SAMPLER_LIBRARIES})
