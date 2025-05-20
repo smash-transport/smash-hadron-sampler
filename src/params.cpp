@@ -11,7 +11,7 @@ namespace params {
 std::string surface_file{"unset"}, vorticity_file{"unset"},
     output_directory{"unset"};
 bool bulk_viscosity_enabled{false}, create_root_output{false},
-    shear_viscosity_enabled{false}, is_spin_sampling_on{false},
+    shear_viscosity_enabled{false}, spin_sampling_enabled{false},
     vorticity_output_enabled{false};
 int number_of_events;
 double dx{0}, dy{0}, deta{0.05};
@@ -64,7 +64,7 @@ void read_configuration_file(const std::string &filename) {
     } else if (parName == "create_root_output") {
       create_root_output = std::stoi(parValue);
     } else if (parName == "sample_spin") {
-      is_spin_sampling_on = std::stoi(parValue);
+      spin_sampling_enabled = std::stoi(parValue);
     } else if (parName == "create_vorticity_vector_output") {
       vorticity_output_enabled = std::stoi(parValue);
     } else if (parName[0] == '!') {
@@ -101,7 +101,7 @@ void print_config_parameters() {
             << "\n"
             << "bulk:                         " << bulk_viscosity_enabled
             << "\n"
-            << "spin:                         " << is_spin_sampling_on << "\n"
+            << "spin:                         " << spin_sampling_enabled << "\n"
             << "vorticity_vector:             " << vorticity_output_enabled
             << "\n"
             << "ecrit:                        " << ecrit << "\n"
