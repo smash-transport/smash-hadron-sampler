@@ -25,6 +25,7 @@ Also possible, but for this project less relevant, is `Deprecated` for soon-to-b
 
 * :heavy_plus_sign: Added new configuration key `sample_spin` (boolean) to enable spin sampling at freezeout; when set to `true`, spin 4-vectors are assigned to all particles
 * :heavy_plus_sign: Added new configuration key `create_vorticity_vector_output` (boolean) to output the full vorticity 4-vectors of all particles to a dedicated file
+* :heavy_plus_sign: Added new configuration key `vorticity_file` (string) to specify the path to the vorticity input file from vHLLE; required when `sample_spin` is enabled
 * :heavy_plus_sign: Introduced a spin sampling procedure to assign physically motivated spin states to particles based on local vorticity when `sample_spin` is enabled
 
 
