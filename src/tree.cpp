@@ -19,9 +19,9 @@ MyTree::MyTree(const char *name) {
   LastColl = new Int_t[gen::NPartBuf];
   NColl = new Int_t[gen::NPartBuf];
   Origin = new Int_t[gen::NPartBuf];
-  Chrg = new Short_t[gen::NPartBuf];  // particle's electric charge
-  Bar = new Short_t[gen::NPartBuf];   // baryon charge
-  Strg = new Short_t[gen::NPartBuf];  // strangeness
+  Chrg = new Short_t[gen::NPartBuf]; // particle's electric charge
+  Bar = new Short_t[gen::NPartBuf];  // baryon charge
+  Strg = new Short_t[gen::NPartBuf]; // strangeness
 
   tree->Branch("npart", &nfill, "npart/I");
   //  treefin->Branch("nev",&nev,"nev/I");
@@ -56,10 +56,10 @@ void MyTree::fill(int iev) {
       Pz[nfill] = gen::pList[iev][ipart]->momentum().x3();
       E[nfill] = gen::pList[iev][ipart]->momentum().x0();
       Id[nfill] = gen::pList[iev][ipart]->pdgcode().get_decimal();
-      MId[nfill] = 0;       // Used to be set to 0 in the UrQMD version
-      LastColl[nfill] = 0;  // Used to be set to 0 in the UrQMD version
-      NColl[nfill] = 0;     // Used to be set to 0 in the UrQMD version
-      Origin[nfill] = 0;    // Used to be set to 0 in the UrQMD version
+      MId[nfill] = 0;      // Used to be set to 0 in the UrQMD version
+      LastColl[nfill] = 0; // Used to be set to 0 in the UrQMD version
+      NColl[nfill] = 0;    // Used to be set to 0 in the UrQMD version
+      Origin[nfill] = 0;   // Used to be set to 0 in the UrQMD version
       Chrg[nfill] =
           static_cast<Char_t>(gen::pList[iev][ipart]->type().charge());
       Bar[nfill] =

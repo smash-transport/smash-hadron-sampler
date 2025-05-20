@@ -3,6 +3,7 @@
 #include <TF1.h>
 #include <TLorentzVector.h>
 #include <TMath.h>
+#include <TROOT.h>
 #include <TRandom3.h>
 
 #include <cmath>
@@ -20,14 +21,35 @@
 
 using namespace std;
 
-#define _USE_MATH_DEFINES
-const double C_Feq = (pow(0.5 / M_PI / hbarC, 3));
-
 // ##########################################################
 // #  this version works with arbitrary T/mu distribution   #
 // #  on freezeout hypersurface (May'2012)                  #
 // #  also, pre-BOOSTED dsigma is used                      #
 // ##########################################################
+
+namespace gen {
+
+int Nelem;
+int NPART;
+double *ntherm, dvMax, dsigmaMax;
+TRandom3 *rnd;
+smash::ParticleData ***pList;  // particle arrays
+std::unique_ptr<std::vector<std::vector<ThetaStruct>>> thetaStorage = nullptr;
+
+struct element {
+  double tau, x, y, eta;
+  double u[4];
+  double dsigma[4];
+  double T, mub, muq, mus;
+  double pi[10];
+  double Pi;
+};
+
+element *surf;
+int *npart;               // number of generated particles in each event
+double *cumulantDensity;  // particle densities (thermal). Seems to be
+                          // redundant, but needed for fast generation
+double totalDensity;  // sum of all thermal densities
 
 // active Lorentz boost
 void fillBoostMatrix(double vx, double vy, double vz, double boostMatrix[4][4])
@@ -57,50 +79,32 @@ void fillBoostMatrix(double vx, double vy, double vz, double boostMatrix[4][4])
 
 // index44: returns an index of pi^{mu nu} mu,nu component in a plain 1D array
 int index44(const int &i, const int &j) {
-  // Index out of range
   if (i > 3 || j > 3 || i < 0 || j < 0) {
-    throw std::out_of_range("Index out of range [0, 3]. Indices passed are (" +
-                            std::to_string(i) + ", " + std::to_string(j) + ")");
+    std::cout << "index44: i j " << i << " " << j << endl;
+    exit(1);
   }
-  if (j < i) {
+  if (j < i)
     return (i * (i + 1)) / 2 + j;
-  } else {
+  else
     return (j * (j + 1)) / 2 + i;
-  }
 }
 
-namespace gen {
-
-int Nelem;
-double *ntherm, dvMax, dsigmaMax;
-TRandom3 *rnd;
-int NPART;
-// const int NPartBuf = 10000 ;
-smash::ParticleData ***pList;  // particle arrays
-std::unique_ptr<std::vector<std::vector<ThetaStruct>>> thetaStorage = nullptr;
-
-element *surf;
-int *npart;  // number of generated particles in each event
-const double c1 = pow(1. / 2. / hbarC / TMath::Pi(), 3.0);
-double *cumulantDensity;  // particle densities (thermal). Seems to be
-                          // redundant, but needed for fast generation
-double totalDensity;      // sum of all thermal densities
-
 // ######## load the elements
-void load(char *filename, int N) {
+void load(const char *filename, int N) {
+  ROOT::EnableThreadSafety();
   double vEff = 0.0, vEffOld = 0.0, dvEff, dvEffOld;
   int nfail = 0, ncut = 0;
   TLorentzVector dsigma;
   Nelem = N;
   surf = new element[Nelem];
 
-  pList = new smash::ParticleData **[params::NEVENTS];
-  for (int i = 0; i < params::NEVENTS; i++) {
+  pList = new smash::ParticleData **[params::number_of_events];
+  for (int i = 0; i < params::number_of_events; i++) {
     pList[i] = new smash::ParticleData *[NPartBuf];
   }
-  npart = new int[params::NEVENTS];
+  npart = new int[params::number_of_events];
 
-  cout << "reading " << N << " lines from  " << filename << "\n";
+  cout << "Read " << N << " lines from '" << filename << "'\n";
   ifstream fin(filename);
   if (!fin) {
     cout << "cannot read file " << filename << endl;
@@ -112,14 +116,13 @@ void load(char *filename, int N) {
   // Read the vorticity tensor from file and set it in all surface cells
   if (params::is_spin_sampling_on) {
     std::cout << "Setting vorticity tensor in all surface cells from file "
-              << params::sVorticity << std::endl;
+              << params::vorticity_file << std::endl;
     Vorticity::set_vorticity_in_surface_cells(surf, Nelem);
   }
 
   // ---- reading loop
   string line;
   istringstream instream;
-  double temporary_energy_density = 0;
   cout << "1?: failbit=" << instream.fail() << endl;
   for (int n = 0; n < Nelem; n++) {
     getline(fin, line);
@@ -140,9 +143,6 @@ void load(char *filename, int N) {
       surf[n].e = temporary_energy_density;
     }
 
-    /* Load the thermal vorticity tensor if spin sampling is switched on and
-     *  vorticity tensor was printed to freezeout surface
-     */
     if (surf[n].muq > 0.12) {
       surf[n].muq = 0.12;  // omit charge ch.pot. for test
       ncut++;
@@ -186,14 +186,20 @@ void load(char *filename, int N) {
     if (dsigma.T() + dsigma.Rho() > dsigmaMax)
       dsigmaMax = dsigma.T() + dsigma.Rho();
 
-    // ####################################################
-    //  boost pi^{mu nu} and vorticity to fluid rest frame
-    // ####################################################
+    // ########################
+    // pi^{mu nu} boost to fluid rest frame
+    // ########################
     double boostMatrix[4][4];
-    fillBoostMatrix(-surf[n].u[1] / surf[n].u[0], -surf[n].u[2] / surf[n].u[0],
-                    -surf[n].u[3] / surf[n].u[0], boostMatrix);
+    bool boost_matrix_needed =
+        params::shear_viscosity_enabled || params::is_spin_sampling_on;
 
-    if (params::shear) {
+    if (boost_matrix_needed) {
+      fillBoostMatrix(-surf[n].u[1] / surf[n].u[0],
+                      -surf[n].u[2] / surf[n].u[0],
+                      -surf[n].u[3] / surf[n].u[0], boostMatrix);
+    }
+
+    if (params::shear_viscosity_enabled) {
       double _pi[10];
       for (int i = 0; i < 4; i++)
         for (int j = i; j < 4; j++) {
@@ -215,7 +221,7 @@ void load(char *filename, int N) {
       (*surf[n].vorticity)->boost_vorticity_to_fluid_rest_frame(boostMatrix);
     }
   }
-  if (params::shear)
+  if (params::shear_viscosity_enabled)
     dsigmaMax *= 2.0;  // *2.0: jun17. default: *1.5
   else
     dsigmaMax *= 1.3;
@@ -265,11 +271,12 @@ double ffthermal(double *x, double *par) {
   return x[0] * x[0] / (exp((sqrt(x[0] * x[0] + mass * mass) - mu) / T) - stat);
 }
 
-int generate() {
+void generate() {
+  ROOT::EnableThreadSafety();
   const double gmumu[4] = {1., -1., -1., -1.};
   TF1 *fthermal = new TF1("fthermal", ffthermal, 0.0, 10.0, 4);
   TLorentzVector mom;
-  for (int iev = 0; iev < params::NEVENTS; iev++) npart[iev] = 0;
+  for (int iev = 0; iev < params::number_of_events; iev++) npart[iev] = 0;
   int nmaxiter = 0;
   int ntherm_fail = 0;
 
@@ -277,8 +284,8 @@ int generate() {
   // Sigma meson needs to be excluded to generate correct multiplicities
   std::vector<smash::PdgCode> species_to_exclude{0x11, -0x11, 0x13, -0x13,
                                                  0x15, -0x15, 0x22, 0x9000221};
-  for (int iel = 0; iel < Nelem; iel++) {
-    // loop over all elements
+
+  for (int iel = 0; iel < Nelem; iel++) {  // loop over all elements
     // ---> thermal densities, for each surface element
     totalDensity = 0.0;
     if (surf[iel].T <= 0.) {
@@ -333,7 +340,7 @@ int generate() {
     double rval, dvEff = 0., W;
     // dvEff = dsigma_mu * u^mu
     dvEff = surf[iel].dsigma[0];
-    for (int ievent = 0; ievent < params::NEVENTS; ievent++) {
+    for (int ievent = 0; ievent < params::number_of_events; ievent++) {
       // ---- number of particles to generate
       int nToGen = 0;
       if (dvEff * totalDensity < 0.01) {
@@ -375,7 +382,7 @@ int generate() {
                surf[iel].dsigma[3] * mom.Pz()) /
               mom.E();
           double WviscFactor = 1.0;
-          if (params::shear) {
+          if (params::shear_viscosity_enabled) {
             const double feq =
                 C_Feq /
                 (exp((sqrt(p * p + mass * mass) - muf) / surf[iel].T) - stat);
@@ -391,16 +398,16 @@ int generate() {
                  (params::ecrit +
                   params::ecrit * params::ratio_pressure_energydensity));
           }
-          if (params::bulk) {
+          if (params::bulk_viscosity_enabled) {
             const double feq =
                 C_Feq /
                 (exp((sqrt(p * p + mass * mass) - muf) / surf[iel].T) - stat);
             WviscFactor -=
                 (1.0 + stat * feq) * surf[iel].Pi *
                 (mass * mass / (3 * mom.E()) -
-                 mom.E() * (1.0 / 3.0 - params::cs2)) /
-                (15 * (1.0 / 3.0 - params::cs2) * (1.0 / 3.0 - params::cs2) *
-                 surf[iel].T *
+                 mom.E() * (1.0 / 3.0 - params::speed_of_sound_squared)) /
+                (15 * (1.0 / 3.0 - params::speed_of_sound_squared) *
+                 (1.0 / 3.0 - params::speed_of_sound_squared) * surf[iel].T *
                  (params::ecrit +
                   params::ecrit * params::ratio_pressure_energydensity));
           }
@@ -440,7 +447,6 @@ int generate() {
            << endl;
   }  // loop over all elements
   cout << "therm_failed elements: " << ntherm_fail << endl;
-  return npart[0];
   delete fthermal;
 }
 
@@ -464,7 +470,6 @@ smash::ParticleData *acceptParticle(int ievent,
     cout << "Error. Please increase gen::npartbuf\n";
     exit(1);
   }
-
   return new_particle;
 }
 

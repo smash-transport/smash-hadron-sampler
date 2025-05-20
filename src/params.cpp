@@ -1,109 +1,133 @@
-#include <cstdlib>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <cstring>
-
 #include "params.h"
 
-using namespace std ;
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <string>
 
-namespace params{
+using namespace std;
 
-char sSurface [255], sSpectraDir [255];
-char sVorticity [255] = "unset";
-bool weakContribution ;
-bool rescatter ;
-bool shear ;
-bool bulk ;
-bool is_spin_sampling_on, vorticity_output_enabled;
-//double Temp, mu_b, mu_q, mu_s ;
-int NEVENTS ;
-double NBINS, QMAX ;
-double dx, dy, deta ;
-double ecrit ;
-double cs2=0.15;
-double ratio_pressure_energydensity=0.15;
-double global_polarization=0.0;
+namespace params {
+std::string surface_file{"unset"}, vorticity_file{"unset"},
+    output_directory{"unset"};
+bool bulk_viscosity_enabled{false}, create_root_output{false},
+    shear_viscosity_enabled{false}, is_spin_sampling_on{false},
+    vorticity_output_enabled{false};
+int number_of_events;
+double dx{0}, dy{0}, deta{0.05};
+double ecrit, speed_of_sound_squared{0.15}, ratio_pressure_energydensity{0.15};
+// double Temp, mu_b, mu_q, mu_s ;
+std::vector<std::string> comments_in_config_file,
+    unknown_parameters_in_config_file;
 
 // Helper function to get the directory of a given file path
-string getDirectory(const string& filePath) {
-    size_t pos = filePath.find_last_of("/\\");
-    if (pos != string::npos) {
-        return filePath.substr(0, pos + 1);
+std::string getDirectory(const std::string &filePath) {
+  size_t pos = filePath.find_last_of("/\\");
+  if (pos != std::string::npos) {
+    return filePath.substr(0, pos + 1);
+  }
+  // No directory found, return empty
+  return "";
+}
+
+/// Read and process configuration file parameters
+void read_configuration_file(const std::string &filename) {
+  std::string parName, parValue;
+  std::ifstream fin(filename.c_str());
+  if (!fin.is_open()) {
+    std::cerr << "ERROR: Cannot open config file " << filename << std::endl;
+    std::exit(1);
+  }
+  while (fin.good()) {
+    std::string line;
+    getline(fin, line);
+    std::istringstream sline(line);
+    sline >> parName >> parValue;
+    if (parName == "surface_file") {
+      surface_file = parValue;
+    } else if (parName == "vorticity_file") {
+      vorticity_file = parValue;
+    } else if (parName == "output_dir") {
+      output_directory = parValue;
+    } else if (parName == "number_of_events") {
+      number_of_events = std::stoi(parValue);
+    } else if (parName == "shear") {
+      shear_viscosity_enabled = std::stoi(parValue);
+    } else if (parName == "bulk") {
+      bulk_viscosity_enabled = std::stoi(parValue);
+    } else if (parName == "ecrit") {
+      ecrit = std::stod(parValue);
+    } else if (parName == "cs2") {
+      speed_of_sound_squared = std::stod(parValue);
+    } else if (parName == "ratio_pressure_energydensity") {
+      ratio_pressure_energydensity = std::stod(parValue);
+    } else if (parName == "create_root_output") {
+      create_root_output = std::stoi(parValue);
+    } else if (parName == "sample_spin") {
+      is_spin_sampling_on = std::stoi(parValue);
+    } else if (parName == "create_vorticity_vector_output") {
+      vorticity_output_enabled = std::stoi(parValue);
+    } else if (parName[0] == '!') {
+      comments_in_config_file.push_back(line);
+    } else {
+      unknown_parameters_in_config_file.push_back(line);
     }
-	// No directory found, return empty
-    return "";
+  }
+  // If no vorticity file was specified, set the default based on surface_file
+  if (vorticity_file == "unset") {
+    std::string dir = getDirectory(surface_file);
+    vorticity_file = dir + "beta.dat";
+  }
 }
 
-// ############ reading and processing the parameters
-void readParams(char* filename)
-{
-	char parName [255], parValue [255] ;
-	ifstream fin(filename) ;
-	if(!fin.is_open()) { cout << "cannot open parameters file " << filename << endl ; exit(1) ; }
-
-	string dbetaFile = "";
-	while(fin.good()){
-		string line ;
-		getline(fin, line) ;
-		istringstream sline (line) ;
-		sline >> parName >> parValue ;
-		if     (strcmp(parName,"surface")==0) strcpy(sSurface, parValue) ;
-		else if(strcmp(parName,"dbeta")==0) {
-			strcpy(sVorticity, parValue) ;
-			dbetaFile = sVorticity;
-		}
-		else if(strcmp(parName,"spectra_dir")==0) strcpy(sSpectraDir, parValue) ;
-		else if(strcmp(parName,"Nbins")==0) NBINS = atoi(parValue) ;
-		else if(strcmp(parName,"q_max")==0) QMAX = atof(parValue) ;
-		else if(strcmp(parName,"number_of_events")==0) NEVENTS = atoi(parValue) ;
-		else if(strcmp(parName,"rescatter")==0) rescatter = atoi(parValue) ;
-		else if(strcmp(parName,"weakContribution")==0) weakContribution = atoi(parValue) ;
-		else if(strcmp(parName,"shear")==0) shear = atoi(parValue) ;
-		else if(strcmp(parName,"bulk")==0) bulk = atoi(parValue) ;
-		else if(strcmp(parName,"ecrit")==0) ecrit = atof(parValue) ;
-		else if(strcmp(parName,"cs2")==0) cs2 = atof(parValue) ;
-		else if(strcmp(parName,"ratio_pressure_energydensity")==0) ratio_pressure_energydensity = atof(parValue) ;
-		else if(strcmp(parName, "sample_spin") == 0) is_spin_sampling_on = atoi(parValue);
-		else if(strcmp(parName, "vorticity_vector") == 0) vorticity_output_enabled = atoi(parValue);
-		else if(parName[0]=='!') cout << "CCC " << sline.str() << endl ;
-		else cout << "UUU " << sline.str() << endl ;
-	}
-
-	// If no dbeta file was specified, set the directory to the same as the surface file as a default
-    if (dbetaFile.empty()) {
-    // Construct the path based on the directory of sSurface
-    string dir = getDirectory(sSurface);
-    string defaultFile = dir + "beta.dat";
-
-    // Safely copy the constructed string to sVorticity
-    strncpy(sVorticity, defaultFile.c_str(), sizeof(sVorticity) - 1);
-    sVorticity[sizeof(sVorticity) - 1] = '\0'; // Ensure null-termination
+/// Auxiliary function to print comments and unknown parameters in config file
+void print_comments_and_unknown_parameters_of_config_file(
+    std::vector<std::string> comments_or_unknowns_in_config_file) {
+  for (auto &element : comments_or_unknowns_in_config_file) {
+    std::cout << "'" << element << "'" << std::endl;
+  }
 }
 
- deta=0.05 ; dx=dy=0.0 ; // TODO!
+/// Print config parameters to terminal
+void print_config_parameters() {
+  std::cout << "# ---------------------- parameters used for sampler run "
+               "-----------------------"
+            << "\n"
+            << "surface_file:                 " << surface_file << "\n"
+            << "vorticity_file:               " << vorticity_file << "\n"
+            << "output_dir:                   " << output_directory << "\n"
+            << "number_of_events:             " << number_of_events << "\n"
+            << "shear:                        " << shear_viscosity_enabled
+            << "\n"
+            << "bulk:                         " << bulk_viscosity_enabled
+            << "\n"
+            << "spin:                         " << is_spin_sampling_on << "\n"
+            << "vorticity_vector:             " << vorticity_output_enabled
+            << "\n"
+            << "ecrit:                        " << ecrit << "\n"
+            << "cs2:                          " << speed_of_sound_squared
+            << "\n"
+            << "ratio_pressure_energydensity: " << ratio_pressure_energydensity
+            << "\n"
+            << "create_root_output:           " << create_root_output << "\n"
+            << "# -------------------------------------------------------"
+               "-----------------------"
+            << "\n\n";
+
+  if (!comments_in_config_file.empty()) {
+    std::cout << "Comments in configuration file:" << std::endl;
+    print_comments_and_unknown_parameters_of_config_file(
+        comments_in_config_file);
+    std::cout << "\n";
+  }
+  if (!unknown_parameters_in_config_file.empty()) {
+    std::cout << "Unknown parameters in config configuration file that will "
+                 "not be considered:"
+              << std::endl;
+    print_comments_and_unknown_parameters_of_config_file(
+        unknown_parameters_in_config_file);
+    std::cout << "\n";
+  }
 }
 
-void printParameters()
-{
-  cout << "====== parameters ======\n" ;
-  cout << "surface = " << sSurface << endl ;
-  if(is_spin_sampling_on) cout << "vorticity = " << sVorticity << endl ;
-  cout << "spectraDir = " << sSpectraDir << endl ;
-  cout << "numberOfEvents = " << NEVENTS << endl ;
-  cout << "isRescatter = " << rescatter << endl ;
-  cout << "weakContribution = " << weakContribution << endl ;
-  cout << "shear_visc_on = " << shear << endl ;
-  cout << "bulk_visc_on = " << bulk << endl ;
-  cout << "e_critical = " << ecrit << endl ;
-  cout << "Nbins = " << NBINS << endl ;
-  cout << "q_max = " << QMAX << endl ;
-  cout << "cs2 = " << cs2 << endl ;
-  cout << "ratio_pressure_energydensity = " << ratio_pressure_energydensity << endl ;
-  cout << "sample_spin = " << is_spin_sampling_on << endl ;
-  cout << "vorticity_vector = " << vorticity_output_enabled << endl ;
-  cout << "======= end parameters =======\n" ;
-}
-
-}
+}  // namespace params

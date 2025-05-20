@@ -1,6 +1,8 @@
 #ifndef INCLUDE_TREE_H_
 #define INCLUDE_TREE_H_
 
+#include <TTree.h>
+
 class TTree;
 
 class MyTree {
@@ -10,7 +12,7 @@ class MyTree {
   Short_t *Chrg, *Bar, *Strg;
   Int_t nfill;
 
- public:
+public:
   MyTree(const char *name);
   void fill(int iev);
 };

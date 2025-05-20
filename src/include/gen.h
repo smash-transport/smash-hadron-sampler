@@ -63,8 +63,11 @@ struct element {
 };
 
 // functions
-void load(char *filename, int N);
-
+void fillBoostMatrix(double vx, double vy, double vz, double boostMatrix[4][4]);
+void generate();
+void load(const char *filename, int N);
+double ffthermal(double *x, double *par);
+int index44(const int &i, const int &j);
 // Allocate memory for the vorticity vector for each sampled particle
 void enable_vorticity_storage();
 
