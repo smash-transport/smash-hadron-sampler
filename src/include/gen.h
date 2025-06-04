@@ -14,8 +14,6 @@ class TRandom3;
 class DatabasePDG2;
 class Particle;
 
-int index44(const int &i, const int &j);
-
 namespace gen {
 
 // This struct is only used if vorticity_output_enabled is set to true in the
@@ -71,7 +69,7 @@ int index44(const int &i, const int &j);
 // Allocate memory for the vorticity vector for each sampled particle
 void enable_vorticity_storage();
 
-int generate();
+void generate();
 smash::ParticleData *acceptParticle(int event,
                                     const smash::ParticleTypePtr &ldef,
                                     smash::FourVector position,

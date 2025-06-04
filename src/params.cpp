@@ -75,6 +75,10 @@ void read_configuration_file(const std::string &filename) {
   }
   // If no vorticity file was specified, set the default based on surface_file
   if (vorticity_file == "unset") {
+    std::cerr
+        << "[Warning] No vorticity_file specified in config. "
+           "Defaulting to 'beta.dat' in the same directory as surface_file ("
+        << surface_file << ")." << std::endl;
     std::string dir = getDirectory(surface_file);
     vorticity_file = dir + "beta.dat";
   }

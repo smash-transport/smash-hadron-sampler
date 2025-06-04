@@ -42,7 +42,7 @@ void write_to_file(const fs::path& file_path, const std::string& content) {
 void set_params(const fs::path& configFilePath) {
   std::string configFilePathStr = configFilePath.string();
   char* configFilePathCStr = const_cast<char*>(configFilePathStr.c_str());
-  params::readParams(configFilePathCStr);
+  params::read_configuration_file(configFilePathCStr);
 }
 
 // Cleanup the temporary directory and all its contents
@@ -53,6 +53,30 @@ void cleanup_temp_directory(const fs::path& tempDir) {
     throw std::runtime_error("Cleanup failed for directory: " +
                              tempDir.string() + " with error: " + e.what());
   }
+}
+
+// Reset the parameters to their default values
+void reset_params() {
+  params::surface_file = "unset";
+  params::vorticity_file = "unset";
+  params::output_directory = "unset";
+
+  params::bulk_viscosity_enabled = false;
+  params::create_root_output = false;
+  params::shear_viscosity_enabled = false;
+  params::spin_sampling_enabled = false;
+  params::vorticity_output_enabled = false;
+
+  params::number_of_events = 0;
+  params::dx = 0;
+  params::dy = 0;
+  params::deta = 0.05;
+  params::ecrit = 0;
+  params::speed_of_sound_squared = 0.15;
+  params::ratio_pressure_energydensity = 0.15;
+
+  params::comments_in_config_file.clear();
+  params::unknown_parameters_in_config_file.clear();
 }
 
 }  // namespace test_utils
@@ -113,11 +137,11 @@ TEST(vorticity_file_does_not_exist) {
 
   // Create paths for the config file and the vorticity file
   fs::path configFilePath = tempDir / "config_temp";
-  fs::path betaFilePath = tempDir / "beta.dat";
+  fs::path vorticityFilePath = tempDir / "beta.dat";
 
   // Write config file
-  test_utils::write_to_file(configFilePath,
-                            "dbeta " + betaFilePath.string() + "\n");
+  test_utils::write_to_file(
+      configFilePath, "vorticity_file " + vorticityFilePath.string() + "\n");
 
   // Pass config to params
   test_utils::set_params(configFilePath);
@@ -137,6 +161,8 @@ TEST(vorticity_file_does_not_exist) {
   } catch (const std::exception& e) {
     throw std::runtime_error(std::string("Cleanup failed: ") + e.what());
   }
+  // Reset params to default values
+  test_utils::reset_params();
 }
 
 TEST(vorticity_file_too_few_comment_lines) {
@@ -147,23 +173,23 @@ TEST(vorticity_file_too_few_comment_lines) {
 
   // Create paths for the config file and the vorticity file
   fs::path configFilePath = tempDir / "config_temp";
-  fs::path betaFilePath = tempDir / "beta.dat";
+  fs::path vorticityFilePath = tempDir / "beta.dat";
   fs::path freezeoutFilePath = tempDir / "freezeout.dat";
 
-  // Write config file (Here we use the keyword "surface" instead of "dbeta",
-  // as the sampler looks for the beta.dat file in the same directory as the
-  // surface file as default. This is ensured here)
-  test_utils::write_to_file(configFilePath,
-                            "surface " + freezeoutFilePath.string() + "\n");
+  // Write config file (Here we use the keyword "surface_file" instead of
+  // "vorticity_file", as the sampler looks for the beta.dat file in the same
+  // directory as the surface file as default. This is ensured here)
+  test_utils::write_to_file(
+      configFilePath, "surface_file " + freezeoutFilePath.string() + "\n");
 
   // Write beta.dat file with one comment line and expect error
-  test_utils::write_to_file(betaFilePath, "# Header Line 1");
+  test_utils::write_to_file(vorticityFilePath, "# Header Line 1");
 
   // Pass config to params
   test_utils::set_params(configFilePath);
 
   // Ensure the beta.dat file exists and was set from default
-  VERIFY(fs::exists(params::sVorticity));
+  VERIFY(fs::exists(params::vorticity_file));
 
   try {
     Vorticity::ensure_vorticity_file_exists_and_check_format();
@@ -175,7 +201,7 @@ TEST(vorticity_file_too_few_comment_lines) {
   }
 
   // Add a second comment line to the beta.dat file and expect error
-  test_utils::write_to_file(betaFilePath, "# Number of corona cells: 1");
+  test_utils::write_to_file(vorticityFilePath, "# Number of corona cells: 1");
 
   try {
     Vorticity::ensure_vorticity_file_exists_and_check_format();
@@ -187,7 +213,7 @@ TEST(vorticity_file_too_few_comment_lines) {
   }
 
   // Add a third comment line not matching the expected line and expect error
-  test_utils::write_to_file(betaFilePath, "# Header Line 3");
+  test_utils::write_to_file(vorticityFilePath, "# Header Line 3");
 
   try {
     Vorticity::ensure_vorticity_file_exists_and_check_format();
@@ -204,6 +230,8 @@ TEST(vorticity_file_too_few_comment_lines) {
   } catch (const std::exception& e) {
     throw std::runtime_error(std::string("Cleanup failed: ") + e.what());
   }
+  // Reset params to default values
+  test_utils::reset_params();
 }
 
 TEST(vorticity_file_invalid_second_header_line) {
@@ -214,15 +242,15 @@ TEST(vorticity_file_invalid_second_header_line) {
 
   // Create paths for the config file and the vorticity file
   fs::path configFilePath = tempDir / "config_temp";
-  fs::path betaFilePath = tempDir / "beta.dat";
+  fs::path vorticityFilePath = tempDir / "beta.dat";
 
   // Write config file
-  test_utils::write_to_file(configFilePath,
-                            "dbeta " + betaFilePath.string() + "\n");
+  test_utils::write_to_file(
+      configFilePath, "vorticity_file " + vorticityFilePath.string() + "\n");
 
   // Write beta.dat file with invalid second comment line and expect error
-  test_utils::write_to_file(betaFilePath, "# Header Line 1");
-  test_utils::write_to_file(betaFilePath, "# Header Line");
+  test_utils::write_to_file(vorticityFilePath, "# Header Line 1");
+  test_utils::write_to_file(vorticityFilePath, "# Header Line");
 
   // Pass config to params
   test_utils::set_params(configFilePath);
@@ -237,9 +265,9 @@ TEST(vorticity_file_invalid_second_header_line) {
   }
 
   // Delete beta file and write a valid second comment line
-  fs::remove(betaFilePath);
-  test_utils::write_to_file(betaFilePath, "# Header Line 1");
-  test_utils::write_to_file(betaFilePath, "# Number of corona cells: 1.3");
+  fs::remove(vorticityFilePath);
+  test_utils::write_to_file(vorticityFilePath, "# Header Line 1");
+  test_utils::write_to_file(vorticityFilePath, "# Number of corona cells: 1.3");
 
   try {
     Vorticity::ensure_vorticity_file_exists_and_check_format();
@@ -256,6 +284,8 @@ TEST(vorticity_file_invalid_second_header_line) {
   } catch (const std::exception& e) {
     throw std::runtime_error(std::string("Cleanup failed: ") + e.what());
   }
+  // Reset params to default values
+  test_utils::reset_params();
 }
 
 TEST(vorticity_file_too_many_comment_lines) {
@@ -266,21 +296,21 @@ TEST(vorticity_file_too_many_comment_lines) {
 
   // Create paths for the config file and the vorticity file
   fs::path configFilePath = tempDir / "config_temp";
-  fs::path betaFilePath = tempDir / "beta.dat";
+  fs::path vorticityFilePath = tempDir / "beta.dat";
 
   // Write config file
-  test_utils::write_to_file(configFilePath,
-                            "dbeta " + betaFilePath.string() + "\n");
+  test_utils::write_to_file(
+      configFilePath, "vorticity_file " + vorticityFilePath.string() + "\n");
 
   // Write beta.dat file with four comment lines and expect error
-  test_utils::write_to_file(betaFilePath, "# Header Line 1");
-  test_utils::write_to_file(betaFilePath, "# Number of corona cells: 2");
+  test_utils::write_to_file(vorticityFilePath, "# Header Line 1");
+  test_utils::write_to_file(vorticityFilePath, "# Number of corona cells: 2");
   test_utils::write_to_file(
-      betaFilePath,
+      vorticityFilePath,
       "# τ  x  y  η  dΣ[0]  dΣ[1]  dΣ[2]  dΣ[3]  u[0]  u[1]  u[2]  u[3]  "
       "T  μB  μQ  μS  ∂₀β₀  ∂₀β₁  ∂₀β₂  ∂₀β₃  ∂₁β₀  ∂₁β₁  ∂₁β₂  ∂₁β₃  "
       "∂₂β₀  ∂₂β₁  ∂₂β₂  ∂₂β₃  ∂₃β₀  ∂₃β₁  ∂₃β₂  ∂₃β₃  ϵ");
-  test_utils::write_to_file(betaFilePath, "# Header Line 4");
+  test_utils::write_to_file(vorticityFilePath, "# Header Line 4");
 
   // Pass config to params
   test_utils::set_params(configFilePath);
@@ -300,6 +330,8 @@ TEST(vorticity_file_too_many_comment_lines) {
   } catch (const std::exception& e) {
     throw std::runtime_error(std::string("Cleanup failed: ") + e.what());
   }
+  // Reset params to default values
+  test_utils::reset_params();
 }
 
 TEST(vorticity_file_valid) {
@@ -310,21 +342,21 @@ TEST(vorticity_file_valid) {
 
   // Create paths for the config file and the vorticity file
   fs::path configFilePath = tempDir / "config_temp";
-  fs::path betaFilePath = tempDir / "beta.dat";
+  fs::path vorticityFilePath = tempDir / "beta.dat";
 
   // Write config file
-  test_utils::write_to_file(configFilePath,
-                            "dbeta " + betaFilePath.string() + "\n");
+  test_utils::write_to_file(
+      configFilePath, "vorticity_file " + vorticityFilePath.string() + "\n");
 
   // Write beta.dat file with the expected comment lines
-  test_utils::write_to_file(betaFilePath, "# Header Line 1");
-  test_utils::write_to_file(betaFilePath, "# Number of corona cells: 2");
+  test_utils::write_to_file(vorticityFilePath, "# Header Line 1");
+  test_utils::write_to_file(vorticityFilePath, "# Number of corona cells: 2");
   test_utils::write_to_file(
-      betaFilePath,
+      vorticityFilePath,
       "# τ  x  y  η  dΣ[0]  dΣ[1]  dΣ[2]  dΣ[3]  u[0]  u[1]  u[2]  u[3]  "
       "T  μB  μQ  μS  ∂₀β₀  ∂₀β₁  ∂₀β₂  ∂₀β₃  ∂₁β₀  ∂₁β₁  ∂₁β₂  ∂₁β₃  "
       "∂₂β₀  ∂₂β₁  ∂₂β₂  ∂₂β₃  ∂₃β₀  ∂₃β₁  ∂₃β₂  ∂₃β₃  ϵ");
-  test_utils::write_to_file(betaFilePath,
+  test_utils::write_to_file(vorticityFilePath,
                             "0.0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 "
                             "8.0 9.0 10.0 11.0 12.0 13.0 14.0 "
                             "15.0 16.0 17.0 18.0 19.0 20.0 21.0 "
@@ -348,4 +380,6 @@ TEST(vorticity_file_valid) {
   } catch (const std::exception& e) {
     throw std::runtime_error(std::string("Cleanup failed: ") + e.what());
   }
+  // Reset params to default values
+  test_utils::reset_params();
 }

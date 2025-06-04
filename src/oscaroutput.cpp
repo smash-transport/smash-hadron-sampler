@@ -56,7 +56,7 @@ void write_oscar_output() {
 
 void save_vorticity_vectors_to_file() {
   // Construct file path
-  std::string dir = std::string(params::sSpectraDir);
+  std::string dir = std::string(params::output_directory);
   // Add trailing slash if not present
   if (dir.back() != '/') {
     dir += '/';

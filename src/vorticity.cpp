@@ -17,10 +17,10 @@ int Vorticity::num_corona_cells_ = -1;
 // Check if the vorticity file exists and has the correct format.
 // If not, throw an exception.
 void Vorticity::ensure_vorticity_file_exists_and_check_format() {
-  std::ifstream file(params::sVorticity);
+  std::ifstream file(params::vorticity_file);
   if (!file.is_open()) {
     throw std::runtime_error(std::string("Error opening file: ") +
-                             params::sVorticity);
+                             params::surface_file);
   }
 
   std::string line;
@@ -32,7 +32,7 @@ void Vorticity::ensure_vorticity_file_exists_and_check_format() {
     if (line.empty() || line[0] != '#') {
       std::ostringstream error;
       error << "Line " << (comment_lines_read + 1) << " in file "
-            << params::sVorticity
+            << params::vorticity_file
             << " is not a valid comment line. Expected a line starting with "
                "'#'.\n"
             << "Found: " << line;
@@ -44,7 +44,7 @@ void Vorticity::ensure_vorticity_file_exists_and_check_format() {
       std::regex regex("# Number of corona cells: \\d+");
       if (!std::regex_match(line, regex)) {
         std::ostringstream error;
-        error << "Second comment line in file " << params::sVorticity
+        error << "Second comment line in file " << params::vorticity_file
               << " does not match the expected format.\n"
               << "Found: " << line << "\n"
               << "Expected: '# Number of corona cells: <integer>'";
@@ -61,7 +61,7 @@ void Vorticity::ensure_vorticity_file_exists_and_check_format() {
 
       if (line != expected_third_line) {
         std::ostringstream error;
-        error << "Third comment line in file " << params::sVorticity
+        error << "Third comment line in file " << params::vorticity_file
               << " does not match the expected format.\n"
               << "Found: " << line << "\n"
               << "Expected: " << expected_third_line;
@@ -75,7 +75,7 @@ void Vorticity::ensure_vorticity_file_exists_and_check_format() {
   // Ensure that exactly 3 comment lines were read
   if (comment_lines_read < 3) {
     std::ostringstream error;
-    error << "File " << params::sVorticity
+    error << "File " << params::vorticity_file
           << " does not contain the expected 3 comment lines at the beginning.";
     throw std::invalid_argument(error.str());
   }
@@ -84,7 +84,7 @@ void Vorticity::ensure_vorticity_file_exists_and_check_format() {
   if (std::getline(file, line)) {
     if (line.empty() || line[0] == '#') {
       std::ostringstream error;
-      error << "First data line (line 4) in file " << params::sVorticity
+      error << "First data line (line 4) in file " << params::vorticity_file
             << " is empty or a comment line. Only 3 comment lines are expected";
       throw std::runtime_error(error.str());
     }
@@ -99,14 +99,14 @@ void Vorticity::ensure_vorticity_file_exists_and_check_format() {
 
     if (tokens.size() != 33) {
       std::ostringstream error;
-      error << "First data line in file " << params::sVorticity
+      error << "First data line in file " << params::vorticity_file
             << " does not contain exactly 33 values. Found " << tokens.size()
             << " values.";
       throw std::length_error(error.str());
     }
   } else {
     std::ostringstream error;
-    error << "File " << params::sVorticity
+    error << "File " << params::vorticity_file
           << " does not contain a valid data line.";
     throw std::runtime_error(error.str());
   }
@@ -115,10 +115,10 @@ void Vorticity::ensure_vorticity_file_exists_and_check_format() {
 }
 
 void Vorticity::ensure_extended_freezeout_is_given() {
-  std::ifstream surface_file(params::sSurface);
+  std::ifstream surface_file(params::surface_file);
   if (!surface_file.is_open()) {
     throw std::runtime_error(std::string("Error opening file: ") +
-                             params::sVorticity);
+                             params::vorticity_file);
   }
   std::string line;
 
@@ -138,7 +138,7 @@ void Vorticity::ensure_extended_freezeout_is_given() {
       if (tokens.size() != 29) {
         std::ostringstream error;
         error
-            << "First data line in file " << params::sSurface
+            << "First data line in file " << params::surface_file
             << " does not contain exactly 29 values. Found " << tokens.size()
             << " values. Either the extended format was not used or the number "
             << "of columns in the extended freezeout has changed.";
@@ -155,10 +155,10 @@ void Vorticity::ensure_extended_freezeout_is_given() {
 // the second comment line of the vorticity file.
 void Vorticity::set_number_of_corona_cells() {
   // Open the vorticity file
-  std::ifstream file(params::sVorticity);
+  std::ifstream file(params::vorticity_file);
   if (!file) {
     std::ostringstream error;
-    error << "Failed to open vorticity file: " << params::sVorticity;
+    error << "Failed to open vorticity file: " << params::vorticity_file;
     throw std::runtime_error(error.str());
   }
 
@@ -204,7 +204,7 @@ void Vorticity::set_number_of_corona_cells() {
 // in all surface cells from the vorticity file.
 void Vorticity::set_vorticity_in_surface_cells(gen::element* surf, int N) {
   // Read the vorticity file line by line
-  std::ifstream file(params::sVorticity);
+  std::ifstream file(params::vorticity_file);
   std::string line;
 
   const int num_freezeout_cells = N - num_corona_cells_;
@@ -244,7 +244,7 @@ void Vorticity::set_vorticity_in_surface_cells(gen::element* surf, int N) {
       const int current_line = i + 1 + num_comment_lines;
       throw std::runtime_error(
           "Error: Encountered an empty line in the file \"" +
-          std::string(params::sVorticity) + "\" at line " +
+          std::string(params::vorticity_file) + "\" at line " +
           std::to_string(current_line));
     }
 
@@ -267,7 +267,7 @@ void Vorticity::set_vorticity_in_surface_cells(gen::element* surf, int N) {
         // Next line has already been read, therefore the iterator is i+2
         const int current_line = i + 2 + num_comment_lines;
         throw std::runtime_error("Error: Unexpected end in the file \"" +
-                                 std::string(params::sVorticity) +
+                                 std::string(params::vorticity_file) +
                                  "\" at line " + std::to_string(current_line));
       }
     }

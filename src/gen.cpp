@@ -36,15 +36,6 @@ TRandom3 *rnd;
 smash::ParticleData ***pList;  // particle arrays
 std::unique_ptr<std::vector<std::vector<ThetaStruct>>> thetaStorage = nullptr;
 
-struct element {
-  double tau, x, y, eta;
-  double u[4];
-  double dsigma[4];
-  double T, mub, muq, mus;
-  double pi[10];
-  double Pi;
-};
-
 element *surf;
 int *npart;               // number of generated particles in each event
 double *cumulantDensity;  // particle densities (thermal). Seems to be
@@ -80,8 +71,7 @@ void fillBoostMatrix(double vx, double vy, double vz, double boostMatrix[4][4])
 // index44: returns an index of pi^{mu nu} mu,nu component in a plain 1D array
 int index44(const int &i, const int &j) {
   if (i > 3 || j > 3 || i < 0 || j < 0) {
-    std::cout << "index44: i j " << i << " " << j << endl;
-    exit(1);
+    throw std::out_of_range("index44: indices must be in [0, 3]");
   }
   if (j < i)
     return (i * (i + 1)) / 2 + j;
@@ -139,8 +129,9 @@ void load(const char *filename, int N) {
     // If spin sampling is enabled, load the energy density from the
     // extended freezeout surface
     if (params::spin_sampling_enabled) {
-      instream >> temporary_energy_density;
-      surf[n].e = temporary_energy_density;
+      double tmp_e;
+      instream >> tmp_e;
+      surf[n].e = tmp_e;  // set energy density
     }
 
     if (surf[n].muq > 0.12) {
@@ -254,7 +245,7 @@ void enable_vorticity_storage() {
   // if spin sampling and vorticity output are enabled in the config
   if (params::spin_sampling_enabled && params::vorticity_output_enabled) {
     thetaStorage = std::make_unique<std::vector<std::vector<ThetaStruct>>>(
-        params::NEVENTS);
+        params::number_of_events);
   } else if (!params::spin_sampling_enabled && params::vorticity_output_enabled) {
     throw std::runtime_error(
         "Vorticity output is enabled but spin sampling is not. "
