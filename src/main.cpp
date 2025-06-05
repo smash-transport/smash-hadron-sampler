@@ -1,10 +1,11 @@
 #include <TFile.h>
 #include <TROOT.h>
 #include <TRandom3.h>
+#include <getopt.h>
+
 #include <chrono>
 #include <filesystem>
 #include <fstream>
-#include <getopt.h>
 #include <string>
 
 #include "build_metadata.h"
@@ -57,40 +58,41 @@ int main(int argc, char *argv[]) {
   while ((option = getopt_long(argc, argv, "c:hn:o:s:q", long_options,
                                nullptr)) != -1) {
     switch (option) {
-    case 'c':
-      configuration = optarg;
-      break;
-    case 'h':
-      usage(EXIT_SUCCESS, program_name);
-      break;
-    case 'n':
-      num = optarg;
-      break;
-    case 'o':
-      command_line_output_dir = optarg;
-      break;
-    case 's':
-      command_line_surface_file = optarg;
-      break;
-    case 'q':
-      suppress_disclaimer_and_parameter_printout = true;
-      break;
-    case 0: // --version case
-      std::printf("%s\n"
+      case 'c':
+        configuration = optarg;
+        break;
+      case 'h':
+        usage(EXIT_SUCCESS, program_name);
+        break;
+      case 'n':
+        num = optarg;
+        break;
+      case 'o':
+        command_line_output_dir = optarg;
+        break;
+      case 's':
+        command_line_surface_file = optarg;
+        break;
+      case 'q':
+        suppress_disclaimer_and_parameter_printout = true;
+        break;
+      case 0:  // --version case
+        std::printf(
+            "%s\n"
 #ifdef GIT_BRANCH
-                  "Branch   : %s\n"
+            "Branch   : %s\n"
 #endif
-                  "System   : %s\nCompiler : %s %s\n"
-                  "Date     : %s\n",
-                  SAMPLER_VERSION,
+            "System   : %s\nCompiler : %s %s\n"
+            "Date     : %s\n",
+            SAMPLER_VERSION,
 #ifdef GIT_BRANCH
-                  GIT_BRANCH,
+            GIT_BRANCH,
 #endif
-                  CMAKE_SYSTEM, CMAKE_CXX_COMPILER_ID,
-                  CMAKE_CXX_COMPILER_VERSION, BUILD_DATE);
-      std::exit(EXIT_SUCCESS);
-    default:
-      usage(EXIT_FAILURE, program_name);
+            CMAKE_SYSTEM, CMAKE_CXX_COMPILER_ID, CMAKE_CXX_COMPILER_VERSION,
+            BUILD_DATE);
+        std::exit(EXIT_SUCCESS);
+      default:
+        usage(EXIT_FAILURE, program_name);
     }
   }
 
@@ -135,7 +137,7 @@ int main(int argc, char *argv[]) {
     Vorticity::set_number_of_corona_cells();
     gen::enable_vorticity_storage();
   }
-  
+
   TRandom3 *random3 = new TRandom3();
   random3->SetSeed(ranseed);
   std::cout << "Random seed:  " << ranseed << std::endl;
@@ -151,7 +153,7 @@ int main(int argc, char *argv[]) {
   std::string make_output_directory = "mkdir -p " + output_directory;
   system(make_output_directory.c_str());
 
-  gen::generate(); // one call for number_of_events
+  gen::generate();  // one call for number_of_events
 
   // ROOT output disabled by default
   if (params::create_root_output) {
@@ -164,7 +166,7 @@ int main(int argc, char *argv[]) {
     // Write ROOT output
     for (int iev = 0; iev < number_of_events; iev++) {
       treeIni->fill(iev);
-    } // end events loop
+    }  // end events loop
     outputFile->Write();
     outputFile->Close();
   }
