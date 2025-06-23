@@ -38,9 +38,9 @@ std::unique_ptr<std::vector<std::vector<ThetaStruct>>> thetaStorage = nullptr;
 
 element *surf;
 int *npart;              // number of generated particles in each event
-double *cumulantDensity; // particle densities (thermal). Seems to be
-                         // redundant, but needed for fast generation
-double totalDensity;  // sum of all thermal densities
+double *cumulantDensity; // particle densities (thermal). Seems to be redundant,
+                         // but needed for fast generation
+double totalDensity;     // sum of all thermal densities
 
 // active Lorentz boost
 void fillBoostMatrix(double vx, double vy, double vz, double boostMatrix[4][4])
@@ -176,7 +176,6 @@ void load(const char *filename, int N) {
     // equilibrium DFs
     if (dsigma.T() + dsigma.Rho() > dsigmaMax)
       dsigmaMax = dsigma.T() + dsigma.Rho();
-
     // ########################
     // pi^{mu nu} boost to fluid rest frame
     // ########################
