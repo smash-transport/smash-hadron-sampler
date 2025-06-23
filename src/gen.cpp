@@ -37,9 +37,9 @@ smash::ParticleData ***pList;  // particle arrays
 std::unique_ptr<std::vector<std::vector<ThetaStruct>>> thetaStorage = nullptr;
 
 element *surf;
-int *npart;               // number of generated particles in each event
-double *cumulantDensity;  // particle densities (thermal). Seems to be
-                          // redundant, but needed for fast generation
+int *npart;              // number of generated particles in each event
+double *cumulantDensity; // particle densities (thermal). Seems to be
+                         // redundant, but needed for fast generation
 double totalDensity;  // sum of all thermal densities
 
 // active Lorentz boost
@@ -118,7 +118,7 @@ void load(const char *filename, int N) {
     getline(fin, line);
     instream.str(line);
     instream.seekg(0);
-    instream.clear();  // does not work with gcc 4.1 otherwise
+    instream.clear(); // does not work with gcc 4.1 otherwise
     instream >> surf[n].tau >> surf[n].x >> surf[n].y >> surf[n].eta >>
         surf[n].dsigma[0] >> surf[n].dsigma[1] >> surf[n].dsigma[2] >>
         surf[n].dsigma[3] >> surf[n].u[0] >> surf[n].u[1] >> surf[n].u[2] >>
@@ -135,11 +135,11 @@ void load(const char *filename, int N) {
     }
 
     if (surf[n].muq > 0.12) {
-      surf[n].muq = 0.12;  // omit charge ch.pot. for test
+      surf[n].muq = 0.12; // omit charge ch.pot. for test
       ncut++;
     }
     if (surf[n].muq < -0.12) {
-      surf[n].muq = -0.12;  // omit charge ch.pot. for test
+      surf[n].muq = -0.12; // omit charge ch.pot. for test
       ncut++;
     }
     if (instream.fail()) {
@@ -213,7 +213,7 @@ void load(const char *filename, int N) {
     }
   }
   if (params::shear_viscosity_enabled)
-    dsigmaMax *= 2.0;  // *2.0: jun17. default: *1.5
+    dsigmaMax *= 2.0; // *2.0: jun17. default: *1.5
   else
     dsigmaMax *= 1.3;
 
@@ -276,7 +276,7 @@ void generate() {
   std::vector<smash::PdgCode> species_to_exclude{0x11, -0x11, 0x13, -0x13,
                                                  0x15, -0x15, 0x22, 0x9000221};
 
-  for (int iel = 0; iel < Nelem; iel++) {  // loop over all elements
+  for (int iel = 0; iel < Nelem; iel++) { // loop over all elements
     // ---> thermal densities, for each surface element
     totalDensity = 0.0;
     if (surf[iel].T <= 0.) {
@@ -360,8 +360,8 @@ void generate() {
           cout << " ^^ muf = " << muf << "  " << part.pdgcode() << endl;
         fthermal->SetParameters(surf[iel].T, muf, mass, stat);
         // const double dfMax = part->GetFMax() ;
-        int niter = 0;  // number of iterations, for debug purposes
-        do {            // fast momentum generation loop
+        int niter = 0; // number of iterations, for debug purposes
+        do {           // fast momentum generation loop
           const double p = fthermal->GetRandom();
           const double phi = 2.0 * TMath::Pi() * rnd->Rndm();
           const double sinth = -1.0 + 2.0 * rnd->Rndm();
@@ -436,7 +436,7 @@ void generate() {
     if (iel % (Nelem / 50) == 0)
       cout << round(iel / (Nelem * 0.01)) << " % done, maxiter= " << nmaxiter
            << endl;
-  }  // loop over all elements
+  } // loop over all elements
   cout << "therm_failed elements: " << ntherm_fail << endl;
   delete fthermal;
 }
@@ -465,4 +465,4 @@ smash::ParticleData *acceptParticle(int ievent,
 }
 
 // ################### end #################
-}  // end namespace gen
+} // end namespace gen

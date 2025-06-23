@@ -27,7 +27,7 @@ struct ThetaStruct {
 // typedef std::vector<Particle*> ParticleList ; // TODO in far future
 //  data
 extern TRandom3 *rnd;
-extern smash::ParticleData ***pList;  // particle arrays
+extern smash::ParticleData ***pList; // particle arrays
 extern int *npart;
 const int NPartBuf = 30000;  // dimension of particle buffer for each event
 
@@ -76,4 +76,4 @@ smash::ParticleData *acceptParticle(int event,
                                     smash::FourVector momentum);
 }  // namespace gen
 
-#endif  // INCLUDE_GEN_H_
+#endif // INCLUDE_GEN_H_

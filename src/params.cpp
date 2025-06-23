@@ -9,7 +9,7 @@ using namespace std;
 
 namespace params {
 std::string surface_file{"unset"}, vorticity_file{"unset"},
-    output_directory{"unset"};
+output_directory{"unset"};
 bool bulk_viscosity_enabled{false}, create_root_output{false},
     shear_viscosity_enabled{false}, spin_sampling_enabled{false},
     vorticity_output_enabled{false};
@@ -134,4 +134,4 @@ void print_config_parameters() {
   }
 }
 
-}  // namespace params
+} // namespace params

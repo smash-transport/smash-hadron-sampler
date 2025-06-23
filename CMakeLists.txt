@@ -84,11 +84,9 @@ include_directories(src/include)
 set(SAMPLER_LIBRARIES "")
 
 find_package(SMASH)
-
 if(${SMASH_FOUND})
   set(SAMPLER_LIBRARIES ${SAMPLER_LIBRARIES} ${SMASH_LIBRARIES})
   include_directories(${SMASH_INCLUDE_DIR})
-
   if(DEFINED ENV{SMASH_DIR})
     include_directories($ENV{SMASH_DIR}/3rdparty)
   else()
@@ -101,11 +99,9 @@ else()
 endif()
 
 find_package(ROOT 5.34)
-
 if(ROOT_FOUND)
   set(SAMPLER_LIBRARIES ${SAMPLER_LIBRARIES} ${ROOT_LIBRARIES})
   include_directories(SYSTEM "${ROOT_INCLUDE_DIR}")
-
   # target_link_libraries(sampler aws-cpp-sdk-s3 aws-cpp-sdk-core)
 endif()
 

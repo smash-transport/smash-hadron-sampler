@@ -15,7 +15,6 @@
 #include "tree.h"
 
 using namespace std;
-
 int getNlines(const char *filename);
 void print_disclaimer();
 void usage(const int exit_status, const std::string &program_name);
@@ -80,19 +79,19 @@ int main(int argc, char *argv[]) {
         std::printf(
             "%s\n"
 #ifdef GIT_BRANCH
-            "Branch   : %s\n"
+                  "Branch   : %s\n"
 #endif
-            "System   : %s\nCompiler : %s %s\n"
-            "Date     : %s\n",
-            SAMPLER_VERSION,
+                  "System   : %s\nCompiler : %s %s\n"
+                  "Date     : %s\n",
+                  SAMPLER_VERSION,
 #ifdef GIT_BRANCH
-            GIT_BRANCH,
+                  GIT_BRANCH,
 #endif
-            CMAKE_SYSTEM, CMAKE_CXX_COMPILER_ID, CMAKE_CXX_COMPILER_VERSION,
-            BUILD_DATE);
-        std::exit(EXIT_SUCCESS);
-      default:
-        usage(EXIT_FAILURE, program_name);
+                  CMAKE_SYSTEM, CMAKE_CXX_COMPILER_ID,
+                  CMAKE_CXX_COMPILER_VERSION, BUILD_DATE);
+      std::exit(EXIT_SUCCESS);
+    default:
+      usage(EXIT_FAILURE, program_name);
     }
   }
 
@@ -153,7 +152,7 @@ int main(int argc, char *argv[]) {
   std::string make_output_directory = "mkdir -p " + output_directory;
   system(make_output_directory.c_str());
 
-  gen::generate();  // one call for number_of_events
+  gen::generate(); // one call for number_of_events
 
   // ROOT output disabled by default
   if (params::create_root_output) {
@@ -166,7 +165,7 @@ int main(int argc, char *argv[]) {
     // Write ROOT output
     for (int iev = 0; iev < number_of_events; iev++) {
       treeIni->fill(iev);
-    }  // end events loop
+    } // end events loop
     outputFile->Write();
     outputFile->Close();
   }

@@ -24,6 +24,6 @@ void print_config_parameters();
 void print_comments_and_unknown_parameters_of_config_file(
     std::vector<std::string> comments_or_unknowns_in_config_file);
 void read_configuration_file(const std::string& filename);
-}  // namespace params
+} // namespace params
 
-#endif  // INCLUDE_PARAMS_H_
+#endif // INCLUDE_PARAMS_H_
