@@ -30,7 +30,7 @@ If the output of the sampler is expected to be fed into SMASH for particle propa
 ## Install instructions
 Before getting started with the sampler installation, please check that all prerequisites are satisfied and needed software ready to be used.
 
-To compile the project, first set the environment variable to the smash directory:
+To compile the project, first set the environment variable to the SMASH directory:
 
     export SMASH_DIR=[...]/smash
 
@@ -43,9 +43,12 @@ Execute the following commands to build the project:
 
     mkdir build
     cd build
-    cmake -DPythia_CONFIG_EXECUTABLE=[...]/pythia8312/bin/pythia8-config ..
+    cmake -DPythia_CONFIG_EXECUTABLE=[...]/pythia83XX/bin/pythia8-config ..
     make
-where `[...]/pythia8312` is the path to the pythia directory to which SMASH is also coupled.
+
+where `[...]/pythia83XX` is the path to the Pythia directory.
+The `XX` needs to be exchanged to match the Pythia version that is used by the compiled SMASH library.
+
 
 In continuation, the executable `sampler` is created.
 
