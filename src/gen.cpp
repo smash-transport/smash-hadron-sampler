@@ -26,7 +26,7 @@ TRandom3 *rnd;
 smash::ParticleData ***pList; // particle arrays
 
 struct element {
-  double tau, x, y, eta;
+  double four_position[4];
   double u[4];
   double dsigma[4];
   double T, mub, muq, mus;
@@ -48,7 +48,7 @@ void fillBoostMatrix(double vx, double vy, double vz, double boostMatrix[4][4])
   const double v2 = vx * vx + vy * vy + vz * vz;
   const double gamma = 1.0 / sqrt(1.0 - v2);
   if (std::isinf(gamma) || std::isnan(gamma)) {
-    cout << "boost vector invalid; exiting\n";
+    std::cout << "boost vector invalid; exiting\n";
     exit(1);
   }
   boostMatrix[0][0] = gamma;
@@ -95,10 +95,10 @@ void load(const char *filename, int N) {
   }
   npart = new int[params::number_of_events];
 
-  cout << "Read " << N << " lines from '" << filename << "'\n";
+  std::cout << "Reading " << N << " lines from '" << filename << "'\n";
   ifstream fin(filename);
   if (!fin) {
-    cout << "cannot read file " << filename << endl;
+    std::cout << "cannot read file " << filename << std::endl;
     exit(1);
   }
   dvMax = 0.;
@@ -106,13 +106,14 @@ void load(const char *filename, int N) {
   // ---- reading loop
   string line;
   istringstream instream;
-  cout << "1?: failbit=" << instream.fail() << endl;
+  std::cout << "1?: failbit=" << instream.fail() << std::endl;
   for (int n = 0; n < Nelem; n++) {
     getline(fin, line);
     instream.str(line);
     instream.seekg(0);
     instream.clear(); // does not work with gcc 4.1 otherwise
-    instream >> surf[n].tau >> surf[n].x >> surf[n].y >> surf[n].eta >>
+    instream >> surf[n].four_position[0] >> surf[n].four_position[1] >>
+        surf[n].four_position[2] >> surf[n].four_position[3] >>
         surf[n].dsigma[0] >> surf[n].dsigma[1] >> surf[n].dsigma[2] >>
         surf[n].dsigma[3] >> surf[n].u[0] >> surf[n].u[1] >> surf[n].u[2] >>
         surf[n].u[3] >> surf[n].T >> surf[n].mub >> surf[n].muq >> surf[n].mus;
@@ -129,7 +130,7 @@ void load(const char *filename, int N) {
     }
 
     if (instream.fail()) {
-      cout << "reading failed at line " << n << "; exiting\n";
+      std::cout << "reading failed at line " << n << "; exiting\n";
       exit(1);
     }
     // calculate in the old way
@@ -138,8 +139,8 @@ void load(const char *filename, int N) {
         surf[n].dsigma[2] * surf[n].u[2] + surf[n].dsigma[3] * surf[n].u[3];
     vEffOld += dvEffOld;
     if (dvEffOld < 0.0) {
-      // cout<<"!!! dvOld!=dV " << dvEffOld <<"  " << dV << "  " << surf[n].tau
-      // <<endl ;
+      // cout << "!!! dvOld!=dV " << dvEffOld <<"  " << dV << "  "
+      // << surf[n].four_position[0] << endl ;
       nfail++;
     }
     // if(nfail==100) exit(1) ;
@@ -188,11 +189,11 @@ void load(const char *filename, int N) {
   else
     dsigmaMax *= 1.3;
 
-  cout << "..done.\n";
-  cout << "Veff = " << vEff << "  dvMax = " << dvMax << endl;
-  cout << "Veff(old) = " << vEffOld << endl;
-  cout << "failed elements = " << nfail << endl;
-  cout << "mu_cut elements = " << ncut << endl;
+  std::cout << "..done.\n";
+  std::cout << "Veff = " << vEff << "  dvMax = " << dvMax << std::endl;
+  std::cout << "Veff(old) = " << vEffOld << std::endl;
+  std::cout << "failed elements = " << nfail << std::endl;
+  std::cout << "mu_cut elements = " << ncut << std::endl;
   // ---- prepare some stuff to calculate thermal densities
 
   // Load SMASH hadron list
@@ -206,8 +207,8 @@ void load(const char *filename, int N) {
 
   // NPART = total number of hadron states
   NPART = database.size();
-  cout << "NPART=" << NPART << endl;
-  cout << "dsigmaMax=" << dsigmaMax << endl;
+  std::cout << "NPART=" << NPART << std::endl;
+  std::cout << "dsigmaMax=" << dsigmaMax << "\n\n";
   cumulantDensity = new double[NPART];
 }
 
@@ -321,7 +322,8 @@ void generate() {
                            part.strangeness() * surf[iel].mus +
                            part.charge() * surf[iel].muq;
         if (muf >= mass)
-          cout << " ^^ muf = " << muf << "  " << part.pdgcode() << endl;
+          std::cout << " ^^ muf = " << muf << "  " << part.pdgcode()
+                    << std::endl;
         fthermal->SetParameters(surf[iel].T, muf, mass, stat);
         // const double dfMax = part->GetFMax() ;
         int niter = 0; // number of iterations, for debug purposes
@@ -376,28 +378,56 @@ void generate() {
         } while (rval > W); // end fast momentum generation
         if (niter > nmaxiter)
           nmaxiter = niter;
-        // additional random smearing over eta
-        const double etaF = 0.5 * log((surf[iel].u[0] + surf[iel].u[3]) /
-                                      (surf[iel].u[0] - surf[iel].u[3]));
-        const double etaShift = params::deta * (-0.5 + rnd->Rndm());
-        const double vx = surf[iel].u[1] / surf[iel].u[0] * cosh(etaF) /
-                          cosh(etaF + etaShift);
-        const double vy = surf[iel].u[2] / surf[iel].u[0] * cosh(etaF) /
-                          cosh(etaF + etaShift);
-        const double vz = tanh(etaF + etaShift);
+        const double x = surf[iel].four_position[1];
+        const double y = surf[iel].four_position[2];
+        double t = 0, z = 0, vx = 0, vy = 0, vz = 0;
+        /* The deta_dz is an estimate of spatial extent based on the volume of
+         * the respective freezeout hypersurface element which is used as a
+         * smearing parameter in eta or z direction (depending on the hydro
+         * coordinate system).
+         * Note: No smearing in x and y direction implemented at the moment.
+         */
+        params::deta_dz = std::cbrt(dvEff);
+        double smearing_eta_z = params::deta_dz * (-0.5 + rnd->Rndm());
+        if (params::hydro_coordinate_system == "tau-eta") {
+          smearing_eta_z /=
+              (surf[iel].four_position[0] * cosh(surf[iel].four_position[3]));
+          // additional random smearing over eta
+          const double etaF = 0.5 * log((surf[iel].u[0] + surf[iel].u[3]) /
+                                        (surf[iel].u[0] - surf[iel].u[3]));
+          vx = surf[iel].u[1] / surf[iel].u[0] * cosh(etaF) /
+               cosh(etaF + smearing_eta_z);
+          vy = surf[iel].u[2] / surf[iel].u[0] * cosh(etaF) /
+               cosh(etaF + smearing_eta_z);
+          vz = tanh(etaF + smearing_eta_z);
+          t = surf[iel].four_position[0] *
+              cosh(surf[iel].four_position[3] + smearing_eta_z);
+          z = surf[iel].four_position[0] *
+              sinh(surf[iel].four_position[3] + smearing_eta_z);
+        } else if (params::hydro_coordinate_system == "cartesian") {
+          vx = surf[iel].u[1] / surf[iel].u[0];
+          vy = surf[iel].u[2] / surf[iel].u[0];
+          vz = surf[iel].u[3] / surf[iel].u[0];
+          t = surf[iel].four_position[0];
+          z = surf[iel].four_position[3] + smearing_eta_z;
+        }
+
         mom.Boost(vx, vy, vz);
         smash::FourVector momentum(mom.E(), mom.Px(), mom.Py(), mom.Pz());
-        smash::FourVector position(
-            surf[iel].tau * cosh(surf[iel].eta + etaShift), surf[iel].x,
-            surf[iel].y, surf[iel].tau * sinh(surf[iel].eta + etaShift));
+        smash::FourVector position(t, x, y, z);
         acceptParticle(ievent, &part, position, momentum);
       } // coordinate accepted
     }   // events loop
-    if (iel % (Nelem / 50) == 0)
-      cout << round(iel / (Nelem * 0.01)) << " % done, maxiter= " << nmaxiter
-           << endl;
+    if (iel % (Nelem / 50) == 0) {
+      int progress_in_percent = round(iel / (Nelem * 0.01));
+      std::printf("[%3i%%] done\t(maxiter: %10i)\n", progress_in_percent,
+                  nmaxiter);
+      std::fflush(stdout);
+    }
   } // loop over all elements
-  cout << "therm_failed elements: " << ntherm_fail << endl;
+  std::cout << "\nThermodynamically failed elements: " << ntherm_fail
+            << "\n(caused by negative temperatures or if the sum\n"
+               "of thermal densities is below 0 or above 100)\n\n";
   delete fthermal;
 }
 
@@ -412,12 +442,12 @@ void acceptParticle(int ievent, const smash::ParticleTypePtr &ldef,
   pList[ievent][npart1] = new_particle;
   npart1++;
   if (std::isinf(momentum.x0()) || std::isnan(momentum.x0())) {
-    cout << "acceptPart nan: known, coord=" << position << endl;
-    exit(1);
+    std::cout << "acceptPart nan: known, coord=" << position << std::endl;
+    std::exit(1);
   }
   if (npart1 > NPartBuf) {
-    cout << "Error. Please increase gen::npartbuf\n";
-    exit(1);
+    std::cerr << "ERROR: Please increase gen::NPartBuf\n";
+    std::exit(1);
   }
 }
 

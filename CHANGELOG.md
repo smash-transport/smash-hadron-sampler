@@ -23,6 +23,10 @@ Also possible, but for this project less relevant, is `Deprecated` for soon-to-b
 
 ## Unreleased
 
+* :heavy_plus_sign: Added option to properly treat freeze-out hypersurface if the hydro stage provides the surface elements' position by space-time four-vectors in Cartesian coordinates (addtional to space-time four-vectors given in tau-eta coordinates).
+  Coordinates of the space-time four-vectors specifiable via new config key `hydro_coordinate_system` (options are `tau-eta` (default) and `cartesian`)
+
+
 ## SMASH-hadron-sampler-3.2
 Date: 2025-03-10
 

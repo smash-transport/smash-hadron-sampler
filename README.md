@@ -43,7 +43,7 @@ Execute the following commands to build the project:
 
     mkdir build
     cd build
-    cmake .. -DPythia_CONFIG_EXECUTABLE=[...]/pythia8312/bin/pythia8-config
+    cmake -DPythia_CONFIG_EXECUTABLE=[...]/pythia8312/bin/pythia8-config ..
     make
 where `[...]/pythia8312` is the path to the pythia directory to which SMASH is also coupled.
 
@@ -56,9 +56,9 @@ To run the sampler, execute the following command in the `build` directory:
     ./sampler --config <file>
 
 where `<file>` needs to be the path of the configuration file.
-In this config file the location of the freezeout hypersurface file, the path to the output directory, and all other necessary parameters can be specified.
+In this config file the location of the freeze-out hypersurface file, the path to the output directory, and all other necessary parameters can be specified.
 
-There are additional command line parameters with which the freezeout hypersurface file, the output directory, and a number prefix for parallel runs can be specified.
+There are additional command line parameters with which the freeze-out hypersurface file, the output directory, and a number prefix for parallel runs can be specified.
 All possible command line parameters are:
 
     -h, --help                  Print overview of command line options.
@@ -68,7 +68,7 @@ All possible command line parameters are:
                                 ROOT output filename.
     -o, --output <directory>    Optional parameter to overwrite the output directory given
                                 by "output_dir" in the config file.
-    -s, --surface <file>        Optional parameter to overwrite the freezeout hypersurface
+    -s, --surface <file>        Optional parameter to overwrite the freeze-out hypersurface
                                 file given by "surface_file" in the config file.
     -q, --quiet                 Suppress the disclaimer and config parameters print-out.
     --version                   Print version of the sampler executable.
@@ -84,11 +84,11 @@ The following lists **all possible config parameters**:
 
 Mandatory parameters:
 
-    surface_file                  Path to the freezeout hypersurface file that gets sampled.
+    surface_file                  Path to the freeze-out hypersurface file that gets sampled.
     output_dir                    Path to the output directory.
     number_of_events              Number of events that are sampled.
-    ecrit                         Critical energy density at which the hydro stopped in a
-                                  particular cell and the freezeout hypersurface was constructed.
+    ecrit                         Critical energy density at which the hydro stopped in a particular
+                                  cell and the freeze-out hypersurface was constructed.
 
 
 Optional parameters:
@@ -98,6 +98,10 @@ Optional parameters:
     cs2                           Speed of sound squared.               Default is 0.15.
     ratio_pressure_energydensity  Pressure divided by energy density.   Default is 0.15.
     create_root_output            Enables ROOT output if set to 1.      Default is 0 (false).
+    hydro_coordinate_system       Coordinate system in which the position of the freeze-out
+                                  hypersurface elements from the hydro evolution are provided
+                                  (by space-time four-vectors). Possible coordinate systems
+                                  are 'tau-eta' (default) or 'cartesian'.
 
 
 > [!NOTE]
@@ -106,4 +110,4 @@ Optional parameters:
 > [!TIP]
 > The repository provides an example config file named `config-example`.
 
-In case this example config file is used, the `surface_file` parameter has to be set to the location of the freezeout file and the `output_dir` parameter to the desired output path, either in the config file itself (instead of _/path/to/freezeout/file_ and _/output/path_) or via the command line parameters mentioned above!
+In case this example config file is used, the `surface_file` parameter has to be set to the location of the freeze-out file and the `output_dir` parameter to the desired output path, either in the config file itself (instead of _/path/to/freezeout/file_ and _/output/path_) or via the command line parameters mentioned above!
