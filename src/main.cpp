@@ -59,7 +59,7 @@ int main(int argc, char **argv)
  outputFile->cd();
  MyTree *treeIni = new MyTree(static_cast<const char*>("treeini")) ;
 
- gen::generate() ; // one call for NEVENTS
+ gen::generate(sSurface) ; // one call for NEVENTS
 
  // Write ROOT output
  for(int iev=0; iev<NEVENTS; iev++){

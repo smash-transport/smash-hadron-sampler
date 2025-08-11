@@ -18,7 +18,7 @@ const int NPartBuf = 30000; // dimension of particle buffer for each event
 
 // functions
 void load(char *filename, int N) ;
-int generate() ;
+int generate(char *filename) ;
 }
 
 #endif // INCLUDE_GEN_H_

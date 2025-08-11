@@ -71,6 +71,7 @@ struct element {
  double T, mub, muq, mus ;
  double pi[10] ;
  double Pi ;
+ double e, p, nb;
 } ;
 
 element *surf ;
@@ -85,6 +86,7 @@ double totalDensity ; // sum of all thermal densities
 void load(char *filename, int N)
 {
  double vEff=0.0, vEffOld=0.0, dvEff, dvEffOld ;
+ double Nbar = 0.0 ;
  int nfail=0, ncut=0 ;
  TLorentzVector dsigma ;
  Nelem = N ;
@@ -105,6 +107,11 @@ void load(char *filename, int N)
  string line ;
  istringstream instream ;
  cout<<"1?: failbit="<<instream.fail()<<endl ;
+ //make a string combined from filename and .nb_hist
+ string fnb_hist_name = filename;
+ fnb_hist_name += ".nb_hist";
+ ofstream fnb_hist(fnb_hist_name.c_str());
+ if(!fnb_hist){ cout << "cannot open file " << fnb_hist_name << endl ; exit(1) ; }
  for(int n=0; n<Nelem; n++){
    getline(fin, line) ;
    instream.str(line) ;
@@ -116,6 +123,7 @@ void load(char *filename, int N)
       >>surf[n].T>>surf[n].mub>>surf[n].muq>>surf[n].mus ;
       for(int i=0; i<10; i++) instream>>surf[n].pi[i] ;
       instream>>surf[n].Pi ;
+      instream>>surf[n].e>>surf[n].p>>surf[n].nb ;
       if(surf[n].muq>0.12){ surf[n].muq=0.12 ; // omit charge ch.pot. for test
 	ncut++ ;
       }
@@ -144,6 +152,8 @@ void load(char *filename, int N)
    surf[n].dsigma[2] = -dsigma.Y() ;
    surf[n].dsigma[3] = -dsigma.Z() ;
    dvEff = surf[n].dsigma[0] ;
+   Nbar += dvEff*surf[n].nb ;
+   fnb_hist << setw(14) << surf[n].T << setw(14) << dvEff*surf[n].nb << endl;
    vEff += dvEff ;
    if(dvMax<dvEff) dvMax = dvEff ;
    // maximal value of the weight max(W) = max(dsigma_0+|\vec dsigma_i|)   for equilibrium DFs
@@ -187,6 +197,8 @@ void load(char *filename, int N)
  NPART=database.size();
  cout<<"NPART="<<NPART<<endl ;
  cout<<"dsigmaMax="<<dsigmaMax<<endl ;
+ cout << "Nbar = " << Nbar << endl ;
+ fnb_hist.close();
  cumulantDensity = new double [NPART] ;
 }
 
@@ -204,7 +216,7 @@ double ffthermal(double *x, double *par)
 }
 
 
-int generate()
+int generate(char *filename)
 {
  const double gmumu [4] = {1., -1., -1., -1.} ;
  TF1 *fthermal = new TF1("fthermal",ffthermal,0.0,10.0,4) ;
@@ -213,6 +225,13 @@ int generate()
  int nmaxiter = 0 ;
  int nzero_temp=0, ndensity_fail=0;
  double total_baryon_charge = 0.;
+  //make a string combined from filename and .nb_hist
+ string fnb_sums_name = filename;
+ fnb_sums_name += ".th_sums";
+ ofstream fnb_sums(fnb_sums_name.c_str());
+ string ffailed_name = filename;
+ ffailed_name += ".failed";
+ ofstream ffailed(ffailed_name.c_str());
 
  // List species that should not be sampled: photon, electron, muon, tau
  // Sigma meson needs to be excluded to generate correct multiplicities
@@ -221,8 +240,14 @@ int generate()
 
  for(int iel=0; iel<Nelem; iel++){ // loop over all elements
   // ---> thermal densities, for each surface element
+   //cout << "=================== new surface element ========\n";
+   //cout << "T = " << surf[iel].T << endl;
    totalDensity = 0.0 ;
-   if(surf[iel].T<1e-5){ nzero_temp++ ; continue ; }
+   if(surf[iel].T<1e-5){
+    nzero_temp++ ;
+    ffailed << setw(12) << iel << setw(14) << surf[iel].T << setw(14)<< surf[iel].mub << setw(14)<< surf[iel].muq << setw(14)<< surf[iel].mus << setw(14) << surf[iel].e << setw(14) << surf[iel].nb << setw(14) << surf[iel].nb*surf[iel].dsigma[0] << endl;
+    continue ;
+    }
 
    const smash::ParticleTypeList& database = smash::ParticleType::list_all();
    int ip = 0;
@@ -261,8 +286,13 @@ int generate()
     ip += 1;
    }
    total_baryon_charge += d_baryon_charge*surf[iel].dsigma[0];
+   fnb_sums << setw(12) << iel << setw(14) << surf[iel].T << setw(14)<< surf[iel].mub << setw(14)<< surf[iel].muq << setw(14)<< surf[iel].mus << setw(14) << surf[iel].nb*surf[iel].dsigma[0] << setw(14) << d_baryon_charge*surf[iel].dsigma[0] << endl;
 
-   if(totalDensity<0.  || totalDensity>100.){ ndensity_fail++ ; continue ; }
+   if(totalDensity<0.  || totalDensity>100.){
+    ndensity_fail++ ;
+    ffailed << setw(12) << iel << setw(14) << surf[iel].T << setw(14)<< surf[iel].mub << setw(14)<< surf[iel].muq << setw(14)<< surf[iel].mus << setw(14) << surf[iel].e << setw(14) << surf[iel].nb << setw(14) << surf[iel].nb*surf[iel].dsigma[0] << endl;
+    continue ;
+    }
    //cout<<"thermal densities calculated.\n" ;
    //cout<<cumulantDensity[NPART-1]<<" = "<<totalDensity<<endl ;
  // ---< end thermal densities calc
@@ -338,6 +368,9 @@ int generate()
  } // loop over all elements
  cout << "elements with small temperature: " <<nzero_temp << endl ;
  cout << "elements with divergent density: " <<ndensity_fail << endl ;
+ cout << "total_baryon_charge (thermal sums): " << total_baryon_charge << endl ;
+ fnb_sums.close();
+ ffailed.close();
  return npart[0] ;
  delete fthermal ;
 }
