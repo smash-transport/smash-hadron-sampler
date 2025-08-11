@@ -211,7 +211,8 @@ int generate()
  TLorentzVector mom ;
  for(int iev=0; iev<params::NEVENTS; iev++) npart[iev] = 0 ;
  int nmaxiter = 0 ;
- int ntherm_fail=0 ;
+ int nzero_temp=0, ndensity_fail=0;
+ double total_baryon_charge = 0.;
 
  // List species that should not be sampled: photon, electron, muon, tau
  // Sigma meson needs to be excluded to generate correct multiplicities
@@ -221,10 +222,11 @@ int generate()
  for(int iel=0; iel<Nelem; iel++){ // loop over all elements
   // ---> thermal densities, for each surface element
    totalDensity = 0.0 ;
-   if(surf[iel].T<=0.){ ntherm_fail++ ; continue ; }
+   if(surf[iel].T<1e-5){ nzero_temp++ ; continue ; }
 
    const smash::ParticleTypeList& database = smash::ParticleType::list_all();
    int ip = 0;
+   double d_baryon_charge = 0.0;
    for (auto& particle : database) {
     double density = 0. ;
     const bool exclude_species = std::find(species_to_exclude.begin(), species_to_exclude.end(), particle.pdgcode()) != species_to_exclude.end();
@@ -238,19 +240,29 @@ int generate()
       const double J = particle.spin() * 0.5 ;
       const double stat = static_cast<int>(round(2.*J)) & 1 ? -1. : 1. ;
       // SMASH quantum charges for the hadron state
-      const double muf = particle.baryon_number()*surf[iel].mub + particle.strangeness()*surf[iel].mus +
+      double muf = particle.baryon_number()*surf[iel].mub + particle.strangeness()*surf[iel].mus +
                  particle.charge()*surf[iel].muq ;
-      for(int i=1; i<11; i++)
+      muf = std::min(muf, 0.999*mass);
+      int imax = std::min(static_cast<int>(surf[iel].T/mass*700.), 10);
+      for(int i=1; i<imax+1; i++)
       density += (2.*J+1.)*pow(gevtofm,3)/(2.*pow(TMath::Pi(),2))*mass*mass*surf[iel].T*pow(stat,i+1)*TMath::BesselK(2,i*mass/surf[iel].T)*exp(i*muf/surf[iel].T)/i ;
     }
+    const double muf = particle.baryon_number()*surf[iel].mub + particle.strangeness()*surf[iel].mus +
+                 particle.charge()*surf[iel].muq ;
+    d_baryon_charge += particle.baryon_number()*density;
+    if(std::isnan(density) or std::isinf(density)) {
+      std::cout << "density is NaN, " << surf[iel].T << "  " << muf << "  " << particle.mass() << std::endl;
+    }
+    //cout << setw(14) << particle.pdgcode() << setw(14) << muf << setw(14) << density << endl;
     if(ip>0) cumulantDensity[ip] = cumulantDensity[ip-1] + density ;
         else cumulantDensity[ip] = density ;
     totalDensity += density ;
 
     ip += 1;
    }
+   total_baryon_charge += d_baryon_charge*surf[iel].dsigma[0];
 
-   if(totalDensity<0.  || totalDensity>100.){ ntherm_fail++ ; continue ; }
+   if(totalDensity<0.  || totalDensity>100.){ ndensity_fail++ ; continue ; }
    //cout<<"thermal densities calculated.\n" ;
    //cout<<cumulantDensity[NPART-1]<<" = "<<totalDensity<<endl ;
  // ---< end thermal densities calc
@@ -282,7 +294,7 @@ int generate()
    // SMASH quantum charges for the hadron state
    const double muf = part.baryon_number()*surf[iel].mub + part.strangeness()*surf[iel].mus +
                part.charge()*surf[iel].muq ;
-   if(muf>=mass) cout << " ^^ muf = " << muf << "  " << part.pdgcode() << endl ;
+   //if(muf>=mass) cout << " ^^ muf = " << muf << "  " << part.pdgcode() << endl ;
    fthermal->SetParameters(surf[iel].T,muf,mass,stat) ;
    //const double dfMax = part->GetFMax() ;
    int niter = 0 ; // number of iterations, for debug purposes
@@ -324,7 +336,8 @@ int generate()
   } // events loop
   if(iel%(Nelem/50)==0) cout<<round(iel/(Nelem*0.01))<<" % done, maxiter= "<<nmaxiter<<endl ;
  } // loop over all elements
- cout << "therm_failed elements: " <<ntherm_fail << endl ;
+ cout << "elements with small temperature: " <<nzero_temp << endl ;
+ cout << "elements with divergent density: " <<ndensity_fail << endl ;
  return npart[0] ;
  delete fthermal ;
 }
