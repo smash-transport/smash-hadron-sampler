@@ -23,8 +23,8 @@ void write_oscar_output() {
         "t",  "x",   "y",  "z",      "mass",  "p0",    "px",    "py",
         "pz", "pdg", "ID", "charge", "spin0", "spinx", "spiny", "spinz"};
     output_params.quantities.insert({"Particles", particle_quantities});
-    OscarOutput = create_oscar_output("ASCIICustom", "Particles", OutputPath,
-                                      output_params);
+    OscarOutput =
+        create_oscar_output("ASCII", "Particles", OutputPath, output_params);
   } else {
     OscarOutput = create_oscar_output("Oscar2013", "Particles", OutputPath,
                                       smash::OutputParameters());
