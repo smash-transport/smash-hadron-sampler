@@ -51,7 +51,8 @@ class Vorticity {
   const_reference at(int i, int j) const { return vorticity_[i * 4 + j]; }
 
   // Boost the vorticity tensor to the fluid rest frame with given boost matrix
-  void boost_vorticity_to_fluid_rest_frame(const double (&boostMatrix)[4][4]);
+  void boost_vorticity_to_fluid_rest_frame(
+      const std::array<std::array<double, 4>, 4>& boostMatrix);
 
  private:
   // number of corona cells in the freezeout surface. As the freezeout surface

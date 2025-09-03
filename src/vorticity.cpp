@@ -55,7 +55,7 @@ void Vorticity::ensure_vorticity_file_exists_and_check_format() {
     // Check if the third line matches the expected format
     if (comment_lines_read == 2) {
       const std::string expected_third_line =
-          "# τ  x  y  η  dΣ[0]  dΣ[1]  dΣ[2]  dΣ[3]  u[0]  u[1]  u[2]  u[3]  "
+          "#  τ  x  y  η  dΣ[0]  dΣ[1]  dΣ[2]  dΣ[3]  u[0]  u[1]  u[2]  u[3]  "
           "T  μB  μQ  μS  ∂₀β₀  ∂₀β₁  ∂₀β₂  ∂₀β₃  ∂₁β₀  ∂₁β₁  ∂₁β₂  ∂₁β₃  "
           "∂₂β₀  ∂₂β₁  ∂₂β₂  ∂₂β₃  ∂₃β₀  ∂₃β₁  ∂₃β₂  ∂₃β₃  ϵ";
 
@@ -287,7 +287,10 @@ void Vorticity::set_vorticity_in_surface_cells(gen::element* surf, int N) {
 // Boost the vorticity tensor to the fluid rest frame with the given boost
 // matrix
 void Vorticity::boost_vorticity_to_fluid_rest_frame(
-    const double (&boostMatrix)[4][4]) {
+    const FourMatrix& boostMatrix) {
+  // Transform the row and column indices for a 4x4 matrix into a 1d index
+  auto at = [](int i, int j) { return (i * 4 + j); };
+
   // Create a copy of the vorticity tensor
   std::array<double, 16> vorticity_copy = vorticity_;
 
@@ -298,10 +301,10 @@ void Vorticity::boost_vorticity_to_fluid_rest_frame(
       for (int k = 0; k < 4; k++) {
         for (int l = 0; l < 4; l++) {
           vorticity_ij +=
-              vorticity_copy[k * 4 + l] * boostMatrix[i][k] * boostMatrix[j][l];
+               boostMatrix[i][k] * boostMatrix[j][l] * vorticity_copy[at(k, l)];
         }
       }
-      vorticity_[i * 4 + j] = vorticity_ij;
+      vorticity_[at(i, j)] = vorticity_ij;
     }
   }
 }

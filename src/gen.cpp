@@ -37,10 +37,10 @@ smash::ParticleData ***pList;  // particle arrays
 std::unique_ptr<std::vector<std::vector<ThetaStruct>>> thetaStorage = nullptr;
 
 element *surf;
-int *npart;              // number of generated particles in each event
-double *cumulantDensity; // particle densities (thermal). Seems to be redundant,
-                         // but needed for fast generation
-double totalDensity;     // sum of all thermal densities
+int *npart;               // number of generated particles in each event
+double *cumulantDensity;  // particle densities (thermal). Seems to be
+                          // redundant, but needed for fast generation
+double totalDensity;      // sum of all thermal densities
 
 // active Lorentz boost
 void fillBoostMatrix(double vx, double vy, double vz, double boostMatrix[4][4])
@@ -66,6 +66,25 @@ void fillBoostMatrix(double vx, double vy, double vz, double boostMatrix[4][4])
       for (int j = 1; j < 4; j++) boostMatrix[i][j] = 0.0;
   }
   for (int i = 1; i < 4; i++) boostMatrix[i][i] += 1.0;
+}
+
+// Convert a Lorentz boost matrix from contravariant form (Λ^μ_ν, acts on upper
+// indices) to covariant form (Λ_μ^ν, acts on lower indices) using the (+,-,-,-)
+// metric.
+//
+// Index relation:   (Λ_cov)_μ^ν = g_{μα} (Λ_contra)^α_β g^{βν}
+// Matrix relation:  Λ_cov = g * Λ_contra * g,  with g = diag(+1,-1,-1,-1)
+FourMatrix create_covariant_boost_matrix(
+    const double boost_contravariant[4][4]) {
+  // Metric signature
+  const double g[4] = {+1.0, -1.0, -1.0, -1.0};
+  FourMatrix boost_covariant{};
+
+  for (int mu = 0; mu < 4; ++mu)
+    for (int nu = 0; nu < 4; ++nu)
+      boost_covariant[mu][nu] = g[mu] * boost_contravariant[mu][nu] * g[nu];
+
+  return boost_covariant;
 }
 
 // index44: returns an index of pi^{mu nu} mu,nu component in a plain 1D array
@@ -118,7 +137,7 @@ void load(const char *filename, int N) {
     getline(fin, line);
     instream.str(line);
     instream.seekg(0);
-    instream.clear(); // does not work with gcc 4.1 otherwise
+    instream.clear();  // does not work with gcc 4.1 otherwise
     instream >> surf[n].tau >> surf[n].x >> surf[n].y >> surf[n].eta >>
         surf[n].dsigma[0] >> surf[n].dsigma[1] >> surf[n].dsigma[2] >>
         surf[n].dsigma[3] >> surf[n].u[0] >> surf[n].u[1] >> surf[n].u[2] >>
@@ -135,11 +154,11 @@ void load(const char *filename, int N) {
     }
 
     if (surf[n].muq > 0.12) {
-      surf[n].muq = 0.12; // omit charge ch.pot. for test
+      surf[n].muq = 0.12;  // omit charge ch.pot. for test
       ncut++;
     }
     if (surf[n].muq < -0.12) {
-      surf[n].muq = -0.12; // omit charge ch.pot. for test
+      surf[n].muq = -0.12;  // omit charge ch.pot. for test
       ncut++;
     }
     if (instream.fail()) {
@@ -180,6 +199,7 @@ void load(const char *filename, int N) {
     // pi^{mu nu} boost to fluid rest frame
     // ########################
     double boostMatrix[4][4];
+    FourMatrix boostMatrixCov{};
     bool boost_matrix_needed =
         params::shear_viscosity_enabled || params::spin_sampling_enabled;
 
@@ -187,8 +207,14 @@ void load(const char *filename, int N) {
       fillBoostMatrix(-surf[n].u[1] / surf[n].u[0],
                       -surf[n].u[2] / surf[n].u[0],
                       -surf[n].u[3] / surf[n].u[0], boostMatrix);
+
+      // As boostMatrix is a contravariant boost matrix (acts on upper indices),
+      // and vorticity is a tensor with lower indices, we need to convert the
+      // boost matrix to a covariant form (acts on lower indices).
+      boostMatrixCov = create_covariant_boost_matrix(boostMatrix);
     }
 
+    // _pi^{μν} (upper,upper) uses the contravariant boostMatrix
     if (params::shear_viscosity_enabled) {
       double _pi[10];
       for (int i = 0; i < 4; i++)
@@ -208,11 +234,11 @@ void load(const char *filename, int N) {
         throw std::runtime_error("Error: Vorticity is not set for element " +
                                  std::to_string(n));
       }
-      (*surf[n].vorticity)->boost_vorticity_to_fluid_rest_frame(boostMatrix);
+      (*surf[n].vorticity)->boost_vorticity_to_fluid_rest_frame(boostMatrixCov);
     }
   }
   if (params::shear_viscosity_enabled)
-    dsigmaMax *= 2.0; // *2.0: jun17. default: *1.5
+    dsigmaMax *= 2.0;  // *2.0: jun17. default: *1.5
   else
     dsigmaMax *= 1.3;
 
@@ -245,7 +271,8 @@ void enable_vorticity_storage() {
   if (params::spin_sampling_enabled && params::vorticity_output_enabled) {
     thetaStorage = std::make_unique<std::vector<std::vector<ThetaStruct>>>(
         params::number_of_events);
-  } else if (!params::spin_sampling_enabled && params::vorticity_output_enabled) {
+  } else if (!params::spin_sampling_enabled &&
+             params::vorticity_output_enabled) {
     throw std::runtime_error(
         "Vorticity output is enabled but spin sampling is not. "
         "Enable spin sampling in the config file by adding "
@@ -275,7 +302,7 @@ void generate() {
   std::vector<smash::PdgCode> species_to_exclude{0x11, -0x11, 0x13, -0x13,
                                                  0x15, -0x15, 0x22, 0x9000221};
 
-  for (int iel = 0; iel < Nelem; iel++) { // loop over all elements
+  for (int iel = 0; iel < Nelem; iel++) {  // loop over all elements
     // ---> thermal densities, for each surface element
     totalDensity = 0.0;
     if (surf[iel].T <= 0.) {
@@ -359,8 +386,8 @@ void generate() {
           cout << " ^^ muf = " << muf << "  " << part.pdgcode() << endl;
         fthermal->SetParameters(surf[iel].T, muf, mass, stat);
         // const double dfMax = part->GetFMax() ;
-        int niter = 0; // number of iterations, for debug purposes
-        do {           // fast momentum generation loop
+        int niter = 0;  // number of iterations, for debug purposes
+        do {            // fast momentum generation loop
           const double p = fthermal->GetRandom();
           const double phi = 2.0 * TMath::Pi() * rnd->Rndm();
           const double sinth = -1.0 + 2.0 * rnd->Rndm();
@@ -435,7 +462,7 @@ void generate() {
     if (iel % (Nelem / 50) == 0)
       cout << round(iel / (Nelem * 0.01)) << " % done, maxiter= " << nmaxiter
            << endl;
-  } // loop over all elements
+  }  // loop over all elements
   cout << "therm_failed elements: " << ntherm_fail << endl;
   delete fthermal;
 }
@@ -464,4 +491,4 @@ smash::ParticleData *acceptParticle(int ievent,
 }
 
 // ################### end #################
-} // end namespace gen
+}  // end namespace gen
