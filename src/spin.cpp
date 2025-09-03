@@ -109,7 +109,6 @@ void calculate_and_set_spin_vector(const int index_event,
     particle->set_spin_vector(spin_vec);
 
   } else if (spin > 0) {
-    const double energy_density = *freezeout_element.e;
     const double temperature = freezeout_element.T;
     const double mu = freezeout_element.mub;
     const std::array<double, 16> vorticity =
@@ -123,6 +122,8 @@ void calculate_and_set_spin_vector(const int index_event,
     std::array<double, 4> p = {
         particle->momentum().x0(), particle->momentum().x1(),
         particle->momentum().x2(), particle->momentum().x3()};
+
+    const double particle_energy = particle->momentum().x0();
 
     const std::array<double, 4> theta_array =
         theta(particle->pole_mass(), vorticity, p);
@@ -138,7 +139,7 @@ void calculate_and_set_spin_vector(const int index_event,
     // given right after Eq. (61) in arXiv:2304.02276v2. This prevents division
     // by zero for corona cells in which the vorticity tensor is zero.
     if (std::abs(std::sqrt(-theta_squared)) < tiny_value) {
-      const double distribution_argument = (energy_density - mu) / temperature;
+      const double distribution_argument = (particle_energy - mu) / temperature;
       const double factor =
           (((spin / 2.) * ((spin / 2.) + 1.)) / 3.) *
           (1 + (spin % 2 == 0 ? 1 : -1) *
@@ -157,7 +158,7 @@ void calculate_and_set_spin_vector(const int index_event,
       // Sum all terms of in the numerator and denominator
       for (int k = -spin; k <= spin; k += 2) {
         double sum_index = k / 2.0;
-        double exponential = std::exp(exponent(sum_index, energy_density,
+        double exponential = std::exp(exponent(sum_index, particle_energy,
                                                temperature, mu, theta_squared));
         double denominator_term = 1 / (exponential - (spin % 2 == 0 ? 1 : -1));
         double numerator_term = sum_index * denominator_term;

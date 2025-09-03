@@ -31,7 +31,7 @@ std::array<double, 4> theta(const double mass,
                             const std::array<double, 4> &p);
 
 // Calculate the exponent of exp(...) in EQ. (60) from arXiv:2304.02276v2
-inline double exponent(const double k, const double energy_density,
+inline double exponent(const double k, const double energy,
                        const double temperature, const double mu,
                        const double theta_squared) {
   // Check that k is a multiple of 1/2
@@ -40,7 +40,7 @@ inline double exponent(const double k, const double energy_density,
   } else if (theta_squared > 0) {
     throw std::invalid_argument("theta^2 must be negative.");
   }
-  return (energy_density - mu) / temperature - k * sqrt(-theta_squared);
+  return (energy - mu) / temperature - k * sqrt(-theta_squared);
 }
 
 // Calculate either the Fermi or Bose distribution given the spin of the
