@@ -52,3 +52,61 @@ TEST(index44_index_out_of_range) {
     }
   }
 }
+
+TEST(fillBoostMatrix) {
+  const double v[3] = {0.3, 0.2, -0.1};
+  const double gamma =
+      1.0 / sqrt(1.0 - (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]));
+  const double u[4] = {gamma, gamma * v[0], gamma * v[1], gamma * v[2]};
+
+  double boostMatrix[4][4];
+  fillBoostMatrix(-u[1] / gamma, -u[2] / gamma, -u[3] / gamma, boostMatrix);
+
+  // Perform boost on u to get back to (1,0,0,0)
+  double u_prime[4];
+  for (int mu = 0; mu < 4; ++mu) {
+    u_prime[mu] = 0.0;
+    for (int nu = 0; nu < 4; ++nu) {
+      u_prime[mu] += boostMatrix[mu][nu] * u[nu];
+    }
+  }
+
+  // Check that u' is approximately (1,0,0,0)
+  const double tolerance = 1e-9;
+  VERIFY(std::abs(u_prime[0] - 1.0) < tolerance);
+  VERIFY(std::abs(u_prime[1]) < tolerance);
+  VERIFY(std::abs(u_prime[2]) < tolerance);
+  VERIFY(std::abs(u_prime[3]) < tolerance);
+}
+
+TEST(create_covariant_boost_matrix) {
+  // create covariant 4-velocity
+  const double v[3] = {0.3, 0.2, -0.1};
+  const double gamma =
+      1.0 / sqrt(1.0 - (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]));
+  const double u[4] = {gamma, gamma * v[0], gamma * v[1], gamma * v[2]};
+  const double u_cov[4] = {gamma, -gamma * v[0], -gamma * v[1], -gamma * v[2]};
+
+  double boost_contravariant[4][4];
+  fillBoostMatrix(-u[1] / gamma, -u[2] / gamma, -u[3] / gamma,
+                  boost_contravariant);
+
+  FourMatrix boost_covariant =
+      create_covariant_boost_matrix(boost_contravariant);
+
+  // Perform boost on u to get back to (1,0,0,0)
+  double u_prime[4];
+  for (int mu = 0; mu < 4; ++mu) {
+    u_prime[mu] = 0.0;
+    for (int nu = 0; nu < 4; ++nu) {
+      u_prime[mu] += boost_covariant[mu][nu] * u_cov[nu];
+    }
+  }
+
+  // Check that u' is approximately (1,0,0,0)
+  const double tolerance = 1e-9;
+  VERIFY(std::abs(u_prime[0] - 1.0) < tolerance);
+  VERIFY(std::abs(u_prime[1]) < tolerance);
+  VERIFY(std::abs(u_prime[2]) < tolerance);
+  VERIFY(std::abs(u_prime[3]) < tolerance);
+}
