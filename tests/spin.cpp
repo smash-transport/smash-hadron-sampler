@@ -264,37 +264,37 @@ TEST(spin_vector_valid_values) {
   smash::PdgCode pdg_delta_plus = 0x2214;
 
   // Create the particle data for the pion, proton, and delta plus
-  smash::ParticleData *pion =
-      new smash::ParticleData(smash::ParticleType::find(pdg_pion));
-  smash::ParticleData *proton =
-      new smash::ParticleData(smash::ParticleType::find(pdg_proton));
-  smash::ParticleData *rho =
-      new smash::ParticleData(smash::ParticleType::find(pdg_rho));
-  smash::ParticleData *delta_plus =
-      new smash::ParticleData(smash::ParticleType::find(pdg_delta_plus));
+  smash::ParticleData pion =
+      smash::ParticleData(smash::ParticleType::find(pdg_pion));
+  smash::ParticleData proton =
+      smash::ParticleData(smash::ParticleType::find(pdg_proton));
+  smash::ParticleData rho =
+      smash::ParticleData(smash::ParticleType::find(pdg_rho));
+  smash::ParticleData delta_plus =
+      smash::ParticleData(smash::ParticleType::find(pdg_delta_plus));
 
   // Set particle momenta
   const double pion_mom[4] = {
-      std::sqrt(pion->pole_mass() * pion->pole_mass() + 0.11 * 0.11 +
+      std::sqrt(pion.pole_mass() * pion.pole_mass() + 0.11 * 0.11 +
                 0.22 * 0.22 + 0.33 * 0.33),
       0.11, 0.22, 0.33};
   const std::array<double, 4> proton_mom = {
-      std::sqrt(proton->pole_mass() * proton->pole_mass() + 0.11 * 0.11 +
+      std::sqrt(proton.pole_mass() * proton.pole_mass() + 0.11 * 0.11 +
                 0.22 * 0.22 + 0.33 * 0.33),
       0.11, 0.22, 0.33};
   const std::array<double, 4> rho_mom = {
-      std::sqrt(rho->pole_mass() * rho->pole_mass() + 0.11 * 0.11 +
+      std::sqrt(rho.pole_mass() * rho.pole_mass() + 0.11 * 0.11 +
                 0.22 * 0.22 + 0.33 * 0.33),
       0.11, 0.22, 0.33};
   const std::array<double, 4> delta_plus_mom = {
-      std::sqrt(delta_plus->pole_mass() * delta_plus->pole_mass() +
+      std::sqrt(delta_plus.pole_mass() * delta_plus.pole_mass() +
                 0.11 * 0.11 + 0.22 * 0.22 + 0.33 * 0.33),
       0.11, 0.22, 0.33};
-  pion->set_4momentum(pion->pole_mass(), pion_mom[1], pion_mom[2], pion_mom[3]);
-  proton->set_4momentum(proton->pole_mass(), proton_mom[1], proton_mom[2],
+  pion.set_4momentum(pion.pole_mass(), pion_mom[1], pion_mom[2], pion_mom[3]);
+  proton.set_4momentum(proton.pole_mass(), proton_mom[1], proton_mom[2],
                         proton_mom[3]);
-  rho->set_4momentum(rho->pole_mass(), rho_mom[1], rho_mom[2], rho_mom[3]);
-  delta_plus->set_4momentum(delta_plus->pole_mass(), delta_plus_mom[1],
+  rho.set_4momentum(rho.pole_mass(), rho_mom[1], rho_mom[2], rho_mom[3]);
+  delta_plus.set_4momentum(delta_plus.pole_mass(), delta_plus_mom[1],
                             delta_plus_mom[2], delta_plus_mom[3]);
 
   gen::element surf_element;
@@ -328,37 +328,37 @@ TEST(spin_vector_valid_values) {
 
   // TEST FOR SPIN O (PION)
   // Newly initialized pion should have a spin vector of nan
-  VERIFY(std::isnan(pion->spin_vector()[0]) &&
-         std::isnan(pion->spin_vector()[1]) &&
-         std::isnan(pion->spin_vector()[2]) &&
-         std::isnan(pion->spin_vector()[3]));
+  VERIFY(std::isnan(pion.spin_vector()[0]) &&
+         std::isnan(pion.spin_vector()[1]) &&
+         std::isnan(pion.spin_vector()[2]) &&
+         std::isnan(pion.spin_vector()[3]));
 
   // Calculate and set the spin vector for the pion
-  calculate_and_set_spin_vector(0, surf_element, pion);
+  calculate_and_set_spin_vector(0, surf_element, &pion);
 
   // Perform checks
-  VERIFY(expect_near(pion->spin_vector()[0], 0.0, 1e-9));
-  VERIFY(expect_near(pion->spin_vector()[1], 0.0, 1e-9));
-  VERIFY(expect_near(pion->spin_vector()[2], 0.0, 1e-9));
-  VERIFY(expect_near(pion->spin_vector()[3], 0.0, 1e-9));
+  VERIFY(expect_near(pion.spin_vector()[0], 0.0, 1e-9));
+  VERIFY(expect_near(pion.spin_vector()[1], 0.0, 1e-9));
+  VERIFY(expect_near(pion.spin_vector()[2], 0.0, 1e-9));
+  VERIFY(expect_near(pion.spin_vector()[3], 0.0, 1e-9));
 
   // TEST FOR SPIN 1/2 (PROTON)
   // Newly initialized proton should have a spin vector of nan
-  VERIFY(std::isnan(proton->spin_vector()[0]) &&
-         std::isnan(proton->spin_vector()[1]) &&
-         std::isnan(proton->spin_vector()[2]) &&
-         std::isnan(proton->spin_vector()[3]));
+  VERIFY(std::isnan(proton.spin_vector()[0]) &&
+         std::isnan(proton.spin_vector()[1]) &&
+         std::isnan(proton.spin_vector()[2]) &&
+         std::isnan(proton.spin_vector()[3]));
 
   // Calculate and set the spin vector for the proton
-  calculate_and_set_spin_vector(0, surf_element, proton);
+  calculate_and_set_spin_vector(0, surf_element, &proton);
 
   // Calculate the expected values for the spin vector
   std::array<double, 4> theta_vector =
-      theta(proton->pole_mass(), (**surf_element.vorticity).get_vorticity(),
+      theta(proton.pole_mass(), (**surf_element.vorticity).get_vorticity(),
             proton_mom);
   double theta_squared = spin::four_vector_square(theta_vector);
 
-  double mu_proton = chemical_potential(proton, surf_element);
+  double mu_proton = chemical_potential(&proton, surf_element);
 
   double denominator_1 =
       1 /
@@ -381,26 +381,26 @@ TEST(spin_vector_valid_values) {
       theta_vector[2] * total_weight, theta_vector[3] * total_weight};
 
   // Perform checks
-  VERIFY(expect_near(proton->spin_vector()[0], expected_spin_vector[0], 1e-9));
-  VERIFY(expect_near(proton->spin_vector()[1], expected_spin_vector[1], 1e-9));
-  VERIFY(expect_near(proton->spin_vector()[2], expected_spin_vector[2], 1e-9));
-  VERIFY(expect_near(proton->spin_vector()[3], expected_spin_vector[3], 1e-9));
+  VERIFY(expect_near(proton.spin_vector()[0], expected_spin_vector[0], 1e-9));
+  VERIFY(expect_near(proton.spin_vector()[1], expected_spin_vector[1], 1e-9));
+  VERIFY(expect_near(proton.spin_vector()[2], expected_spin_vector[2], 1e-9));
+  VERIFY(expect_near(proton.spin_vector()[3], expected_spin_vector[3], 1e-9));
 
   // TEST FOR SPIN 1 (RHO)
   // Newly initialized rho should have a spin vector of nan
   VERIFY(
-      std::isnan(rho->spin_vector()[0]) && std::isnan(rho->spin_vector()[1]) &&
-      std::isnan(rho->spin_vector()[2]) && std::isnan(rho->spin_vector()[3]));
+      std::isnan(rho.spin_vector()[0]) && std::isnan(rho.spin_vector()[1]) &&
+      std::isnan(rho.spin_vector()[2]) && std::isnan(rho.spin_vector()[3]));
 
   // Calculate and set the spin vector for the rho
-  calculate_and_set_spin_vector(0, surf_element, rho);
+  calculate_and_set_spin_vector(0, surf_element, &rho);
 
   // Calculate the expected values for the spin vector
-  theta_vector = theta(rho->pole_mass(),
+  theta_vector = theta(rho.pole_mass(),
                        (**surf_element.vorticity).get_vorticity(), rho_mom);
   theta_squared = spin::four_vector_square(theta_vector);
 
-  double mu_rho = chemical_potential(rho, surf_element);
+  double mu_rho = chemical_potential(&rho, surf_element);
 
   denominator_1 =
       1 /
@@ -423,28 +423,28 @@ TEST(spin_vector_valid_values) {
   }
 
   // Perform checks
-  VERIFY(expect_near(rho->spin_vector()[0], expected_spin_vector[0], 1e-9));
-  VERIFY(expect_near(rho->spin_vector()[1], expected_spin_vector[1], 1e-9));
-  VERIFY(expect_near(rho->spin_vector()[2], expected_spin_vector[2], 1e-9));
-  VERIFY(expect_near(rho->spin_vector()[3], expected_spin_vector[3], 1e-9));
+  VERIFY(expect_near(rho.spin_vector()[0], expected_spin_vector[0], 1e-9));
+  VERIFY(expect_near(rho.spin_vector()[1], expected_spin_vector[1], 1e-9));
+  VERIFY(expect_near(rho.spin_vector()[2], expected_spin_vector[2], 1e-9));
+  VERIFY(expect_near(rho.spin_vector()[3], expected_spin_vector[3], 1e-9));
 
   // TEST FOR SPIN 3/2 (DELTA PLUS)
   // Newly initialized delta plus should have a spin vector of nan
-  VERIFY(std::isnan(delta_plus->spin_vector()[0]) &&
-         std::isnan(delta_plus->spin_vector()[1]) &&
-         std::isnan(delta_plus->spin_vector()[2]) &&
-         std::isnan(delta_plus->spin_vector()[3]));
+  VERIFY(std::isnan(delta_plus.spin_vector()[0]) &&
+         std::isnan(delta_plus.spin_vector()[1]) &&
+         std::isnan(delta_plus.spin_vector()[2]) &&
+         std::isnan(delta_plus.spin_vector()[3]));
 
   // Calculate and set the spin vector for the delta plus
-  calculate_and_set_spin_vector(0, surf_element, delta_plus);
+  calculate_and_set_spin_vector(0, surf_element, &delta_plus);
 
   // Calculate the expected values for the spin vector
   theta_vector =
-      theta(delta_plus->pole_mass(), (**surf_element.vorticity).get_vorticity(),
+      theta(delta_plus.pole_mass(), (**surf_element.vorticity).get_vorticity(),
             delta_plus_mom);
   theta_squared = spin::four_vector_square(theta_vector);
 
-  double mu_delta_plus = chemical_potential(delta_plus, surf_element);
+  double mu_delta_plus = chemical_potential(&delta_plus, surf_element);
 
   denominator_1 = 1 / (std::exp(exponent(-1.5, delta_plus_mom[0], 4.3,
                                          mu_delta_plus, theta_squared)) +
@@ -475,13 +475,13 @@ TEST(spin_vector_valid_values) {
 
   // Perform checks
   VERIFY(
-      expect_near(delta_plus->spin_vector()[0], expected_spin_vector[0], 1e-9));
+      expect_near(delta_plus.spin_vector()[0], expected_spin_vector[0], 1e-9));
   VERIFY(
-      expect_near(delta_plus->spin_vector()[1], expected_spin_vector[1], 1e-9));
+      expect_near(delta_plus.spin_vector()[1], expected_spin_vector[1], 1e-9));
   VERIFY(
-      expect_near(delta_plus->spin_vector()[2], expected_spin_vector[2], 1e-9));
+      expect_near(delta_plus.spin_vector()[2], expected_spin_vector[2], 1e-9));
   VERIFY(
-      expect_near(delta_plus->spin_vector()[3], expected_spin_vector[3], 1e-9));
+      expect_near(delta_plus.spin_vector()[3], expected_spin_vector[3], 1e-9));
 }
 
 TEST(chemical_potential) {
@@ -496,14 +496,14 @@ TEST(chemical_potential) {
   smash::PdgCode pdg_lambda = 0x3122;
 
   // Create the particle data for the pion, proton, and delta plus
-  smash::ParticleData *pion =
-      new smash::ParticleData(smash::ParticleType::find(pdg_pion));
-  smash::ParticleData *proton =
-      new smash::ParticleData(smash::ParticleType::find(pdg_proton));
-  smash::ParticleData *rho =
-      new smash::ParticleData(smash::ParticleType::find(pdg_rho));
-  smash::ParticleData *lambda =
-      new smash::ParticleData(smash::ParticleType::find(pdg_lambda));
+  smash::ParticleData pion =
+      smash::ParticleData(smash::ParticleType::find(pdg_pion));
+  smash::ParticleData proton =
+      smash::ParticleData(smash::ParticleType::find(pdg_proton));
+  smash::ParticleData rho =
+      smash::ParticleData(smash::ParticleType::find(pdg_rho));
+  smash::ParticleData lambda =
+      smash::ParticleData(smash::ParticleType::find(pdg_lambda));
 
   // Set all values of the surface element to 1.0 which
   // do not affect the spin sampling
@@ -519,10 +519,10 @@ TEST(chemical_potential) {
   double expected_chemical_potential_lambda = 1.0 * 0.9 - 1.0 * 7.5;
 
   // Chemical potentials from function
-  double chemical_potential_pion = chemical_potential(pion, surf_element);
-  double chemical_potential_proton = chemical_potential(proton, surf_element);
-  double chemical_potential_rho = chemical_potential(rho, surf_element);
-  double chemical_potential_lambda = chemical_potential(lambda, surf_element);
+  double chemical_potential_pion = chemical_potential(&pion, surf_element);
+  double chemical_potential_proton = chemical_potential(&proton, surf_element);
+  double chemical_potential_rho = chemical_potential(&rho, surf_element);
+  double chemical_potential_lambda = chemical_potential(&lambda, surf_element);
 
   // Perform checks
   VERIFY(expect_near(chemical_potential_pion, expected_chemical_potential_pion,
