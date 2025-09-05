@@ -98,6 +98,13 @@ Optional parameters:
     cs2                           Speed of sound squared.               Default is 0.15.
     ratio_pressure_energydensity  Pressure divided by energy density.   Default is 0.15.
     create_root_output            Enables ROOT output if set to 1.      Default is 0 (false).
+    sample_spin                   Enables spin sampling at freezeout if set to 1. Spin 4-vectors
+                                  are assigned to all particles based on local vorticity following
+                                  [arXiv:2304.02276v2](https://arxiv.org/abs/2304.02276). Default is 0 (false).
+    create_vorticity_vector_output Enables output of full vorticity 4-vectors of all particles
+                                   to a dedicated file if set to 1.     Default is 0 (false).
+    vorticity_file                Path to the vorticity input file from vHLLE. Mandatory if
+                                  `sample_spin` is enabled.
 
 
 > [!NOTE]
