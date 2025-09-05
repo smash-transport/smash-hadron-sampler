@@ -19,7 +19,7 @@ namespace spin {
 
 // Calculate theta from EQ. 42 in arXiv:2304.02276v2 which is needed to
 // calculate the full EQ. 60 afterwards. The momentum needs to be given with
-// upper indices (as calculated by the sampler), the function will consider
+// upper indices (as calculated by the sampler).
 std::array<double, 4> theta(const double mass,
                             const std::array<double, 16> &vorticity,
                             const std::array<double, 4> &p) {
@@ -27,6 +27,10 @@ std::array<double, 4> theta(const double mass,
     throw std::invalid_argument(
         "Theta cannot be calculated for massless particles.");
   }
+  // Lower index of the momentum (vorticity already has lower indices from
+  // vHLLE)
+  const std::array<double, 4> p_ = {p[0], -p[1], -p[2], -p[3]};
+
   // Transform the row and column indices for a 4x4 matrix into a 1d index
   auto at = [](int i, int j) { return (i * 4 + j); };
 
@@ -37,32 +41,25 @@ std::array<double, 4> theta(const double mass,
   // calculates it in 1/fm which needs to be compensated.
   const double theta0 =
       hbarC * (-1.0 / mass) *
-      (vorticity[at(2, 3)] * p[1] + vorticity[at(3, 1)] * p[2] +
-       vorticity[at(1, 2)] * p[3]);
+      (vorticity[at(2, 3)] * p_[1] + vorticity[at(3, 1)] * p_[2] +
+       vorticity[at(1, 2)] * p_[3]);
 
   const double theta1 =
       hbarC * (-1.0 / mass) *
-      (vorticity[at(3, 2)] * p[0] + vorticity[at(0, 3)] * p[2] +
-       vorticity[at(2, 0)] * p[3]);
+      (vorticity[at(3, 2)] * p_[0] + vorticity[at(0, 3)] * p_[2] +
+       vorticity[at(2, 0)] * p_[3]);
 
   const double theta2 =
       hbarC * (-1.0 / mass) *
-      (vorticity[at(1, 3)] * p[0] + vorticity[at(3, 0)] * p[1] +
-       vorticity[at(0, 1)] * p[3]);
+      (vorticity[at(1, 3)] * p_[0] + vorticity[at(3, 0)] * p_[1] +
+       vorticity[at(0, 1)] * p_[3]);
 
   const double theta3 =
       hbarC * (-1.0 / mass) *
-      (vorticity[at(2, 1)] * p[0] + vorticity[at(0, 2)] * p[1] +
-       vorticity[at(1, 0)] * p[2]);
+      (vorticity[at(2, 1)] * p_[0] + vorticity[at(0, 2)] * p_[1] +
+       vorticity[at(1, 0)] * p_[2]);
 
-  // The additional minus sign is due to the position of the indicies of the
-  // vorticity tensor and the momentum which all have lower indices. As we only
-  // get quantities with upper indices from the sampler, we need to lower these
-  // indices with three metric tensors. Calculating the 0 component, the product
-  // of these three metric tensors gives a factor of (-1)^3 = -1, while for the
-  // spatial components, the product gives a factor of (-1)^2 = 1.
-
-  return {-theta0, theta1, theta2, theta3};
+  return {theta0, theta1, theta2, theta3};
 }
 
 void add_entry_to_theta_storage(const int index_event,
@@ -110,7 +107,7 @@ void calculate_and_set_spin_vector(const int index_event,
 
   } else if (spin > 0) {
     const double temperature = freezeout_element.T;
-    const double mu = freezeout_element.mub;
+    const double mu = chemical_potential(particle, freezeout_element);
     const std::array<double, 16> vorticity =
         (**freezeout_element.vorticity).get_vorticity();
 

@@ -307,7 +307,7 @@ TEST(vorticity_file_too_many_comment_lines) {
   test_utils::write_to_file(vorticityFilePath, "# Number of corona cells: 2");
   test_utils::write_to_file(
       vorticityFilePath,
-      "# τ  x  y  η  dΣ[0]  dΣ[1]  dΣ[2]  dΣ[3]  u[0]  u[1]  u[2]  u[3]  "
+      "#  τ  x  y  η  dΣ[0]  dΣ[1]  dΣ[2]  dΣ[3]  u[0]  u[1]  u[2]  u[3]  "
       "T  μB  μQ  μS  ∂₀β₀  ∂₀β₁  ∂₀β₂  ∂₀β₃  ∂₁β₀  ∂₁β₁  ∂₁β₂  ∂₁β₃  "
       "∂₂β₀  ∂₂β₁  ∂₂β₂  ∂₂β₃  ∂₃β₀  ∂₃β₁  ∂₃β₂  ∂₃β₃  ϵ");
   test_utils::write_to_file(vorticityFilePath, "# Header Line 4");
@@ -353,7 +353,7 @@ TEST(vorticity_file_valid) {
   test_utils::write_to_file(vorticityFilePath, "# Number of corona cells: 2");
   test_utils::write_to_file(
       vorticityFilePath,
-      "# τ  x  y  η  dΣ[0]  dΣ[1]  dΣ[2]  dΣ[3]  u[0]  u[1]  u[2]  u[3]  "
+      "#  τ  x  y  η  dΣ[0]  dΣ[1]  dΣ[2]  dΣ[3]  u[0]  u[1]  u[2]  u[3]  "
       "T  μB  μQ  μS  ∂₀β₀  ∂₀β₁  ∂₀β₂  ∂₀β₃  ∂₁β₀  ∂₁β₁  ∂₁β₂  ∂₁β₃  "
       "∂₂β₀  ∂₂β₁  ∂₂β₂  ∂₂β₃  ∂₃β₀  ∂₃β₁  ∂₃β₂  ∂₃β₃  ϵ");
   test_utils::write_to_file(vorticityFilePath,

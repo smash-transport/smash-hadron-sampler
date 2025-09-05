@@ -31,7 +31,7 @@ std::array<double, 4> theta(const double mass,
                             const std::array<double, 4> &p);
 
 // Calculate the exponent of exp(...) in EQ. (60) from arXiv:2304.02276v2
-inline double exponent(const double k, const double energy,
+inline double exponent(const double k, const double particle_energy,
                        const double temperature, const double mu,
                        const double theta_squared) {
   // Check that k is a multiple of 1/2
@@ -40,7 +40,7 @@ inline double exponent(const double k, const double energy,
   } else if (theta_squared > 0) {
     throw std::invalid_argument("theta^2 must be negative.");
   }
-  return (energy - mu) / temperature - k * sqrt(-theta_squared);
+  return (particle_energy - mu) / temperature - k * sqrt(-theta_squared);
 }
 
 // Calculate either the Fermi or Bose distribution given the spin of the
@@ -51,6 +51,17 @@ inline double fermi_bose_distribution(const int spin, const double argument) {
   } else {
     return 1.0 / (std::exp(argument) + 1.0);
   }
+}
+
+// Calculate the full chemical potential for a given particle and freezeout
+// element
+inline double chemical_potential(const smash::ParticleData *particle,
+                                 const gen::element &freezeout_element) {
+
+  const smash::ParticleType& type = particle->type();
+  return type.baryon_number() * freezeout_element.mub +
+         type.charge() * freezeout_element.muq +
+         type.strangeness() * freezeout_element.mus;
 }
 
 void add_entry_to_theta_storage(const smash::ParticleData *particle,

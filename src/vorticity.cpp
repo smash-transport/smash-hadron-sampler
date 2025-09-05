@@ -285,7 +285,8 @@ void Vorticity::set_vorticity_in_surface_cells(gen::element* surf, int N) {
 }
 
 // Boost the vorticity tensor to the fluid rest frame with the given boost
-// matrix
+// matrix (vorticity has two lower indices, ensure to use boost matrix for lower
+// indices)
 void Vorticity::boost_vorticity_to_fluid_rest_frame(
     const FourMatrix& boostMatrix) {
   // Transform the row and column indices for a 4x4 matrix into a 1d index

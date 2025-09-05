@@ -3,6 +3,7 @@
 #include <array>
 #include <cmath>
 #include <iomanip>
+#include <mutex>
 #include <random>
 
 #include "gen.h"
@@ -11,6 +12,22 @@
 #include "vorticity.h"
 
 using namespace spin;
+
+// Ensures the global ParticleType list is initialized only once using
+// std::call_once. Avoids the "Type list was already built!" exception when
+// multiple tests need it.
+void ensure_particletype_initialized() {
+  static std::once_flag flag;
+  std::call_once(flag, [] {
+    smash::ParticleType::create_type_list(
+        "# NAME MASS[GEV] WIDTH[GEV] PARITY PDG\n"
+        "π⁰ 0.1380 0      - 111\n"
+        "ρ  0.776  0.149  - 113  213\n"
+        "N⁺ 0.938  0      + 2212\n"
+        "Δ  1.232  0.117  + 2224 2214 2114 1114\n"
+        "Λ  1.116 2.5e-15 + 3122  # stable by default");
+  });
+}
 
 // Precomputed lookup table for Levi-Civita symbol
 int levi_civita(int i, int j, int k, int l) {
@@ -75,8 +92,8 @@ TEST(theta_valid_values) {
                                             -3.0, -5.0, -6.0, 0.0};
   const std::array<double, 4> p = {1.0, 2.0, 3.0, 4.0};
   // Manually calculated values for theta
-  const double expected_theta_array[4] = {26.0 * hbarC, 10.0 * hbarC,
-                                          -6.0 * hbarC, 6.0 * hbarC};
+  const double expected_theta_array[4] = {26.0 * hbarC, 14.0 * hbarC,
+                                          -14.0 * hbarC, 10.0 * hbarC};
   const auto theta_array = theta(mass, vorticity, p);
   // Perform checks
   VERIFY(theta_array.size() == 4);
@@ -91,9 +108,9 @@ TEST(theta_valid_values) {
                                              -6.3, -4.9, 5.1,  6.3, 0.0,  -5.6,
                                              -3.7, 4.9,  5.6,  0.0};
   const std::array<double, 4> p2 = {2.8, -1.3, 3.4, -4.1};
-  const double expected_theta_array2[4] = {55.3 * hbarC, -8.16666666667 * hbarC,
-                                           18.5555555556 * hbarC,
-                                           -19.7888888889 * hbarC};
+  const double expected_theta_array2[4] = {
+      55.3 * hbarC, -26.67777777778 * hbarC, 11.9333333333333 * hbarC,
+      -19.411111111111 * hbarC};
   const auto theta_array2 = theta(mass2, vorticity2, p2);
   // Perform checks
   VERIFY(theta_array2.size() == 4);
@@ -104,12 +121,8 @@ TEST(theta_valid_values) {
 }
 
 TEST(theta_tensor_structure) {
-  // As explained in the comments of theta(...), explicitely performing all
-  // contractions with the metric tensor to lower the indices of the vorticity
-  // tensor and the 4-momentum results in an additional minus sign for the
-  // 0-component of the theta tensor. This minus sign was added by hand.
-  // However, this test performs the contractions with the metric tensor
-  // explicitely to ensure that the tensor structure is correct.
+  // This test performs all tensor contractions explicitely to verify that the
+  // tensor structure of the theta function is implemented correctly.
   const double mass = 0.55;
   const std::array<double, 4> p = {5.5, 2.2, 3.3, 1.1};
   const std::array<double, 16> vorticity = {0.0,  1.7,  2.1,  3.4,  -1.7, 0.0,
@@ -129,15 +142,11 @@ TEST(theta_tensor_structure) {
     for (int nu = 0; nu < 4; nu++) {
       for (int rho = 0; rho < 4; rho++) {
         for (int sigma = 0; sigma < 4; sigma++) {
-          for (int alpha = 0; alpha < 4; alpha++) {
-            for (int beta = 0; beta < 4; beta++) {
-              for (int gamma = 0; gamma < 4; gamma++) {
-                theta_expected[mu] += hbarC *
-                    (-1.0 / (2.0 * mass)) * levi_civita(mu, nu, rho, sigma) *
-                    g[nu][alpha] * g[rho][beta] * vorticity[at(alpha, beta)] *
-                    g[sigma][gamma] * p[gamma];
-              }
-            }
+          for (int gamma = 0; gamma < 4; gamma++) {
+            theta_expected[mu] += hbarC * (-1.0 / (2.0 * mass)) *
+                                  levi_civita(mu, nu, rho, sigma) *
+                                  vorticity[at(nu, rho)] * g[sigma][gamma] *
+                                  p[gamma];
           }
         }
       }
@@ -170,14 +179,13 @@ TEST(theta_invalid_mass) {
 TEST(exponent_valid_value) {
   // Test the validity of the exponent function
   const double k = -1.5;
-  const double energy_density = 18.6;
+  const double energy = 18.6;
   const double temperature = 2.0;
   const double mu = 4.8;
   const double theta_squared = -10.89;
   // Manually calculated value for the exponent
   const double expected_result = 9.3 - 2.4 + 4.95;
-  const double result =
-      exponent(k, energy_density, temperature, mu, theta_squared);
+  const double result = exponent(k, energy, temperature, mu, theta_squared);
   VERIFY(expect_near(result, expected_result, 1e-6));
 }
 
@@ -209,14 +217,14 @@ TEST(exponent_inconsistent_input_values) {
 TEST(exponent_invalid_k) {
   // Test the invalidity of the exponent function for non-integer k
   const double invalid_k_array[3] = {-1.2, 0.4, 7.9};
-  const double energy_density = 1.0;
+  const double energy = 1.0;
   const double temperature = 1.0;
   const double mu = 1.0;
   const double theta_squared = -1.0;
   // Expect an invalid argument exception
   for (const double k : invalid_k_array) {
     try {
-      exponent(k, energy_density, temperature, mu, theta_squared);
+      exponent(k, energy, temperature, mu, theta_squared);
       std::cout << "exponent unexpectedly passed with k not being a multiple "
                 << "of 1/2" << std::endl;
     } catch (std::invalid_argument &e) {
@@ -228,14 +236,14 @@ TEST(exponent_invalid_k) {
 TEST(exponent_positive_theta_squared) {
   // Test the invalidity of the exponent function for positive theta squared
   const double k = 1.0;
-  const double energy_density = 1.0;
+  const double energy = 1.0;
   const double temperature = 1.0;
   const double mu = 1.0;
   const double invalid_theta_squared_array[3] = {0.0001, 1.3, 4.6};
   // Expect an invalid argument exception
   for (const double theta_squared : invalid_theta_squared_array) {
     try {
-      exponent(k, energy_density, temperature, mu, theta_squared);
+      exponent(k, energy, temperature, mu, theta_squared);
       std::cout << "exponent unexpectedly passed with positive theta squared"
                 << std::endl;
     } catch (std::invalid_argument &e) {
@@ -247,12 +255,7 @@ TEST(exponent_positive_theta_squared) {
 TEST(spin_vector_valid_values) {
   // Initialize the particle type list with a pion (spin 0),
   // proton (spin 1/2), and delta plus (spin 3/2)
-  smash::ParticleType::create_type_list(
-      "# NAME MASS[GEV] WIDTH[GEV] PARITY PDG\n"
-      "π⁰ 0.1380 0      - 111\n"
-      "ρ  0.776  0.149  - 113  213\n"
-      "N⁺ 0.938  0      + 2212\n"
-      "Δ  1.232  0.117  + 2224 2214 2114 1114");
+  ensure_particletype_initialized();
 
   // Define the PDG code for the particles
   smash::PdgCode pdg_pion = 0x111;
@@ -305,8 +308,8 @@ TEST(spin_vector_valid_values) {
     surf_element.u[i] = 1.0;
     surf_element.dsigma[i] = 1.0;
   }
-  surf_element.muq = 1.0;
-  surf_element.mus = 1.0;
+  surf_element.muq = 1.7;
+  surf_element.mus = 2.3;
   for (int i = 0; i < 10; i++) {
     surf_element.pi[i] = 1.0;
   }
@@ -355,10 +358,16 @@ TEST(spin_vector_valid_values) {
             proton_mom);
   double theta_squared = spin::four_vector_square(theta_vector);
 
+  double mu_proton = chemical_potential(proton, surf_element);
+
   double denominator_1 =
-      1 / (std::exp(exponent(-0.5, 1.7, 4.3, 0.7, theta_squared)) + 1);
+      1 /
+      (std::exp(exponent(-0.5, proton_mom[0], 4.3, mu_proton, theta_squared)) +
+       1);
   double denominator_2 =
-      1 / (std::exp(exponent(0.5, 1.7, 4.3, 0.7, theta_squared)) + 1);
+      1 /
+      (std::exp(exponent(0.5, proton_mom[0], 4.3, mu_proton, theta_squared)) +
+       1);
 
   double numerator_1 = -0.5 * denominator_1;
   double numerator_2 = 0.5 * denominator_2;
@@ -391,12 +400,15 @@ TEST(spin_vector_valid_values) {
                        (**surf_element.vorticity).get_vorticity(), rho_mom);
   theta_squared = spin::four_vector_square(theta_vector);
 
+  double mu_rho = chemical_potential(rho, surf_element);
+
   denominator_1 =
-      1 / (std::exp(exponent(-1.0, 1.7, 4.3, 0.7, theta_squared)) - 1);
+      1 /
+      (std::exp(exponent(-1.0, rho_mom[0], 4.3, mu_rho, theta_squared)) - 1);
   denominator_2 =
-      1 / (std::exp(exponent(0.0, 1.7, 4.3, 0.7, theta_squared)) - 1);
+      1 / (std::exp(exponent(0.0, rho_mom[0], 4.3, mu_rho, theta_squared)) - 1);
   double denominator_3 =
-      1 / (std::exp(exponent(1.0, 1.7, 4.3, 0.7, theta_squared)) - 1);
+      1 / (std::exp(exponent(1.0, rho_mom[0], 4.3, mu_rho, theta_squared)) - 1);
 
   numerator_1 = -1.0 * denominator_1;
   numerator_2 = 0.0 * denominator_2;
@@ -432,14 +444,20 @@ TEST(spin_vector_valid_values) {
             delta_plus_mom);
   theta_squared = spin::four_vector_square(theta_vector);
 
-  denominator_1 =
-      1 / (std::exp(exponent(-1.5, 1.7, 4.3, 0.7, theta_squared)) + 1);
-  denominator_2 =
-      1 / (std::exp(exponent(-0.5, 1.7, 4.3, 0.7, theta_squared)) + 1);
-  denominator_3 =
-      1 / (std::exp(exponent(0.5, 1.7, 4.3, 0.7, theta_squared)) + 1);
-  double denominator_4 =
-      1 / (std::exp(exponent(1.5, 1.7, 4.3, 0.7, theta_squared)) + 1);
+  double mu_delta_plus = chemical_potential(delta_plus, surf_element);
+
+  denominator_1 = 1 / (std::exp(exponent(-1.5, delta_plus_mom[0], 4.3,
+                                         mu_delta_plus, theta_squared)) +
+                       1);
+  denominator_2 = 1 / (std::exp(exponent(-0.5, delta_plus_mom[0], 4.3,
+                                         mu_delta_plus, theta_squared)) +
+                       1);
+  denominator_3 = 1 / (std::exp(exponent(0.5, delta_plus_mom[0], 4.3,
+                                         mu_delta_plus, theta_squared)) +
+                       1);
+  double denominator_4 = 1 / (std::exp(exponent(1.5, delta_plus_mom[0], 4.3,
+                                                mu_delta_plus, theta_squared)) +
+                              1);
 
   numerator_1 = -1.5 * denominator_1;
   numerator_2 = -0.5 * denominator_2;
@@ -464,4 +482,55 @@ TEST(spin_vector_valid_values) {
       expect_near(delta_plus->spin_vector()[2], expected_spin_vector[2], 1e-9));
   VERIFY(
       expect_near(delta_plus->spin_vector()[3], expected_spin_vector[3], 1e-9));
+}
+
+TEST(chemical_potential) {
+  // Initialize the particle type list with a pion (spin 0),
+  // proton (spin 1/2), and delta plus (spin 3/2)
+  ensure_particletype_initialized();
+
+  // Define the PDG code for the particles
+  smash::PdgCode pdg_pion = 0x111;
+  smash::PdgCode pdg_proton = 0x2212;
+  smash::PdgCode pdg_rho = 0x213;
+  smash::PdgCode pdg_lambda = 0x3122;
+
+  // Create the particle data for the pion, proton, and delta plus
+  smash::ParticleData *pion =
+      new smash::ParticleData(smash::ParticleType::find(pdg_pion));
+  smash::ParticleData *proton =
+      new smash::ParticleData(smash::ParticleType::find(pdg_proton));
+  smash::ParticleData *rho =
+      new smash::ParticleData(smash::ParticleType::find(pdg_rho));
+  smash::ParticleData *lambda =
+      new smash::ParticleData(smash::ParticleType::find(pdg_lambda));
+
+  // Set all values of the surface element to 1.0 which
+  // do not affect the spin sampling
+  gen::element surf_element;
+  surf_element.mub = 0.9;
+  surf_element.muq = 3.1;
+  surf_element.mus = 7.5;
+
+  // Calculate expected chemical potentials
+  double expected_chemical_potential_pion = 0.0;
+  double expected_chemical_potential_proton = 1.0 * 0.9 + 1.0 * 3.1;
+  double expected_chemical_potential_rho = 1.0 * 3.1;
+  double expected_chemical_potential_lambda = 1.0 * 0.9 - 1.0 * 7.5;
+
+  // Chemical potentials from function
+  double chemical_potential_pion = chemical_potential(pion, surf_element);
+  double chemical_potential_proton = chemical_potential(proton, surf_element);
+  double chemical_potential_rho = chemical_potential(rho, surf_element);
+  double chemical_potential_lambda = chemical_potential(lambda, surf_element);
+
+  // Perform checks
+  VERIFY(expect_near(chemical_potential_pion, expected_chemical_potential_pion,
+                     1e-12));
+  VERIFY(expect_near(chemical_potential_proton,
+                     expected_chemical_potential_proton, 1e-12));
+  VERIFY(expect_near(chemical_potential_rho, expected_chemical_potential_rho,
+                     1e-12));
+  VERIFY(expect_near(chemical_potential_lambda,
+                     expected_chemical_potential_lambda, 1e-12));
 }
