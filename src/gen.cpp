@@ -36,15 +36,6 @@ TRandom3 *rnd;
 smash::ParticleData ***pList;  // particle arrays
 std::unique_ptr<std::vector<std::vector<ThetaStruct>>> thetaStorage = nullptr;
 
-struct element {
-  double four_position[4];
-  double u[4];
-  double dsigma[4];
-  double T, mub, muq, mus;
-  double pi[10];
-  double Pi;
-};
-
 element *surf;
 int *npart;               // number of generated particles in each event
 double *cumulantDensity;  // particle densities (thermal). Seems to be

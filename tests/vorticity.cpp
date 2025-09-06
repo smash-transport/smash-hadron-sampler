@@ -70,7 +70,7 @@ void reset_params() {
   params::number_of_events = 0;
   params::dx = 0;
   params::dy = 0;
-  params::deta = 0.05;
+  params::deta_dz = 0.05;
   params::ecrit = 0;
   params::speed_of_sound_squared = 0.15;
   params::ratio_pressure_energydensity = 0.15;

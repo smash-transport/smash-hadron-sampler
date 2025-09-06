@@ -9,7 +9,7 @@ using namespace std;
 
 namespace params {
 std::string surface_file{"unset"}, vorticity_file{"unset"},
-output_directory{"unset"}, hydro_coordinate_system{"tau-eta"};
+    output_directory{"unset"}, hydro_coordinate_system{"tau-eta"};
 
 bool bulk_viscosity_enabled{false}, create_root_output{false},
     shear_viscosity_enabled{false}, spin_sampling_enabled{false},
@@ -77,6 +77,7 @@ void read_configuration_file(const std::string &filename) {
                   << hydro_coordinate_system
                   << "'.\n       Please update the config and try again.\n";
         std::exit(1);
+      }
     } else if (parName == "sample_spin") {
       spin_sampling_enabled = std::stoi(parValue);
     } else if (parName == "create_vorticity_vector_output") {
@@ -150,4 +151,4 @@ void print_config_parameters() {
   }
 }
 
-} // namespace params
+}  // namespace params

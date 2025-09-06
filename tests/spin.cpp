@@ -300,10 +300,10 @@ TEST(spin_vector_valid_values) {
   gen::element surf_element;
   // Set all values of the surface element to 1.0 which
   // do not affect the spin sampling
-  surf_element.tau = 1.0;
-  surf_element.x = 1.0;
-  surf_element.y = 1.0;
-  surf_element.eta = 1.0;
+  surf_element.four_position[0] = 1.0;
+  surf_element.four_position[1] = 1.0;
+  surf_element.four_position[2] = 1.0;
+  surf_element.four_position[3] = 1.0;
   for (int i = 0; i < 4; i++) {
     surf_element.u[i] = 1.0;
     surf_element.dsigma[i] = 1.0;

@@ -31,30 +31,16 @@ struct ThetaStruct {
   std::array<double, 4> vorticity_vector;
 };
 
-// typedef std::vector<Particle*> ParticleList ; // TODO in far future
-//  data
-extern TRandom3 *rnd;
-extern smash::ParticleData ***pList;  // particle arrays
-extern int *npart;
-const int NPartBuf = 30000;  // dimension of particle buffer for each event
-
 // If vorticity_vector == 1 in the config, thetaStorage will be used to store
 // the vorticity vector for each sampled particle
 extern std::unique_ptr<std::vector<std::vector<ThetaStruct>>> thetaStorage;
 
-// Define the structure of the elements of the freeze-out surface
 struct element {
-  // Milne coorinates
-  double tau, x, y, eta;
-  // fluid 4-velocity
+  double four_position[4];
   double u[4];
-  // normal vector to the freezeout cell
   double dsigma[4];
-  // temperature and chemical potentials
   double T, mub, muq, mus;
-  // shear stress tensor
   double pi[10];
-  // bulk pressure
   double Pi;
   // optional pointer to the energy density.
   OptionalEnergy e = std::nullopt;
@@ -62,6 +48,13 @@ struct element {
   // the index structure {mu nu} = [{0 0}, {0 1}, {0 2}, {0 3}, {1 0}, ... ]
   OptionalVorticity vorticity = std::nullopt;
 };
+
+// typedef std::vector<Particle*> ParticleList ; // TODO in far future
+//  data
+extern TRandom3 *rnd;
+extern smash::ParticleData ***pList;  // particle arrays
+extern int *npart;
+const int NPartBuf = 30000;  // dimension of particle buffer for each event
 
 // functions
 void fillBoostMatrix(double vx, double vy, double vz, double boostMatrix[4][4]);
