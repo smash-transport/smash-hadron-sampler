@@ -1,6 +1,7 @@
-surface_file     /path/to/freezeout/file
-output_dir       /output/path
-number_of_events 1000
-shear            1
-bulk             0
-ecrit            0.5
+surface_file            /path/to/freezeout/file
+output_dir              /output/path
+number_of_events        1000
+shear                   1
+bulk                    0
+ecrit                   0.5
+hydro_coordinate_system tau-eta

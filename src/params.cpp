@@ -9,12 +9,16 @@ using namespace std;
 
 namespace params {
 std::string surface_file{"unset"}, vorticity_file{"unset"},
-output_directory{"unset"};
+output_directory{"unset"}, hydro_coordinate_system{"tau-eta"};
+
 bool bulk_viscosity_enabled{false}, create_root_output{false},
     shear_viscosity_enabled{false}, spin_sampling_enabled{false},
     vorticity_output_enabled{false};
 int number_of_events;
-double dx{0}, dy{0}, deta{0.05};
+/* Smearing parameters dx, dy, and deta_dz
+ * No smearing in x and y direction implemented at the moment
+ */
+double dx{0}, dy{0}, deta_dz{0.05};
 double ecrit, speed_of_sound_squared{0.15}, ratio_pressure_energydensity{0.15};
 // double Temp, mu_b, mu_q, mu_s ;
 std::vector<std::string> comments_in_config_file,
@@ -63,6 +67,16 @@ void read_configuration_file(const std::string &filename) {
       ratio_pressure_energydensity = std::stod(parValue);
     } else if (parName == "create_root_output") {
       create_root_output = std::stoi(parValue);
+    } else if (parName == "hydro_coordinate_system") {
+      hydro_coordinate_system = parValue;
+      if (hydro_coordinate_system != "tau-eta" &&
+          hydro_coordinate_system != "cartesian") {
+        std::cerr << "ERROR: Only 'tau-eta' (default) or 'cartesian' are "
+                     "supported as coordinate\n"
+                     "       systems for the hydro evolution. Provided was '"
+                  << hydro_coordinate_system
+                  << "'.\n       Please update the config and try again.\n";
+        std::exit(1);
     } else if (parName == "sample_spin") {
       spin_sampling_enabled = std::stoi(parValue);
     } else if (parName == "create_vorticity_vector_output") {
@@ -114,6 +128,8 @@ void print_config_parameters() {
             << "ratio_pressure_energydensity: " << ratio_pressure_energydensity
             << "\n"
             << "create_root_output:           " << create_root_output << "\n"
+            << "hydro_coordinate_system:      " << hydro_coordinate_system
+            << "\n"
             << "# -------------------------------------------------------"
                "-----------------------"
             << "\n\n";
