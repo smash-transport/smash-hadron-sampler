@@ -129,6 +129,33 @@ TEST(vorticity_at) {
   }
 }
 
+TEST(boost_vorticity_to_fluid_rest_frame_matrix_multiplication) {
+  Vorticity vorticity;
+  std::array<double, 16> new_vorticity = {0.10, -0.20, 0.30, -0.40, 0.50, -0.60,
+                                          0.70, -0.80, 0.90, -1.00, 1.10, -1.20,
+                                          1.30, -1.40, 1.50, -1.60};
+  vorticity.set_vorticity(new_vorticity);
+
+  std::array<std::array<double, 4>, 4> boostmatrix = {
+      {{{1.0, 2.0, 3.0, 4.0}},
+       {{5.0, 6.0, 7.0, 8.0}},
+       {{9.0, 10.0, 11.0, 12.0}},
+       {{13.0, 14.0, 15.0, 16.0}}}};
+  vorticity.boost_vorticity_to_fluid_rest_frame(boostmatrix);
+
+  // Manually calculated values for the boosted vorticity tensor
+  std::array<double, 16> expected_vorticity = {
+      -26.0, -34.0,  -42.0,  -50.0,  -61.2,  -82.0,  -102.8, -123.6,
+      -96.4, -130.0, -163.6, -197.2, -131.6, -178.0, -224.4, -270.8};
+  // Perform checks
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      VERIFY(
+          expect_near(vorticity.at(i, j), expected_vorticity[i * 4 + j], 1e-9));
+    }
+  }
+}
+
 TEST(vorticity_file_does_not_exist) {
   namespace fs = std::filesystem;
 
