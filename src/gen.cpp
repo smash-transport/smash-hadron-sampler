@@ -137,7 +137,7 @@ void load(const char *filename, int N) {
     getline(fin, line);
     instream.str(line);
     instream.seekg(0);
-    instream.clear(); // does not work with gcc 4.1 otherwise
+    instream.clear();  // does not work with gcc 4.1 otherwise
     instream >> surf[n].four_position[0] >> surf[n].four_position[1] >>
         surf[n].four_position[2] >> surf[n].four_position[3] >>
         surf[n].dsigma[0] >> surf[n].dsigma[1] >> surf[n].dsigma[2] >>
@@ -436,9 +436,8 @@ void generate() {
           W *= WviscFactor;
           rval = rnd->Rndm() * dsigmaMax;
           niter++;
-        } while (rval > W); // end fast momentum generation
-        if (niter > nmaxiter)
-          nmaxiter = niter;
+        } while (rval > W);  // end fast momentum generation
+        if (niter > nmaxiter) nmaxiter = niter;
         const double x = surf[iel].four_position[1];
         const double y = surf[iel].four_position[2];
         double t = 0, z = 0, vx = 0, vy = 0, vz = 0;
@@ -477,22 +476,29 @@ void generate() {
         smash::FourVector momentum(mom.E(), mom.Px(), mom.Py(), mom.Pz());
         smash::FourVector position(t, x, y, z);
         smash::ParticleData *particle_ptr =
-          acceptParticle(ievent, &part, position, momentum);
-  
+            acceptParticle(ievent, &part, position, momentum);
+
         // Calculate and set the spin vector if spin sampling is enabled
         if (params::spin_sampling_enabled) {
           spin::calculate_and_set_spin_vector(ievent, surf[iel], particle_ptr);
+          // Boost the spin vector to the lab frame. Note that SMASH uses a
+          // different sign convention for the Lorentz boost than ROOT, so we
+          // need to use the negative velocity here.
+          smash::FourVector spin_vector_lab_frame =
+              particle_ptr->spin_vector().lorentz_boost(
+                  smash::ThreeVector(-vx, -vy, -vz));
+          particle_ptr->set_spin_vector(spin_vector_lab_frame);
         }
 
-      } // coordinate accepted
-    }   // events loop
+      }  // coordinate accepted
+    }    // events loop
     if (iel % (Nelem / 50) == 0) {
       int progress_in_percent = round(iel / (Nelem * 0.01));
       std::printf("[%3i%%] done\t(maxiter: %10i)\n", progress_in_percent,
                   nmaxiter);
       std::fflush(stdout);
     }
-  } // loop over all elements
+  }  // loop over all elements
   std::cout << "\nThermodynamically failed elements: " << ntherm_fail
             << "\n(caused by negative temperatures or if the sum\n"
                "of thermal densities is below 0 or above 100)\n\n";

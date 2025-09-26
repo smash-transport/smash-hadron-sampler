@@ -10,7 +10,12 @@
 
 #include "gen.h"
 #include "params.h"
-#include "vorticity.h"
+
+// Helper function to transform the row and column indices for a 4x4 matrix
+// into a 1d index
+namespace {
+constexpr int at_index(int i, int j) noexcept { return i * 4 + j; }
+}  // namespace
 
 int Vorticity::num_corona_cells_ = -1;
 
@@ -251,15 +256,32 @@ void Vorticity::set_vorticity_in_surface_cells(gen::element* surf, int N) {
     // Initialize vorticity for this freezeout cell
     surf[num_corona_cells_ + i].vorticity = std::make_unique<Vorticity>();
 
-    // Parse and set the relevant components (16th to 32nd values)
+    // Parse the 16 derivatives (16th to 32nd column) into a local dbeta[16]
+    // to construct the vorticity tensor varpi antisymmetrically
+    std::array<double, 16> dbeta = {};
     std::istringstream instream(line);
-    double value;
+    double value = 0.0;
     for (int column = 0; column <= 31; column++) {
       instream >> value;
       if (column >= 16 && column <= 31) {
-        (**surf[num_corona_cells_ + i].vorticity)[column - 16] = value;
+        dbeta[column - 16] = value;
       }
     }
+
+    // Construct the vorticity tensor varpi_{μν} = -0.5*(dbeta_{μν}-dbeta_{νμ})
+    std::array<double, 16> varpi = {};
+    // Fill upper triangle and mirror to lower triangle to ensure antisymmetry
+    // and leave diagonal elements as zero.
+    for (int mu = 0; mu < 4; mu++) {
+      varpi[at_index(mu, mu)] = 0.0;  // set diagonal elements to zero
+      for (int nu = mu + 1; nu < 4; nu++) {
+        varpi[at_index(mu, nu)] =
+            -0.5 * (dbeta[at_index(mu, nu)] - dbeta[at_index(nu, mu)]);
+        varpi[at_index(nu, mu)] = -varpi[at_index(mu, nu)];
+      }
+    }
+    // Set the vorticity tensor in the surface element
+    (**surf[num_corona_cells_ + i].vorticity).set_vorticity(varpi);
 
     // Read the next line for the next iteration, if not the last iteration
     if (i < num_freezeout_cells - 1) {
@@ -289,9 +311,6 @@ void Vorticity::set_vorticity_in_surface_cells(gen::element* surf, int N) {
 // indices)
 void Vorticity::boost_vorticity_to_fluid_rest_frame(
     const FourMatrix& boostMatrix) {
-  // Transform the row and column indices for a 4x4 matrix into a 1d index
-  auto at = [](int i, int j) { return (i * 4 + j); };
-
   // Create a copy of the vorticity tensor
   std::array<double, 16> vorticity_copy = vorticity_;
 
@@ -301,11 +320,11 @@ void Vorticity::boost_vorticity_to_fluid_rest_frame(
       double vorticity_ij = 0.0;
       for (int k = 0; k < 4; k++) {
         for (int l = 0; l < 4; l++) {
-          vorticity_ij +=
-               boostMatrix[i][k] * boostMatrix[j][l] * vorticity_copy[at(k, l)];
+          vorticity_ij += boostMatrix[i][k] * boostMatrix[j][l] *
+                          vorticity_copy[at_index(k, l)];
         }
       }
-      vorticity_[at(i, j)] = vorticity_ij;
+      vorticity_[at_index(i, j)] = vorticity_ij;
     }
   }
 }

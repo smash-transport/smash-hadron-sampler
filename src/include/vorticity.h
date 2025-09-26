@@ -15,11 +15,8 @@ class Vorticity {
   // Default constructor nulls all vorticity components
   Vorticity() : vorticity_({0.0}) {}
 
-  using reference = double&;
-  using const_reference = const double&;
-
   // access the component i of the vorticity tensor as linear array
-  reference operator[](size_t index) { return vorticity_[index]; }
+  double& operator[](size_t index) { return vorticity_[index]; }
 
   // Check that the vorticity file exists
   static void ensure_vorticity_file_exists_and_check_format();
@@ -32,7 +29,7 @@ class Vorticity {
   static void set_number_of_corona_cells();
 
   // const overload of the [] operator
-  const_reference operator[](size_t index) const { return vorticity_[index]; }
+  const double& operator[](size_t index) const { return vorticity_[index]; }
 
   // Set vorticity_ to a new array
   void set_vorticity(const std::array<double, 16>& new_vorticity) {
@@ -47,8 +44,8 @@ class Vorticity {
   static void set_vorticity_in_surface_cells(gen::element* surf, int N);
 
   // return a component of the vorticity tensor as a 4x4 matrix
-  reference at(int i, int j) { return vorticity_[i * 4 + j]; }
-  const_reference at(int i, int j) const { return vorticity_[i * 4 + j]; }
+  double& at(int i, int j) { return vorticity_[i * 4 + j]; }
+  const double& at(int i, int j) const { return vorticity_[i * 4 + j]; }
 
   // Boost the vorticity tensor to the fluid rest frame with given boost matrix
   void boost_vorticity_to_fluid_rest_frame(

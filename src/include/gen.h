@@ -56,7 +56,7 @@ extern smash::ParticleData ***pList;  // particle arrays
 extern int *npart;
 const int NPartBuf = 30000;  // dimension of particle buffer for each event
 
-// functions
+// active Lorentz boost
 void fillBoostMatrix(double vx, double vy, double vz, double boostMatrix[4][4]);
 
 // Convert a Lorentz boost matrix from contravariant form (Λ^μ_ν, acts on upper

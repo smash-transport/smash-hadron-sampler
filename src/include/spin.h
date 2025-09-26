@@ -67,6 +67,9 @@ inline double chemical_potential(const smash::ParticleData *particle,
 void add_entry_to_theta_storage(const smash::ParticleData *particle,
                                 const std::array<double, 16> &vorticity);
 
+void boost_particle_momentum_to_fluid_rest_frame(
+    const gen::element &freezeout_element, smash::ParticleData *particle);
+
 void calculate_and_set_spin_vector(const int index_event,
                                    const gen::element &freezeout_element,
                                    smash::ParticleData *particle);

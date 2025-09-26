@@ -79,6 +79,35 @@ void add_entry_to_theta_storage(const int index_event,
   (*gen::thetaStorage)[index_event].push_back({txyz, theta_array});
 }
 
+// Boost the particle's 4-momentum from LAB to the cell's fluid-rest frame
+void boost_particle_momentum_to_fluid_rest_frame(
+    const gen::element &freezeout_element, smash::ParticleData *particle) {
+  // Calculate the boost velocity from the fluid 4-velocity
+  const double u0 = freezeout_element.u[0];
+  const double ux = freezeout_element.u[1];
+  const double uy = freezeout_element.u[2];
+  const double uz = freezeout_element.u[3];
+  const double vx = ux / u0;
+  const double vy = uy / u0;
+  const double vz = uz / u0;
+  double boostMatrix[4][4];
+  gen::fillBoostMatrix(
+      -vx, -vy, -vz,
+      boostMatrix);  // negative velocity for boost to rest frame
+  // Perform the boost
+  double p_lab[4] = {particle->momentum().x0(), particle->momentum().x1(),
+                     particle->momentum().x2(), particle->momentum().x3()};
+  double p_rest[4] = {0.0, 0.0, 0.0, 0.0};
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      p_rest[i] += boostMatrix[i][j] * p_lab[j];
+    }
+  }
+  // Set the boosted momentum back to the particle
+  particle->set_4momentum(
+      smash::FourVector(p_rest[0], p_rest[1], p_rest[2], p_rest[3]));
+}
+
 // Calculate and set the spin vector for a given particle
 void calculate_and_set_spin_vector(const int index_event,
                                    const gen::element &freezeout_element,
@@ -93,6 +122,12 @@ void calculate_and_set_spin_vector(const int index_event,
   // Linearity applies already for values smaller than 1e-3
   const double tiny_value = 1e-3;
   const int spin = particle->spin();
+
+  // Boost the particle momentum to the fluid rest frame to ensure that all
+  // calculations are done in the fluid rest frame. Store the initial momentum
+  // to set it back afterwards.
+  const smash::FourVector momentum_lab_frame = particle->momentum();
+  boost_particle_momentum_to_fluid_rest_frame(freezeout_element, particle);
 
   if (spin == 0) {
     // Store the vorticity vector if vorticity_output is enabled
@@ -164,10 +199,9 @@ void calculate_and_set_spin_vector(const int index_event,
         denominator += denominator_term;
       }
 
-      if (std::abs(denominator) < 1e-8) {
+      if (denominator == 0.0) {
         throw std::runtime_error(
-            "Denominator must be sufficiently negative for valid spin vector "
-            "calculation.");
+            "Denominator in spin vector calculation is zero.");
       }
 
       // Calculate the spin vector
@@ -186,6 +220,8 @@ void calculate_and_set_spin_vector(const int index_event,
   } else {
     throw std::runtime_error("Spin of particle is invalid or unset.");
   }
+  // Set the particle momentum back to the lab frame
+  particle->set_4momentum(momentum_lab_frame);
 }
 
 }  // namespace spin
