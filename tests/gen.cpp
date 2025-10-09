@@ -10,6 +10,27 @@
 
 using namespace gen;
 
+// Custom function to compare two doubles within a given tolerance
+bool expect_near(double val1, double val2, double abs_error) {
+  return std::abs(val1 - val2) <= abs_error;
+}
+
+// Ensures the global ParticleType list is initialized only once using
+// std::call_once. Avoids the "Type list was already built!" exception when
+// multiple tests need it.
+void ensure_particletype_initialized() {
+  static std::once_flag flag;
+  std::call_once(flag, [] {
+    smash::ParticleType::create_type_list(
+        "# NAME MASS[GEV] WIDTH[GEV] PARITY PDG\n"
+        "π⁰ 0.1380 0      - 111\n"
+        "ρ  0.776  0.149  - 113  213\n"
+        "N⁺ 0.938  0      + 2212\n"
+        "Δ  1.232  0.117  + 2224 2214 2114 1114\n"
+        "Λ  1.116 2.5e-15 + 3122  # stable by default");
+  });
+}
+
 TEST(index44) {
   // Call with all valid values and expect passing
   int indices[4][4] = {{0, 1, 3, 6}, {1, 2, 4, 7}, {3, 4, 5, 8}, {6, 7, 8, 9}};
@@ -109,4 +130,108 @@ TEST(create_covariant_boost_matrix) {
   VERIFY(std::abs(u_prime[1]) < tolerance);
   VERIFY(std::abs(u_prime[2]) < tolerance);
   VERIFY(std::abs(u_prime[3]) < tolerance);
+}
+
+TEST(chemical_potential) {
+  // Initialize the particle type list with a pion (spin 0),
+  // proton (spin 1/2), and delta plus (spin 3/2)
+  ensure_particletype_initialized();
+
+  // Define the PDG code for the particles
+  const smash::PdgCode pdg_pion = 0x111;
+  const smash::PdgCode pdg_proton = 0x2212;
+  const smash::PdgCode pdg_rho = 0x213;
+  const smash::PdgCode pdg_lambda = 0x3122;
+
+  // Create the particle data for the pion, proton, and delta plus
+  smash::ParticleData pion =
+      smash::ParticleData(smash::ParticleType::find(pdg_pion));
+  smash::ParticleData proton =
+      smash::ParticleData(smash::ParticleType::find(pdg_proton));
+  smash::ParticleData rho =
+      smash::ParticleData(smash::ParticleType::find(pdg_rho));
+  smash::ParticleData lambda =
+      smash::ParticleData(smash::ParticleType::find(pdg_lambda));
+
+  // Set all values of the surface element to 1.0 which
+  // do not affect the spin sampling
+  gen::element surf_element;
+  surf_element.mub = 0.9;
+  surf_element.muq = 3.1;
+  surf_element.mus = 7.5;
+
+  // Calculate expected chemical potentials
+  double expected_chemical_potential_pion = 0.0;
+  double expected_chemical_potential_proton = 1.0 * 0.9 + 1.0 * 3.1;
+  double expected_chemical_potential_rho = 1.0 * 3.1;
+  double expected_chemical_potential_lambda = 1.0 * 0.9 - 1.0 * 7.5;
+
+  // Chemical potentials from function
+  double chemical_potential_pion = chemical_potential(&pion, surf_element);
+  double chemical_potential_proton = chemical_potential(&proton, surf_element);
+  double chemical_potential_rho = chemical_potential(&rho, surf_element);
+  double chemical_potential_lambda = chemical_potential(&lambda, surf_element);
+
+  // Perform checks
+  VERIFY(expect_near(chemical_potential_pion, expected_chemical_potential_pion,
+                     1e-12));
+  VERIFY(expect_near(chemical_potential_proton,
+                     expected_chemical_potential_proton, 1e-12));
+  VERIFY(expect_near(chemical_potential_rho, expected_chemical_potential_rho,
+                     1e-12));
+  VERIFY(expect_near(chemical_potential_lambda,
+                     expected_chemical_potential_lambda, 1e-12));
+}
+
+TEST(chemical_potential_from_type_overload) {
+  // Ensure particle types are available
+  ensure_particletype_initialized();
+
+  // PDG codes
+  const smash::PdgCode pdg_pion = 0x111;
+  const smash::PdgCode pdg_proton = 0x2212;
+  const smash::PdgCode pdg_rho = 0x213;
+  const smash::PdgCode pdg_lambda = 0x3122;
+
+  // Build ParticleData so we can easily access type() (const ParticleType&)
+  smash::ParticleData pion =
+      smash::ParticleData(smash::ParticleType::find(pdg_pion));
+  smash::ParticleData proton =
+      smash::ParticleData(smash::ParticleType::find(pdg_proton));
+  smash::ParticleData rho =
+      smash::ParticleData(smash::ParticleType::find(pdg_rho));
+  smash::ParticleData lambda =
+      smash::ParticleData(smash::ParticleType::find(pdg_lambda));
+
+  // Surface element with chemical potentials
+  gen::element surf_element;
+  surf_element.mub = 0.9;
+  surf_element.muq = 3.1;
+  surf_element.mus = 7.5;
+
+  // Expected values (B, Q, S factors)
+  const double exp_pion = 0.0;          // B=0, Q=0, S=0
+  const double exp_proton = 0.9 + 3.1;  // B=1, Q=1, S=0
+  const double exp_rho = 3.1;           // B=0, Q=1, S=0
+  const double exp_lambda = 0.9 - 7.5;  // B=1, Q=0, S=-1
+
+  // Call the ParticleType& overload via type()
+  const double mu_pion_type =
+      gen::chemical_potential(pion.type(), surf_element);
+  const double mu_proton_type =
+      gen::chemical_potential(proton.type(), surf_element);
+  const double mu_rho_type = gen::chemical_potential(rho.type(), surf_element);
+  const double mu_lambda_type =
+      gen::chemical_potential(lambda.type(), surf_element);
+
+  // Independent checks against expected numbers
+  VERIFY(expect_near(mu_pion_type, exp_pion, 1e-12));
+  VERIFY(expect_near(mu_proton_type, exp_proton, 1e-12));
+  VERIFY(expect_near(mu_rho_type, exp_rho, 1e-12));
+  VERIFY(expect_near(mu_lambda_type, exp_lambda, 1e-12));
+
+  // Cross-check: type overload matches pointer overload (one is enough, do
+  // proton)
+  const double mu_proton_ptr = gen::chemical_potential(&proton, surf_element);
+  VERIFY(expect_near(mu_proton_ptr, mu_proton_type, 1e-12));
 }

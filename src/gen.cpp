@@ -329,9 +329,7 @@ void generate() {
         const double J = particle.spin() * 0.5;
         const double stat = static_cast<int>(round(2. * J)) & 1 ? -1. : 1.;
         // SMASH quantum charges for the hadron state
-        const double muf = particle.baryon_number() * surf[iel].mub +
-                           particle.strangeness() * surf[iel].mus +
-                           particle.charge() * surf[iel].muq;
+        const double muf = chemical_potential(particle, surf[iel]);
         for (int i = 1; i < 11; i++)
           density += (2. * J + 1.) * pow(gevtofm, 3) /
                      (2. * pow(TMath::Pi(), 2)) * mass * mass * surf[iel].T *
@@ -380,9 +378,7 @@ void generate() {
         const double mass = part.mass();
         const double stat = static_cast<int>(round(2. * J)) & 1 ? -1. : 1.;
         // SMASH quantum charges for the hadron state
-        const double muf = part.baryon_number() * surf[iel].mub +
-                           part.strangeness() * surf[iel].mus +
-                           part.charge() * surf[iel].muq;
+        const double muf = chemical_potential(part, surf[iel]);
         if (muf >= mass)
           std::cout << " ^^ muf = " << muf << "  " << part.pdgcode()
                     << std::endl;
@@ -471,7 +467,8 @@ void generate() {
           t = surf[iel].four_position[0];
           z = surf[iel].four_position[3] + smearing_eta_z;
         }
-
+        // Store velocity for spin calculation
+        const smash::ThreeVector v_lab_smeared(vx, vy, vz);
         mom.Boost(vx, vy, vz);
         smash::FourVector momentum(mom.E(), mom.Px(), mom.Py(), mom.Pz());
         smash::FourVector position(t, x, y, z);
@@ -480,10 +477,11 @@ void generate() {
 
         // Calculate and set the spin vector if spin sampling is enabled
         if (params::spin_sampling_enabled) {
-          spin::calculate_and_set_spin_vector(ievent, surf[iel], particle_ptr);
-          // Boost the spin vector to the lab frame. Note that SMASH uses a
-          // different sign convention for the Lorentz boost than ROOT, so we
-          // need to use the negative velocity here.
+          spin::calculate_and_set_spin_vector(ievent, surf[iel], particle_ptr,
+                                              v_lab_smeared);
+          // Boost the spin vector to the lab frame including smearing. Note
+          // that SMASH uses a different sign convention for the Lorentz boost
+          // than ROOT, so we need to use the negative velocity here.
           smash::FourVector spin_vector_lab_frame =
               particle_ptr->spin_vector().lorentz_boost(
                   smash::ThreeVector(-vx, -vy, -vz));

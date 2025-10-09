@@ -53,26 +53,17 @@ inline double fermi_bose_distribution(const int spin, const double argument) {
   }
 }
 
-// Calculate the full chemical potential for a given particle and freezeout
-// element
-inline double chemical_potential(const smash::ParticleData *particle,
-                                 const gen::element &freezeout_element) {
-
-  const smash::ParticleType& type = particle->type();
-  return type.baryon_number() * freezeout_element.mub +
-         type.charge() * freezeout_element.muq +
-         type.strangeness() * freezeout_element.mus;
-}
-
-void add_entry_to_theta_storage(const smash::ParticleData *particle,
+void add_entry_to_theta_storage(const int index_event,
+                                const smash::ParticleData *particle,
                                 const std::array<double, 16> &vorticity);
 
 void boost_particle_momentum_to_fluid_rest_frame(
-    const gen::element &freezeout_element, smash::ParticleData *particle);
+    smash::ParticleData *particle, const smash::ThreeVector &boost_velocity);
 
 void calculate_and_set_spin_vector(const int index_event,
                                    const gen::element &freezeout_element,
-                                   smash::ParticleData *particle);
+                                   smash::ParticleData *particle,
+                                   const smash::ThreeVector &boost_velocity);
 
 }  // namespace spin
 #endif  // INCLUDE_SPIN_H_

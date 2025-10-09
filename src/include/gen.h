@@ -56,6 +56,23 @@ extern smash::ParticleData ***pList;  // particle arrays
 extern int *npart;
 const int NPartBuf = 30000;  // dimension of particle buffer for each event
 
+// Core implementation on ParticleType to calculate the full chemical potential
+// for a given particle and freezeout element
+inline double chemical_potential(const smash::ParticleType &type,
+                                 const gen::element &freezeout_element) {
+  return type.baryon_number() * freezeout_element.mub +
+         type.charge() * freezeout_element.muq +
+         type.strangeness() * freezeout_element.mus;
+}
+
+// Convenience overload for ParticleData*
+inline double chemical_potential(const smash::ParticleData *particle,
+                                 const gen::element &freezeout_element) {
+  // debug check
+  assert(particle != nullptr);
+  return chemical_potential(particle->type(), freezeout_element);
+}
+
 // active Lorentz boost
 void fillBoostMatrix(double vx, double vy, double vz, double boostMatrix[4][4]);
 
