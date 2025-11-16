@@ -33,6 +33,9 @@ void read_configuration_file(const std::string &filename) {
   while (fin.good()) {
     std::string line;
     getline(fin, line);
+    if (line == "") {
+      continue;
+    }
     std::istringstream sline(line);
     sline >> parName >> parValue;
     if (parName == "surface_file") {
@@ -111,12 +114,11 @@ void print_config_parameters() {
     std::cout << "\n";
   }
   if (!unknown_parameters_in_config_file.empty()) {
-    std::cout << "Unknown parameters in config configuration file that will "
-                 "not be considered:"
-              << std::endl;
+    std::cerr << "Unknown parameters in configuration file:\n";
     print_comments_and_unknown_parameters_of_config_file(
         unknown_parameters_in_config_file);
-    std::cout << "\n";
+    std::cerr << "\n";
+    throw std::invalid_argument("Unknown parameters in configuration file.");
   }
 }
 
