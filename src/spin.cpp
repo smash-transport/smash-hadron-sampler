@@ -136,6 +136,7 @@ void calculate_and_set_spin_vector(const int index_event,
     // calculations are done in the fluid rest frame. Store the initial momentum
     // to set it back afterwards.
     const smash::FourVector momentum_lab_frame = particle->momentum();
+    //remove
     boost_particle_momentum_to_fluid_rest_frame(particle, boost_velocity);
 
     const double temperature = freezeout_element.T;
@@ -215,6 +216,7 @@ void calculate_and_set_spin_vector(const int index_event,
       particle->set_spin_vector(spin_vec);
     }
     // Set the particle momentum back to the lab frame
+    // remove
     particle->set_4momentum(momentum_lab_frame);
 
   } else {

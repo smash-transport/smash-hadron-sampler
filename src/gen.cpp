@@ -235,6 +235,7 @@ void load(const char *filename, int N) {
         throw std::runtime_error("Error: Vorticity is not set for element " +
                                  std::to_string(n));
       }
+      //remove
       (*surf[n].vorticity)->boost_vorticity_to_fluid_rest_frame(boostMatrixCov);
     }
   }
@@ -482,6 +483,8 @@ void generate() {
           // Boost the spin vector to the lab frame including smearing. Note
           // that SMASH uses a different sign convention for the Lorentz boost
           // than ROOT, so we need to use the negative velocity here.
+
+          // remove the boost as everything is in the global frame as momentum
           smash::FourVector spin_vector_lab_frame =
               particle_ptr->spin_vector().lorentz_boost(
                   smash::ThreeVector(-vx, -vy, -vz));

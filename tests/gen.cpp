@@ -5,20 +5,21 @@
 #include <numeric>
 #include <random>
 #include <vector>
+#include <mutex>
 
 #include "virtest/vir/test.h"
 
 using namespace gen;
 
 // Custom function to compare two doubles within a given tolerance
-bool expect_near(double val1, double val2, double abs_error) {
+static bool expect_near(double val1, double val2, double abs_error) {
   return std::abs(val1 - val2) <= abs_error;
 }
 
 // Ensures the global ParticleType list is initialized only once using
 // std::call_once. Avoids the "Type list was already built!" exception when
 // multiple tests need it.
-void ensure_particletype_initialized() {
+static void ensure_particletype_initialized() {
   static std::once_flag flag;
   std::call_once(flag, [] {
     smash::ParticleType::create_type_list(
