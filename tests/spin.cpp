@@ -319,11 +319,6 @@ TEST(spin_vector_valid_values) {
   surf_element.mub = 0.7;
   surf_element.e = 1.7;
 
-  // This test does not test the boost behavior, so we can set the boost
-  // velocity to zero. The particle momentum is already given in the
-  // fluid rest frame, so no boost is needed
-  const smash::ThreeVector boost_velocity(0.0, 0.0, 0.0);
-
   // Create a Vorticity instance and set the vorticity components in the surface
   auto vorticity = std::make_unique<Vorticity>();
   vorticity->set_vorticity(
@@ -338,7 +333,7 @@ TEST(spin_vector_valid_values) {
       std::isnan(pion.spin_vector()[2]) && std::isnan(pion.spin_vector()[3]));
 
   // Calculate and set the spin vector for the pion
-  calculate_and_set_spin_vector(0, surf_element, &pion, boost_velocity);
+  calculate_and_set_spin_vector(0, surf_element, &pion);
 
   // Perform checks
   VERIFY(expect_near(pion.spin_vector()[0], 0.0, 1e-9));
@@ -354,7 +349,7 @@ TEST(spin_vector_valid_values) {
          std::isnan(proton.spin_vector()[3]));
 
   // Calculate and set the spin vector for the proton
-  calculate_and_set_spin_vector(0, surf_element, &proton, boost_velocity);
+  calculate_and_set_spin_vector(0, surf_element, &proton);
 
   // Calculate the expected values for the spin vector
   std::array<double, 4> theta_vector =
@@ -396,7 +391,7 @@ TEST(spin_vector_valid_values) {
          std::isnan(rho.spin_vector()[2]) && std::isnan(rho.spin_vector()[3]));
 
   // Calculate and set the spin vector for the rho
-  calculate_and_set_spin_vector(0, surf_element, &rho, boost_velocity);
+  calculate_and_set_spin_vector(0, surf_element, &rho);
 
   // Calculate the expected values for the spin vector
   theta_vector = theta(rho.pole_mass(),
@@ -439,7 +434,7 @@ TEST(spin_vector_valid_values) {
          std::isnan(delta_plus.spin_vector()[3]));
 
   // Calculate and set the spin vector for the delta plus
-  calculate_and_set_spin_vector(0, surf_element, &delta_plus, boost_velocity);
+  calculate_and_set_spin_vector(0, surf_element, &delta_plus);
 
   // Calculate the expected values for the spin vector
   theta_vector =

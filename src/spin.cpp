@@ -79,36 +79,10 @@ void add_entry_to_theta_storage(const int index_event,
   (*gen::thetaStorage)[index_event].push_back({txyz, theta_array});
 }
 
-// Boost the particle's 4-momentum from LAB to the cell's fluid-rest frame
-void boost_particle_momentum_to_fluid_rest_frame(
-    smash::ParticleData *particle, const smash::ThreeVector &boost_velocity) {
-  // Calculate the boost velocity from the fluid 4-velocity
-  const double vx = boost_velocity.x1();
-  const double vy = boost_velocity.x2();
-  const double vz = boost_velocity.x3();
-  double boostMatrix[4][4];
-  gen::fillBoostMatrix(
-      -vx, -vy, -vz,
-      boostMatrix);  // negative velocity for boost to rest frame
-  // Perform the boost
-  double p_lab[4] = {particle->momentum().x0(), particle->momentum().x1(),
-                     particle->momentum().x2(), particle->momentum().x3()};
-  double p_rest[4] = {0.0, 0.0, 0.0, 0.0};
-  for (int i = 0; i < 4; i++) {
-    for (int j = 0; j < 4; j++) {
-      p_rest[i] += boostMatrix[i][j] * p_lab[j];
-    }
-  }
-  // Set the boosted momentum back to the particle
-  particle->set_4momentum(
-      smash::FourVector(p_rest[0], p_rest[1], p_rest[2], p_rest[3]));
-}
-
 // Calculate and set the spin vector for a given particle
 void calculate_and_set_spin_vector(const int index_event,
                                    const gen::element &freezeout_element,
-                                   smash::ParticleData *particle,
-                                   const smash::ThreeVector &boost_velocity) {
+                                   smash::ParticleData *particle) {
   // Ensure that the optional values in the freezeout element are set
   if (!freezeout_element.vorticity.has_value()) {
     throw std::runtime_error("Vorticity tensor not set in surface element.");
@@ -132,13 +106,6 @@ void calculate_and_set_spin_vector(const int index_event,
     particle->set_spin_vector(spin_vec);
 
   } else if (spin > 0) {
-    // Boost the particle momentum to the fluid rest frame to ensure that all
-    // calculations are done in the fluid rest frame. Store the initial momentum
-    // to set it back afterwards.
-    const smash::FourVector momentum_lab_frame = particle->momentum();
-    //remove
-    boost_particle_momentum_to_fluid_rest_frame(particle, boost_velocity);
-
     const double temperature = freezeout_element.T;
     const double mu = gen::chemical_potential(particle, freezeout_element);
     const std::array<double, 16> vorticity =
@@ -215,10 +182,6 @@ void calculate_and_set_spin_vector(const int index_event,
       // Set the spin vector in the particle data
       particle->set_spin_vector(spin_vec);
     }
-    // Set the particle momentum back to the lab frame
-    // remove
-    particle->set_4momentum(momentum_lab_frame);
-
   } else {
     throw std::runtime_error("Spin of particle is invalid or unset.");
   }

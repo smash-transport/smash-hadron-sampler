@@ -68,25 +68,6 @@ void fillBoostMatrix(double vx, double vy, double vz, double boostMatrix[4][4])
   for (int i = 1; i < 4; i++) boostMatrix[i][i] += 1.0;
 }
 
-// Convert a Lorentz boost matrix from contravariant form (Λ^μ_ν, acts on upper
-// indices) to covariant form (Λ_μ^ν, acts on lower indices) using the (+,-,-,-)
-// metric.
-//
-// Index relation:   (Λ_cov)_μ^ν = g_{μα} (Λ_contra)^α_β g^{βν}
-// Matrix relation:  Λ_cov = g * Λ_contra * g,  with g = diag(+1,-1,-1,-1)
-FourMatrix create_covariant_boost_matrix(
-    const double boost_contravariant[4][4]) {
-  // Metric signature
-  const double g[4] = {+1.0, -1.0, -1.0, -1.0};
-  FourMatrix boost_covariant{};
-
-  for (int mu = 0; mu < 4; ++mu)
-    for (int nu = 0; nu < 4; ++nu)
-      boost_covariant[mu][nu] = g[mu] * boost_contravariant[mu][nu] * g[nu];
-
-  return boost_covariant;
-}
-
 // index44: returns an index of pi^{mu nu} mu,nu component in a plain 1D array
 int index44(const int &i, const int &j) {
   if (i > 3 || j > 3 || i < 0 || j < 0) {
@@ -200,22 +181,14 @@ void load(const char *filename, int N) {
     // pi^{mu nu} boost to fluid rest frame
     // ########################
     double boostMatrix[4][4];
-    FourMatrix boostMatrixCov{};
-    bool boost_matrix_needed =
-        params::shear_viscosity_enabled || params::spin_sampling_enabled;
-
-    if (boost_matrix_needed) {
+    if (params::shear_viscosity_enabled) {
       fillBoostMatrix(-surf[n].u[1] / surf[n].u[0],
                       -surf[n].u[2] / surf[n].u[0],
                       -surf[n].u[3] / surf[n].u[0], boostMatrix);
-
-      // As boostMatrix is a contravariant boost matrix (acts on upper indices),
-      // and vorticity is a tensor with lower indices, we need to convert the
-      // boost matrix to a covariant form (acts on lower indices).
-      boostMatrixCov = create_covariant_boost_matrix(boostMatrix);
     }
 
-    // _pi^{μν} (upper,upper) uses the contravariant boostMatrix
+    /* _pi^{μν} (upper,upper) uses the contravariant boostMatrix acting on
+    upper indices */
     if (params::shear_viscosity_enabled) {
       double _pi[10];
       for (int i = 0; i < 4; i++)
@@ -228,16 +201,6 @@ void load(const char *filename, int N) {
         }
       for (int i = 0; i < 10; i++) surf[n].pi[i] = _pi[i];
     }  // end pi boost
-
-    // boost vorticity tensor to fluid rest frame
-    if (params::spin_sampling_enabled) {
-      if (!surf[n].vorticity.has_value()) {
-        throw std::runtime_error("Error: Vorticity is not set for element " +
-                                 std::to_string(n));
-      }
-      //remove
-      (*surf[n].vorticity)->boost_vorticity_to_fluid_rest_frame(boostMatrixCov);
-    }
   }
   if (params::shear_viscosity_enabled)
     dsigmaMax *= 2.0;  // *2.0: jun17. default: *1.5
@@ -468,8 +431,6 @@ void generate() {
           t = surf[iel].four_position[0];
           z = surf[iel].four_position[3] + smearing_eta_z;
         }
-        // Store velocity for spin calculation
-        const smash::ThreeVector v_lab_smeared(vx, vy, vz);
         mom.Boost(vx, vy, vz);
         smash::FourVector momentum(mom.E(), mom.Px(), mom.Py(), mom.Pz());
         smash::FourVector position(t, x, y, z);
@@ -478,19 +439,8 @@ void generate() {
 
         // Calculate and set the spin vector if spin sampling is enabled
         if (params::spin_sampling_enabled) {
-          spin::calculate_and_set_spin_vector(ievent, surf[iel], particle_ptr,
-                                              v_lab_smeared);
-          // Boost the spin vector to the lab frame including smearing. Note
-          // that SMASH uses a different sign convention for the Lorentz boost
-          // than ROOT, so we need to use the negative velocity here.
-
-          // remove the boost as everything is in the global frame as momentum
-          smash::FourVector spin_vector_lab_frame =
-              particle_ptr->spin_vector().lorentz_boost(
-                  smash::ThreeVector(-vx, -vy, -vz));
-          particle_ptr->set_spin_vector(spin_vector_lab_frame);
+          spin::calculate_and_set_spin_vector(ievent, surf[iel], particle_ptr);
         }
-
       }  // coordinate accepted
     }    // events loop
     if (iel % (Nelem / 50) == 0) {
