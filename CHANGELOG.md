@@ -23,6 +23,8 @@ Also possible, but for this project less relevant, is `Deprecated` for soon-to-b
 
 ## Unreleased
 
+## SMASH-hadron-sampler-3.3
+Date: 2025-12-15
 
 * :heavy_plus_sign: Added new configuration key `sample_spin` (boolean) to enable spin sampling at freezeout; when set to `true`, spin 4-vectors are assigned to all particles
 * :heavy_plus_sign: Added new configuration key `create_vorticity_vector_output` (boolean) to output the full vorticity 4-vectors of all particles to a dedicated file

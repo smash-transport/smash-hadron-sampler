@@ -4,12 +4,12 @@ cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 # The name, version and language of the project
 project(
   SMASH-hadron-sampler
-  VERSION "3.2"
+  VERSION "3.3"
   LANGUAGES CXX)
 set(SAMPLER_VERSION "${SMASH-hadron-sampler_VERSION}")
 # If the following set() command is not commented out, the codebase is marked as
 # dirty (for development on the way to next release)
-set(SAMPLER_VERSION "${SAMPLER_VERSION}-next")
+#set(SAMPLER_VERSION "${SAMPLER_VERSION}-next")
 
 # Fail if cmake is called in the source directory
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
