@@ -1,10 +1,11 @@
 #include <TFile.h>
 #include <TROOT.h>
 #include <TRandom3.h>
+#include <getopt.h>
+
 #include <chrono>
 #include <filesystem>
 #include <fstream>
-#include <getopt.h>
 #include <string>
 
 #include "build_metadata.h"
@@ -56,26 +57,27 @@ int main(int argc, char *argv[]) {
   while ((option = getopt_long(argc, argv, "c:hn:o:s:q", long_options,
                                nullptr)) != -1) {
     switch (option) {
-    case 'c':
-      configuration = optarg;
-      break;
-    case 'h':
-      usage(EXIT_SUCCESS, program_name);
-      break;
-    case 'n':
-      num = optarg;
-      break;
-    case 'o':
-      command_line_output_dir = optarg;
-      break;
-    case 's':
-      command_line_surface_file = optarg;
-      break;
-    case 'q':
-      suppress_disclaimer_and_parameter_printout = true;
-      break;
-    case 0: // --version case
-      std::printf("%s\n"
+      case 'c':
+        configuration = optarg;
+        break;
+      case 'h':
+        usage(EXIT_SUCCESS, program_name);
+        break;
+      case 'n':
+        num = optarg;
+        break;
+      case 'o':
+        command_line_output_dir = optarg;
+        break;
+      case 's':
+        command_line_surface_file = optarg;
+        break;
+      case 'q':
+        suppress_disclaimer_and_parameter_printout = true;
+        break;
+      case 0:  // --version case
+        std::printf(
+            "%s\n"
 #ifdef GIT_BRANCH
                   "Branch   : %s\n"
 #endif
@@ -127,6 +129,14 @@ int main(int argc, char *argv[]) {
           .count() +
       std::stoi(num) * 16;
 
+  // check input formats
+  if (params::spin_sampling_enabled) {
+    Vorticity::ensure_vorticity_file_exists_and_check_format();
+    Vorticity::ensure_extended_freezeout_is_given();
+    Vorticity::set_number_of_corona_cells();
+    gen::enable_vorticity_storage();
+  }
+
   TRandom3 *random3 = new TRandom3();
   random3->SetSeed(ranseed);
   std::cout << "Random seed:  " << ranseed << std::endl;
@@ -162,6 +172,11 @@ int main(int argc, char *argv[]) {
 
   // Write Oscar output
   write_oscar_output();
+
+  // Write vorticity vector to file
+  if (params::vorticity_output_enabled) {
+    save_vorticity_vectors_to_file();
+  }
 
   const auto end_time = std::chrono::steady_clock::now();
   const auto execution_time =

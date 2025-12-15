@@ -1,0 +1,65 @@
+#ifndef INCLUDE_SPIN_H_
+#define INCLUDE_SPIN_H_
+
+#include <array>
+#include <stdexcept>
+
+#include "const.h"
+#include "gen.h"
+#include "smash/particles.h"
+
+namespace spin {
+/* The following definitions correspond to the conventions used in Eq. (60)
+ * of the paper "Exact spin polarization of massive and massless particles in
+ * relativistic fluids at global equilibrium" by A. Palermo and F. Becattini
+ * (arXiv:2304.02276v2).
+ */
+
+// Calculate the square of a four-vector in Minkowski space
+inline double four_vector_square(const std::array<double, 4> &four_vector) {
+  double result = 0.0;
+  for (int i = 0; i < 4; i++) {
+    result += metric[i] * four_vector[i] * four_vector[i];
+  }
+  return result;
+}
+
+// Calculate theta from EQ. 42 in arXiv:2304.02276v2 which is needed to
+// calculate the full EQ. 60 afterwards.
+std::array<double, 4> theta(const double mass,
+                            const std::array<double, 16> &vorticity,
+                            const std::array<double, 4> &p);
+
+// Calculate the exponent of exp(...) in EQ. (60) from arXiv:2304.02276v2
+inline double exponent(const double k, const double particle_energy,
+                       const double temperature, const double mu,
+                       const double theta_squared) {
+  // Check that k is a multiple of 1/2
+  if (std::abs(std::fmod(k, 0.5)) > 1e-6) {
+    throw std::invalid_argument("k must be a multiple of 1/2.");
+  } else if (theta_squared > 0) {
+    throw std::invalid_argument("theta^2 must be negative.");
+  }
+  return (particle_energy - mu) / temperature - k * sqrt(-theta_squared);
+}
+
+// Calculate either the Fermi or Bose distribution given the spin of the
+// particle
+inline double fermi_bose_distribution(const int spin, const double argument) {
+  if (spin % 2 == 0) {
+    return 1.0 / (std::exp(argument) - 1.0);
+  } else {
+    return 1.0 / (std::exp(argument) + 1.0);
+  }
+}
+
+void add_entry_to_theta_storage(const int index_event,
+                                const smash::ParticleData *particle,
+                                const std::array<double, 16> &vorticity);
+
+void calculate_and_set_spin_vector(const int index_event,
+                                   const gen::element &freezeout_element,
+                                   smash::ParticleData *particle);
+
+}  // namespace spin
+#endif  // INCLUDE_SPIN_H_

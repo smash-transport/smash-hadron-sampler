@@ -1,17 +1,19 @@
+#include "params.h"
+
 #include <fstream>
 #include <iostream>
 #include <sstream>
-
-#include "params.h"
+#include <string>
 
 using namespace std;
 
 namespace params {
+std::string surface_file{"unset"}, vorticity_file{"unset"},
+    output_directory{"unset"}, hydro_coordinate_system{"tau-eta"};
 
-std::string surface_file{"unset"}, output_directory{"unset"},
-    hydro_coordinate_system{"tau-eta"};
 bool bulk_viscosity_enabled{false}, create_root_output{false},
-    shear_viscosity_enabled{false};
+    shear_viscosity_enabled{false}, spin_sampling_enabled{false},
+    vorticity_output_enabled{false};
 int number_of_events;
 /* Smearing parameters dx, dy, and deta_dz
  * No smearing in x and y direction implemented at the moment
@@ -21,6 +23,16 @@ double ecrit, speed_of_sound_squared{0.15}, ratio_pressure_energydensity{0.15};
 // double Temp, mu_b, mu_q, mu_s ;
 std::vector<std::string> comments_in_config_file,
     unknown_parameters_in_config_file;
+
+// Helper function to get the directory of a given file path
+std::string getDirectory(const std::string &filePath) {
+  size_t pos = filePath.find_last_of("/\\");
+  if (pos != std::string::npos) {
+    return filePath.substr(0, pos + 1);
+  }
+  // No directory found, return empty
+  return "";
+}
 
 /// Read and process configuration file parameters
 void read_configuration_file(const std::string &filename) {
@@ -40,6 +52,8 @@ void read_configuration_file(const std::string &filename) {
     sline >> parName >> parValue;
     if (parName == "surface_file") {
       surface_file = parValue;
+    } else if (parName == "vorticity_file") {
+      vorticity_file = parValue;
     } else if (parName == "output_dir") {
       output_directory = parValue;
     } else if (parName == "number_of_events") {
@@ -67,11 +81,24 @@ void read_configuration_file(const std::string &filename) {
                   << "'.\n       Please update the config and try again.\n";
         std::exit(1);
       }
+    } else if (parName == "sample_spin") {
+      spin_sampling_enabled = std::stoi(parValue);
+    } else if (parName == "create_vorticity_vector_output") {
+      vorticity_output_enabled = std::stoi(parValue);
     } else if (parName[0] == '!') {
       comments_in_config_file.push_back(line);
     } else {
       unknown_parameters_in_config_file.push_back(line);
     }
+  }
+  // If no vorticity file was specified, set the default based on surface_file
+  if (vorticity_file == "unset") {
+    std::cerr
+        << "[Warning] No vorticity_file specified in config. "
+           "Defaulting to 'beta.dat' in the same directory as surface_file ("
+        << surface_file << ")." << std::endl;
+    std::string dir = getDirectory(surface_file);
+    vorticity_file = dir + "beta.dat";
   }
 }
 
@@ -89,11 +116,15 @@ void print_config_parameters() {
                "-----------------------"
             << "\n"
             << "surface_file:                 " << surface_file << "\n"
+            << "vorticity_file:               " << vorticity_file << "\n"
             << "output_dir:                   " << output_directory << "\n"
             << "number_of_events:             " << number_of_events << "\n"
             << "shear:                        " << shear_viscosity_enabled
             << "\n"
             << "bulk:                         " << bulk_viscosity_enabled
+            << "\n"
+            << "spin:                         " << spin_sampling_enabled << "\n"
+            << "vorticity_vector:             " << vorticity_output_enabled
             << "\n"
             << "ecrit:                        " << ecrit << "\n"
             << "cs2:                          " << speed_of_sound_squared
@@ -122,4 +153,4 @@ void print_config_parameters() {
   }
 }
 
-} // namespace params
+}  // namespace params

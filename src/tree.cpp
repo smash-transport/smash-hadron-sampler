@@ -1,4 +1,7 @@
 #include "tree.h"
+
+#include <TTree.h>
+
 #include "gen.h"
 
 MyTree::MyTree(const char *name) {

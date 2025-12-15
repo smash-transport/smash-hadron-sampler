@@ -105,6 +105,13 @@ Optional parameters:
                                   hypersurface elements from the hydro evolution are provided
                                   (by space-time four-vectors). Possible coordinate systems
                                   are 'tau-eta' (default) or 'cartesian'.
+    sample_spin                   Enables spin sampling at freezeout if set to 1. Spin 4-vectors
+                                  are assigned to all particles based on local vorticity following
+                                  [arXiv:2304.02276v2](https://arxiv.org/abs/2304.02276). Default is 0 (false).
+    create_vorticity_vector_output Enables output of full vorticity 4-vectors of all particles
+                                   to a dedicated file if set to 1.     Default is 0 (false).
+    vorticity_file                Path to the vorticity input file from vHLLE. Mandatory if
+                                  `sample_spin` is enabled.
 
 
 > [!NOTE]

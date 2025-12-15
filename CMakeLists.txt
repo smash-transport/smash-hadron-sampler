@@ -72,7 +72,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/include/build_metadata.h.in"
 # ------------------------------------------------------------------------------
 
 # Collect all the cpp files
-set(sampler_src src/gen.cpp src/oscaroutput.cpp src/params.cpp src/tree.cpp)
+set(sampler_src src/gen.cpp src/oscaroutput.cpp src/params.cpp src/tree.cpp src/spin.cpp src/vorticity.cpp)
 
 # Create object library for the linker which contains pre-compiled cpp files
 add_library(objlib OBJECT ${sampler_src})
@@ -94,7 +94,9 @@ if(${SMASH_FOUND})
       FATAL_ERROR
         "Environment variable SMASH_DIR unset. Unable to include virtest.")
   endif()
-endif(${SMASH_FOUND})
+else()
+  message(FATAL_ERROR "SMASH could not be found.")
+endif()
 
 find_package(ROOT 5.34)
 if(ROOT_FOUND)
@@ -111,17 +113,26 @@ include(CTest)
 message(STATUS "BUILD_TESTING=${BUILD_TESTING}")
 
 if(BUILD_TESTING)
-  # library for unit tests
-  #add_library(sampler_static STATIC $<TARGET_OBJECTS:objlib>)
-  #set_target_properties(sampler_static PROPERTIES OUTPUT_NAME sampler)
+  # Create a directory for test executables
+  set(TEST_OUTPUT_DIR ${CMAKE_BINARY_DIR}/tests)
+  file(MAKE_DIRECTORY ${TEST_OUTPUT_DIR})
+
+  # Set runtime output directory for test executables
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${TEST_OUTPUT_DIR})
 
   # Add the executable for the gen test
   add_executable(gen tests/gen.cpp)
-
-  # Link the test executable with Virtest and any other necessary libraries
   target_link_libraries(gen objlib ${SAMPLER_LIBRARIES})
-
-  # Add the test to ctest
   add_test(NAME gen_test COMMAND gen)
+
+  # Add the executable for the vorticity test
+  add_executable(vorticity tests/vorticity.cpp)
+  target_link_libraries(vorticity objlib ${SAMPLER_LIBRARIES})
+  add_test(NAME vorticity_test COMMAND vorticity)
+
+  # Add the executable for the spin test
+  add_executable(spin tests/spin.cpp)
+  target_link_libraries(spin objlib ${SAMPLER_LIBRARIES})
+  add_test(NAME spin_test COMMAND spin)
   #add_subdirectory(tests)
 endif()

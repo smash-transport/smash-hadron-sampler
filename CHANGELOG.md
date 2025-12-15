@@ -23,8 +23,14 @@ Also possible, but for this project less relevant, is `Deprecated` for soon-to-b
 
 ## Unreleased
 
+
+* :heavy_plus_sign: Added new configuration key `sample_spin` (boolean) to enable spin sampling at freezeout; when set to `true`, spin 4-vectors are assigned to all particles
+* :heavy_plus_sign: Added new configuration key `create_vorticity_vector_output` (boolean) to output the full vorticity 4-vectors of all particles to a dedicated file
+* :heavy_plus_sign: Added new configuration key `vorticity_file` (string) to specify the path to the vorticity input file from vHLLE; required when `sample_spin` is enabled
+* :heavy_plus_sign: Introduced a spin sampling procedure to assign physically motivated spin states to particles based on local vorticity when `sample_spin` is enabled
 * :heavy_plus_sign: Added option to properly treat freeze-out hypersurface if the hydro stage provides the surface elements' position by space-time four-vectors in Cartesian coordinates (addtional to space-time four-vectors given in tau-eta coordinates).
   Coordinates of the space-time four-vectors specifiable via new config key `hydro_coordinate_system` (options are `tau-eta` (default) and `cartesian`)
+
 
 
 ## SMASH-hadron-sampler-3.2
