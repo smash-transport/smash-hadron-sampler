@@ -32,7 +32,9 @@ Date: 2025-12-15
 * :heavy_plus_sign: Introduced a spin sampling procedure to assign physically motivated spin states to particles based on local vorticity when `sample_spin` is enabled
 * :heavy_plus_sign: Added option to properly treat freeze-out hypersurface if the hydro stage provides the surface elements' position by space-time four-vectors in Cartesian coordinates (addtional to space-time four-vectors given in tau-eta coordinates).
   Coordinates of the space-time four-vectors specifiable via new config key `hydro_coordinate_system` (options are `tau-eta` (default) and `cartesian`)
+* :recycle: The sampler will now abort and print an error message if an unknown input key is present in the configuration file
 
+[Link to diff from previous version](https://github.com/smash-transport/smash-hadron-sampler/compare/SMASH-hadron-sampler-3.2...SMASH-hadron-sampler-3.3)
 
 
 ## SMASH-hadron-sampler-3.2
@@ -99,4 +101,4 @@ Date: 2022-05-17
   * push the changes on `develop`.
 8. Remove the `release` branch.
 
-This checklist is inspired by the [release checklist of the SMASH-vHLLE-Hybrid](https://smash-transport.github.io/smash-vhlle-hybrid/latest/developer/release_procedure/#release-checklist).
+This checklist is inspired by the [release checklist of the Hybrid-handler](https://smash-transport.github.io/smash-vhlle-hybrid/latest/developer/release_procedure/#release-checklist).
