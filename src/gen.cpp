@@ -377,17 +377,22 @@ void generate() {
         } while (rval > W); // end fast momentum generation
         if (niter > nmaxiter)
           nmaxiter = niter;
-        const double x = surf[iel].four_position[1];
-        const double y = surf[iel].four_position[2];
-        double t = 0, z = 0, vx = 0, vy = 0, vz = 0;
         /* The deta_dz is an estimate of spatial extent based on the volume of
          * the respective freezeout hypersurface element which is used as a
          * smearing parameter in eta or z direction (depending on the hydro
          * coordinate system).
-         * Note: No smearing in x and y direction implemented at the moment.
          */
         params::deta_dz = std::cbrt(dvEff);
         double smearing_eta_z = params::deta_dz * (-0.5 + rnd->Rndm());
+        double x = surf[iel].four_position[1];
+        double y = surf[iel].four_position[2];
+        double t = 0, z = 0, vx = 0, vy = 0, vz = 0;
+        if (params::transversal_smearing) {
+          double smearing_x = params::deta_dz * (-0.5 + rnd->Rndm());
+          double smearing_y = params::deta_dz * (-0.5 + rnd->Rndm());
+          x += smearing_x;
+          y += smearing_y;
+        }
         if (params::hydro_coordinate_system == "tau-eta") {
           smearing_eta_z /=
               (surf[iel].four_position[0] * cosh(surf[iel].four_position[3]));

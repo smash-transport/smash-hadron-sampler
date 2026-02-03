@@ -11,11 +11,9 @@ namespace params {
 std::string surface_file{"unset"}, output_directory{"unset"},
     hydro_coordinate_system{"tau-eta"};
 bool bulk_viscosity_enabled{false}, create_root_output{false},
-    shear_viscosity_enabled{false};
+    shear_viscosity_enabled{false}, transversal_smearing{false};
 int number_of_events;
-/* Smearing parameters dx, dy, and deta_dz
- * No smearing in x and y direction implemented at the moment
- */
+// Smearing parameters dx, dy, and deta_dz (not really since dx, dy stay unused)
 double dx{0}, dy{0}, deta_dz{0.05};
 double ecrit, speed_of_sound_squared{0.15}, ratio_pressure_energydensity{0.15};
 // double Temp, mu_b, mu_q, mu_s ;
@@ -64,6 +62,8 @@ void read_configuration_file(const std::string &filename) {
                   << "'.\n       Please update the config and try again.\n";
         std::exit(1);
       }
+    } else if (parName == "transversal_smearing") {
+      transversal_smearing = std::stoi(parValue);
     } else if (parName[0] == '!') {
       comments_in_config_file.push_back(line);
     } else {
@@ -100,6 +100,7 @@ void print_config_parameters() {
             << "create_root_output:           " << create_root_output << "\n"
             << "hydro_coordinate_system:      " << hydro_coordinate_system
             << "\n"
+            << "transversal_smearing:         " << transversal_smearing << "\n"
             << "# -------------------------------------------------------"
                "-----------------------"
             << "\n\n";
