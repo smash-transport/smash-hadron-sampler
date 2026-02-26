@@ -47,9 +47,9 @@ inline double exponent(const double k, const double particle_energy,
 // particle
 inline double fermi_bose_distribution(const int spin, const double argument) {
   if (spin % 2 == 0) {
-    return 1.0 / (std::exp(argument) - 1.0);
+    return C_Feq / (std::exp(argument) - 1.0);
   } else {
-    return 1.0 / (std::exp(argument) + 1.0);
+    return C_Feq / (std::exp(argument) + 1.0);
   }
 }
 
