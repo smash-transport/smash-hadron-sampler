@@ -11,6 +11,7 @@
 #include "vorticity.h"
 
 class TRandom3;
+class TF1;
 class DatabasePDG2;
 class Particle;
 
@@ -54,8 +55,13 @@ struct element {
 extern TRandom3 *rnd;
 extern smash::ParticleData ***pList;  // particle arrays
 extern int *npart;
-const int NPartBuf = 30000;  // dimension of particle buffer for each event
-
+extern element *surf;
+extern double *cumulantDensity;
+extern double totalDensity;
+extern const smash::ParticleTypeList *database;
+extern TF1 *fthermal;
+const int NPartBuf = 2000000;  // dimension of particle buffer for each event
+extern double dvMax, dsigmaMax;
 // Core implementation on ParticleType to calculate the full chemical potential
 // for a given particle and freezeout element
 inline double chemical_potential(const smash::ParticleType &type,
@@ -90,6 +96,12 @@ double ffthermal(double *x, double *par);
 int index44(const int &i, const int &j);
 // Allocate memory for the vorticity vector for each sampled particle
 void enable_vorticity_storage();
+
+double* calculate_particle_densities(element &surf_element, const std::vector<smash::ParticleType> *db);
+bool generate_particle(int iel, int ievent, double dvEff);
+
+double W_shear_correction(double momArray[4], double muf, double stat, const element &surf_elem);
+double W_bulk_correction(double p, double mass, double muf, double stat, const element &surf_elem);
 
 void generate();
 smash::ParticleData *acceptParticle(int event,
