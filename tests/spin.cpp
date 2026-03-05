@@ -3,6 +3,8 @@
 #include <array>
 #include <cmath>
 #include <iomanip>
+#include <iostream>
+#include <memory>
 #include <mutex>
 #include <random>
 
@@ -12,6 +14,8 @@
 #include "vorticity.h"
 
 using namespace spin;
+
+namespace {
 
 // Ensures the global ParticleType list is initialized only once using
 // std::call_once. Avoids the "Type list was already built!" exception when
@@ -61,6 +65,8 @@ int levi_civita(int i, int j, int k, int l) {
 bool expect_near(double val1, double val2, double abs_error) {
   return std::abs(val1 - val2) <= abs_error;
 }
+
+}  // namespace
 
 TEST(four_vector_square) {
   // Create a random number generator
@@ -166,14 +172,15 @@ TEST(theta_invalid_mass) {
                                             4.0,  5.0,  -2.0, -4.0, 0.0,  6.0,
                                             -3.0, -5.0, -6.0, 0.0};
   const std::array<double, 4> p = {1.0, 2.0, 3.0, 4.0};
+
   // Expect an invalid argument exception
+  bool threw = false;
   try {
     theta(mass, vorticity, p);
-    std::cout << "theta unexpectedly passed with massless particle"
-              << std::endl;
-  } catch (std::invalid_argument &e) {
-    // Exception was caught as expected
+  } catch (std::invalid_argument &) {
+    threw = true;  // Exception was caught as expected
   }
+  VERIFY(threw);
 }
 
 TEST(exponent_valid_value) {
@@ -221,15 +228,17 @@ TEST(exponent_invalid_k) {
   const double temperature = 1.0;
   const double mu = 1.0;
   const double theta_squared = -1.0;
+
   // Expect an invalid argument exception
+  bool threw = false;
   for (const double k : invalid_k_array) {
     try {
       exponent(k, energy, temperature, mu, theta_squared);
-      std::cout << "exponent unexpectedly passed with k not being a multiple "
-                << "of 1/2" << std::endl;
-    } catch (std::invalid_argument &e) {
-      // Exception was caught as expected
+    } catch (std::invalid_argument &) {
+      threw = true;  // Exception was caught as expected
     }
+    VERIFY(threw);
+    threw = false;
   }
 }
 
@@ -240,15 +249,17 @@ TEST(exponent_positive_theta_squared) {
   const double temperature = 1.0;
   const double mu = 1.0;
   const double invalid_theta_squared_array[3] = {0.0001, 1.3, 4.6};
+
   // Expect an invalid argument exception
+  bool threw = false;
   for (const double theta_squared : invalid_theta_squared_array) {
     try {
       exponent(k, energy, temperature, mu, theta_squared);
-      std::cout << "exponent unexpectedly passed with positive theta squared"
-                << std::endl;
-    } catch (std::invalid_argument &e) {
-      // Exception was caught as expected
+    } catch (std::invalid_argument &) {
+      threw = true;  // Exception was caught as expected
     }
+    VERIFY(threw);
+    threw = false;
   }
 }
 
@@ -359,13 +370,18 @@ TEST(spin_vector_valid_values) {
 
   double mu_proton = chemical_potential(&proton, surf_element);
 
+  // proton energy in global frame
+  double proton_energy =
+      proton_mom[0] * surf_element.u[0] - proton_mom[1] * surf_element.u[1] -
+      proton_mom[2] * surf_element.u[2] - proton_mom[3] * surf_element.u[3];
+
   double denominator_1 =
       1 /
-      (std::exp(exponent(-0.5, proton_mom[0], 4.3, mu_proton, theta_squared)) +
+      (std::exp(exponent(-0.5, proton_energy, 4.3, mu_proton, theta_squared)) +
        1);
   double denominator_2 =
       1 /
-      (std::exp(exponent(0.5, proton_mom[0], 4.3, mu_proton, theta_squared)) +
+      (std::exp(exponent(0.5, proton_energy, 4.3, mu_proton, theta_squared)) +
        1);
 
   double numerator_1 = -0.5 * denominator_1;
@@ -400,13 +416,18 @@ TEST(spin_vector_valid_values) {
 
   double mu_rho = chemical_potential(&rho, surf_element);
 
+  // rho energy in global frame
+  double rho_energy =
+      rho_mom[0] * surf_element.u[0] - rho_mom[1] * surf_element.u[1] -
+      rho_mom[2] * surf_element.u[2] - rho_mom[3] * surf_element.u[3];
+
   denominator_1 =
       1 /
-      (std::exp(exponent(-1.0, rho_mom[0], 4.3, mu_rho, theta_squared)) - 1);
+      (std::exp(exponent(-1.0, rho_energy, 4.3, mu_rho, theta_squared)) - 1);
   denominator_2 =
-      1 / (std::exp(exponent(0.0, rho_mom[0], 4.3, mu_rho, theta_squared)) - 1);
+      1 / (std::exp(exponent(0.0, rho_energy, 4.3, mu_rho, theta_squared)) - 1);
   double denominator_3 =
-      1 / (std::exp(exponent(1.0, rho_mom[0], 4.3, mu_rho, theta_squared)) - 1);
+      1 / (std::exp(exponent(1.0, rho_energy, 4.3, mu_rho, theta_squared)) - 1);
 
   numerator_1 = -1.0 * denominator_1;
   numerator_2 = 0.0 * denominator_2;
@@ -444,16 +465,22 @@ TEST(spin_vector_valid_values) {
 
   double mu_delta_plus = chemical_potential(&delta_plus, surf_element);
 
-  denominator_1 = 1 / (std::exp(exponent(-1.5, delta_plus_mom[0], 4.3,
+  // delta energy in global frame
+  double delta_plus_energy = delta_plus_mom[0] * surf_element.u[0] -
+                             delta_plus_mom[1] * surf_element.u[1] -
+                             delta_plus_mom[2] * surf_element.u[2] -
+                             delta_plus_mom[3] * surf_element.u[3];
+
+  denominator_1 = 1 / (std::exp(exponent(-1.5, delta_plus_energy, 4.3,
                                          mu_delta_plus, theta_squared)) +
                        1);
-  denominator_2 = 1 / (std::exp(exponent(-0.5, delta_plus_mom[0], 4.3,
+  denominator_2 = 1 / (std::exp(exponent(-0.5, delta_plus_energy, 4.3,
                                          mu_delta_plus, theta_squared)) +
                        1);
-  denominator_3 = 1 / (std::exp(exponent(0.5, delta_plus_mom[0], 4.3,
+  denominator_3 = 1 / (std::exp(exponent(0.5, delta_plus_energy, 4.3,
                                          mu_delta_plus, theta_squared)) +
                        1);
-  double denominator_4 = 1 / (std::exp(exponent(1.5, delta_plus_mom[0], 4.3,
+  double denominator_4 = 1 / (std::exp(exponent(1.5, delta_plus_energy, 4.3,
                                                 mu_delta_plus, theta_squared)) +
                               1);
 
