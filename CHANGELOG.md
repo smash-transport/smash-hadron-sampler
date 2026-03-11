@@ -23,6 +23,9 @@ Also possible, but for this project less relevant, is `Deprecated` for soon-to-b
 
 ## Unreleased
 
+* :left_right_arrow: Changed the name of the key `sample_spin` into `compute_spin_vector` (boolean).
+* :left_right_arrow: Fixed bug in the calculation of Pauli-Lubanski vectors in spin.cpp
+
 ## SMASH-hadron-sampler-3.3
 Date: 2025-12-15
 
