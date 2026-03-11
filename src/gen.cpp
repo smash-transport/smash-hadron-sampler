@@ -239,9 +239,9 @@ void enable_vorticity_storage() {
   } else if (!params::spin_vector_enabled &&
              params::vorticity_output_enabled) {
     throw std::runtime_error(
-        "Vorticity output is enabled but spin sampling is not. "
-        "Enable spin sampling in the config file by adding "
-        " the line 'sample_spin 1'.");
+        "Vorticity output is enabled but spin vector computation is not. "
+        "Enable spin vector computation in the config file by adding "
+        " the line 'compute_spin_vector 1'.");
   }
 }
 

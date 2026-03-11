@@ -206,7 +206,7 @@ TEST(vorticity_file_too_few_comment_lines) {
   // directory as the surface file as default. This is ensured here)
   write_to_file(configFilePath,
                 "surface_file " + freezeoutFilePath.string() + "\n");
-  write_to_file(configFilePath, "sample_spin 1 \n");
+  write_to_file(configFilePath, "compute_spin_vector 1 \n");
   VERIFY(fs::exists(configFilePath));
 
   // Write beta.dat file with one comment line and expect error
