@@ -119,8 +119,15 @@ void calculate_and_set_spin_vector(const int index_event,
     std::array<double, 4> p = {
         particle->momentum().x0(), particle->momentum().x1(),
         particle->momentum().x2(), particle->momentum().x3()};
+    std::array<double, 4> u = {freezeout_element.u[0], freezeout_element.u[1],
+                               freezeout_element.u[2], freezeout_element.u[3]};
 
-    const double particle_energy = particle->momentum().x0();
+    // p^0 denotes the particle energy in the global (lab) frame.
+    // For a fluid element with four-velocity u^mu, the combination p^mu u_mu
+    // gives the particle energy measured in the local rest frame of that fluid
+    // element. This is the energy relevant for the distribution function.
+    const double particle_energy =
+        p[0] * u[0] - p[1] * u[1] - p[2] * u[2] - p[3] * u[3];
 
     const std::array<double, 4> theta_array =
         theta(particle->pole_mass(), vorticity, p);
@@ -165,8 +172,7 @@ void calculate_and_set_spin_vector(const int index_event,
       }
 
       if (denominator == 0.0) {
-        throw std::runtime_error(
-            "Denominator in spin vector calculation is zero.");
+        denominator = small_value;
       }
 
       // Calculate the spin vector
