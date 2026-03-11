@@ -66,7 +66,7 @@ void reset_params() {
   params::bulk_viscosity_enabled = false;
   params::create_root_output = false;
   params::shear_viscosity_enabled = false;
-  params::spin_sampling_enabled = false;
+  params::spin_vector_enabled = false;
   params::vorticity_output_enabled = false;
 
   params::number_of_events = 0;

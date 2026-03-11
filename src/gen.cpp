@@ -104,7 +104,7 @@ void load(const char *filename, int N) {
   dsigmaMax = 0.;
 
   // Read the vorticity tensor from file and set it in all surface cells
-  if (params::spin_sampling_enabled) {
+  if (params::spin_vector_enabled) {
     std::cout << "Setting vorticity tensor in all surface cells from file "
               << params::vorticity_file << std::endl;
     Vorticity::set_vorticity_in_surface_cells(surf, Nelem);
@@ -129,7 +129,7 @@ void load(const char *filename, int N) {
 
     // If spin sampling is enabled, load the energy density from the
     // extended freezeout surface
-    if (params::spin_sampling_enabled) {
+    if (params::spin_vector_enabled) {
       double tmp_e;
       instream >> tmp_e;
       surf[n].e = tmp_e;  // set energy density
@@ -233,10 +233,10 @@ void load(const char *filename, int N) {
 void enable_vorticity_storage() {
   // Allocate memory for the vorticity vector for each sampled particle
   // if spin sampling and vorticity output are enabled in the config
-  if (params::spin_sampling_enabled && params::vorticity_output_enabled) {
+  if (params::spin_vector_enabled && params::vorticity_output_enabled) {
     thetaStorage = std::make_unique<std::vector<std::vector<ThetaStruct>>>(
         params::number_of_events);
-  } else if (!params::spin_sampling_enabled &&
+  } else if (!params::spin_vector_enabled &&
              params::vorticity_output_enabled) {
     throw std::runtime_error(
         "Vorticity output is enabled but spin sampling is not. "
@@ -438,7 +438,7 @@ void generate() {
             acceptParticle(ievent, &part, position, momentum);
 
         // Calculate and set the spin vector if spin sampling is enabled
-        if (params::spin_sampling_enabled) {
+        if (params::spin_vector_enabled) {
           spin::calculate_and_set_spin_vector(ievent, surf[iel], particle_ptr);
         }
       }  // coordinate accepted

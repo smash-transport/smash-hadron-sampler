@@ -17,7 +17,7 @@ void write_oscar_output() {
   std::unique_ptr<smash::OutputInterface> OscarOutput;
 
   // Initialize Oscar output
-  if (params::spin_sampling_enabled) {
+  if (params::spin_vector_enabled) {
     smash::OutputParameters output_params;
     std::vector<std::string> particle_quantities = {
         "t",  "x",   "y",  "z",      "mass",  "p0",    "px",    "py",
