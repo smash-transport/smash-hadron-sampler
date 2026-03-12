@@ -12,7 +12,7 @@ std::string surface_file{"unset"}, vorticity_file{"unset"},
     output_directory{"unset"}, hydro_coordinate_system{"tau-eta"};
 
 bool bulk_viscosity_enabled{false}, create_root_output{false},
-    shear_viscosity_enabled{false}, spin_sampling_enabled{false},
+    shear_viscosity_enabled{false}, spin_vector_enabled{false},
     vorticity_output_enabled{false};
 int number_of_events;
 /* Smearing parameters dx, dy, and deta_dz
@@ -81,8 +81,8 @@ void read_configuration_file(const std::string &filename) {
                   << "'.\n       Please update the config and try again.\n";
         std::exit(1);
       }
-    } else if (parName == "sample_spin") {
-      spin_sampling_enabled = std::stoi(parValue);
+    } else if (parName == "compute_spin_vector") {
+      spin_vector_enabled = std::stoi(parValue);
     } else if (parName == "create_vorticity_vector_output") {
       vorticity_output_enabled = std::stoi(parValue);
     } else if (parName[0] == '!') {
@@ -92,7 +92,7 @@ void read_configuration_file(const std::string &filename) {
     }
   }
   // If no vorticity file was specified, set the default based on surface_file
-  if (vorticity_file == "unset") {
+  if (spin_vector_enabled && vorticity_file == "unset") {
     std::cerr
         << "[Warning] No vorticity_file specified in config. "
            "Defaulting to 'beta.dat' in the same directory as surface_file ("
@@ -123,7 +123,7 @@ void print_config_parameters() {
             << "\n"
             << "bulk:                         " << bulk_viscosity_enabled
             << "\n"
-            << "spin:                         " << spin_sampling_enabled << "\n"
+            << "spin:                         " << spin_vector_enabled << "\n"
             << "vorticity_vector:             " << vorticity_output_enabled
             << "\n"
             << "ecrit:                        " << ecrit << "\n"
