@@ -5,7 +5,7 @@ More precisely it provides an interface between the macroscopic hydrodynamic evo
 During the hydrodynamic evolution a hypersurface of constant energy density (the switching energy density) is created.
 Each element on the hypersurface needs then be transformed into a list of particles with properties loosely provided by the macroscopic properties of the hypersurface elements.
 This process of particlization is performed by means of the hadron sampler provided within this project.
-It is designed to couple the [3+1D viscous hydrodynamic code vhlle](https://github.com/yukarpenko/vhlle) to the [hadronic transport model SMASH](https://smash-transport.github.io).
+It is designed to couple the [3+1D viscous hydrodynamic code vHLLE](https://github.com/yukarpenko/vhlle) to the [hadronic transport model SMASH](https://smash-transport.github.io).
 For details about the sampling algorithm, please consult [I. Karpenko et al., Phys. Rev. C 91 (2015) 6, 064901](https://inspirehep.net/literature/1343339).
 
 > [!NOTE]
@@ -13,8 +13,8 @@ For details about the sampling algorithm, please consult [I. Karpenko et al., Ph
 > - [I. Karpenko et al., Phys. Rev. C 91 (2015) 6, 064901](https://inspirehep.net/literature/1343339)
 > - [A. Schäfer et al., arXiv:2112.08724](https://arxiv.org/abs/2112.08724)
 
-
 ## Prerequisites
+
 - [cmake](https://cmake.org) version &ge; 3.16 or higher
 - [SMASH](https://github.com/smash-transport/smash) version 3.3, as well as prerequisites therein
 - [ROOT](https://root.cern.ch) version &ge; 6.06
@@ -23,11 +23,11 @@ For details about the sampling algorithm, please consult [I. Karpenko et al., Ph
 > Only tagged versions are guaranteed to be compatible with SMASH.
 
 The minimum requirement regarding the [SMASH transport approach](https://github.com/smash-transport/smash) is that it can be used as a library.
-Detailed install instructions how to compile SMASH are provided in SMASH'S [README.md](https://github.com/smash-transport/smash/blob/main/README.md) and [INSTALL.md](https://github.com/smash-transport/smash/blob/main/INSTALL.md) files.
+Detailed install instructions how to compile SMASH are provided in SMASH's [README.md](https://github.com/smash-transport/smash/blob/main/README.md) and [INSTALL.md](https://github.com/smash-transport/smash/blob/main/INSTALL.md) files.
 If the output of the sampler is expected to be fed into SMASH for particle propagation after the sampling (Afterburner), then SMASH needs to be compiled entirely &ndash; not just as a library.
 
-
 ## Install instructions
+
 Before getting started with the sampler installation, please check that all prerequisites are satisfied and needed software ready to be used.
 
 To compile the project, first set the environment variable to the SMASH directory:
@@ -49,11 +49,10 @@ Execute the following commands to build the project:
 where `[...]/pythia83XX` is the path to the Pythia directory.
 The `XX` needs to be exchanged to match the Pythia version that is used by the compiled SMASH library.
 
-
 In continuation, the executable `sampler` is created.
 
-
 ## Execute the sampler
+
 To run the sampler, execute the following command in the `build` directory:
 
     ./sampler --config <file>
@@ -80,7 +79,6 @@ Example usage:
 
     ./sampler -c /path/to/config-example --num 1 --output /path/to/output/dir -s /path/to/freezeout.dat
 
-
 ## Config file
 
 The following lists **all possible config parameters**:
@@ -92,7 +90,6 @@ Mandatory parameters:
     number_of_events              Number of events that are sampled.
     ecrit                         Critical energy density at which the hydro stopped in a particular
                                   cell and the freeze-out hypersurface was constructed.
-
 
 Optional parameters:
 
@@ -112,7 +109,6 @@ Optional parameters:
                                    to a dedicated file if set to 1.     Default is 0 (false).
     vorticity_file                Path to the vorticity input file from vHLLE. Mandatory if
                                   `compute_spin_vector` is enabled.
-
 
 > [!NOTE]
 > Lines in the config file can be commented out by using an exclamation point in the beginning of a line (e.g., `! This is a comment`).
