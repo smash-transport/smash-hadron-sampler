@@ -79,6 +79,7 @@ add_library(objlib OBJECT ${sampler_src})
 set_property(TARGET objlib PROPERTY POSITION_INDEPENDENT_CODE 1)
 
 add_executable(sampler src/main.cpp $<TARGET_OBJECTS:objlib>)
+add_executable(momentum_diag src/momentum_diag_main.cpp $<TARGET_OBJECTS:objlib>)
 include_directories(src/include)
 
 set(SAMPLER_LIBRARIES "")
@@ -106,6 +107,7 @@ if(ROOT_FOUND)
 endif()
 
 target_link_libraries(sampler ${SAMPLER_LIBRARIES})
+target_link_libraries(momentum_diag ${SAMPLER_LIBRARIES})
 
 # enable standard CTest
 include(CTest)

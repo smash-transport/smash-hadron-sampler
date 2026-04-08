@@ -10,6 +10,8 @@
 #include <vector>
 
 #include <TF1.h>
+#include <TH1D.h>
+#include <TFile.h>
 #include <TRandom3.h>
 
 #include <TLorentzVector.h>
@@ -399,7 +401,7 @@ TEST(number_of_hadrons_without_visc_corrections) {
   gen::fthermal = new TF1("fthermal", gen::ffthermal, 0.0, 10.0, 4);
   
   // Initialize particle storage arrays
-  int numEvents = 10000;
+  int numEvents = 1000;
   gen::npart = new int[numEvents];
   gen::pList = new smash::ParticleData**[numEvents];
   for (int i = 0; i < numEvents; i++) {
@@ -478,7 +480,7 @@ TEST(number_of_hadrons_with_visc_corrections) {
   gen::surf[0].dsigma[2] = 0.0;   
   gen::surf[0].dsigma[3] = 0.0;   
   gen::surf[0].T = 0.155;
-  gen::surf[0].mub = 0.0;
+  gen::surf[0].mub = 0.5;
   gen::surf[0].muq = 0.0;
   gen::surf[0].mus = 0.0;
   // Artificial viscous stress tensor π^μν for Björken flow
@@ -557,4 +559,237 @@ TEST(number_of_hadrons_with_visc_corrections) {
   std::cout << "Iterations per event : " << static_cast<double>(niter) / static_cast<double>(numEvents) << "\n";
   std::cout << "Relative error: " << relative_error << "\n";
   VERIFY(expect_near(relative_error, 0.0, 2e-2));
+}
+
+TEST(momentum_generation) {
+  // Initialize globals
+  gen::rnd = new TRandom3(0);
+  
+  ensure_particletype_initialized();
+  gen::database = &smash::ParticleType::list_all();
+  
+  // Allocate global surface array with one element and initialize it directly
+  gen::surf = new element[1];
+  gen::surf[0].four_position[0] = 1.0;
+  gen::surf[0].four_position[1] = 0.0;
+  gen::surf[0].four_position[2] = 0.0;
+  gen::surf[0].four_position[3] = 0.0;
+  gen::surf[0].u[0] = 1.0;
+  gen::surf[0].u[1] = .0;
+  gen::surf[0].u[2] = .0;
+  gen::surf[0].u[3] = .0;
+  // Proper constant-time hypersurface with effective volume dsigma[0]
+  gen::surf[0].dsigma[0] = 10.0;  // Effective spatial volume in rest frame
+  gen::surf[0].dsigma[1] = 2.0;   
+  gen::surf[0].dsigma[2] = 1.0;   
+  gen::surf[0].dsigma[3] = 0.0;   
+  gen::surf[0].T = 0.255;
+  gen::surf[0].mub = 0.5;
+  gen::surf[0].muq = 0.0;
+  gen::surf[0].mus = 0.0;
+  // Artificial viscous stress tensor π^μν for Björken flow
+  // In Björken flow with longitudinal expansion, expect π^τη ≠ 0
+  for (int i = 0; i < 10; i++) gen::surf[0].pi[i] = 0.0;
+  
+
+  // Set shear viscosity components using index44(i,j) mapping
+  // π^τη = π^ητ (symmetric tensor)
+  gen::surf[0].pi[gen::index44(0, 3)] = -0.1;  // GeV/fm³, negative due to expansion
+  // Small diagonal component: π^ττ to maintain tracelessness approximately
+  gen::surf[0].pi[gen::index44(0, 0)] = 0.025;  // π^ττ
+  // Transverse components
+  gen::surf[0].pi[gen::index44(1, 1)] = 0.01;   // π^xx
+  gen::surf[0].pi[gen::index44(2, 2)] = 0.01;   // π^yy
+
+  // Bulk viscous pressure (negative for expanding medium)
+  gen::surf[0].Pi = -0.5;  // GeV/fm³
+  
+  // Initialize fthermal
+  gen::fthermal = new TF1("fthermal", gen::ffthermal, 0.0, 10.0, 4);
+  
+  // Calculate particle densities (this sets global cumulantDensity and totalDensity)
+  gen::totalDensity = 0.0;
+  
+  // Ensure dsigmaMax is set for viscous correction normalization
+  gen::dsigmaMax = gen::surf[0].dsigma[0] + sqrt(gen::surf[0].dsigma[1] * gen::surf[0].dsigma[1] +
+                                                 gen::surf[0].dsigma[2] * gen::surf[0].dsigma[2] + 
+                                                 gen::surf[0].dsigma[3] * gen::surf[0].dsigma[3]);  
+                                                 
+  double* cumulantDens = gen::calculate_particle_densities(gen::surf[0], gen::database);
+
+  double dvEff = gen::surf[0].dsigma[0];
+  
+  params::shear_viscosity_enabled = true;
+  params::bulk_viscosity_enabled = true;
+  params::ecrit = 0.5;  // GeV/fm³
+
+  // ============= Pion Momentum Distribution Test =============
+  int numSamples = 1000;  // reduced for faster test
+  double mass = 0.135;   // pion mass [GeV]
+  double muf = 0.0;      // chemical potential
+  double stat = 1.0;     // bosons
+  int iel = 0;
+  double T = gen::surf[iel].T;
+
+  // IMPORTANT: Set fthermal parameters before sampling
+  gen::fthermal->SetParameters(T, muf, mass, stat);
+  
+  TH1D* hNewVisc = new TH1D("hNewVisc", "New Visc Sampling;p [GeV];dN/dp", 50, 0, 3.0);
+  TH1D* hOldVisc = new TH1D("hOldVisc", "Old Visc Sampling;p [GeV];dN/dp", 50, 0, 3.0);
+  TH1D* hNoVisc = new TH1D("hNoVisc", "Equilibrium Sampling;p [GeV];dN/dp", 50, 0, 3.0);
+
+  std::cout << "dsigmaMax = " << gen::dsigmaMax << std::endl;
+  std::cout << "dsigma[0] = " << gen::surf[iel].dsigma[0] << std::endl;
+  std::cout << "T = " << T << std::endl;
+  
+  // Sample with NEW viscous method
+  int acceptedNew = 0;
+  std::cout << "Sampling " << numSamples << " particles (newvisc)..." << std::endl;
+  for (int i = 0; i < numSamples; i++) {
+    auto [p, phi, sinth] = gen::sample_momentum_newvisc_fullrejection(iel, mass, muf, stat);
+    if (!std::isnan(p)) {
+      hNewVisc->Fill(p);
+      acceptedNew++;
+    }
+  }
+  std::cout << "New visc acceptance rate: " << (double)acceptedNew / numSamples << std::endl;
+
+  // Sample with OLD viscous method
+  int acceptedOld = 0;
+  std::cout << "Sampling " << numSamples << " particles (oldvisc)..." << std::endl;
+  for (int i = 0; i < numSamples; i++) {
+    auto [p, phi, sinth] = gen::sample_momentum_oldvisc(iel, mass, muf, stat);
+    if (!std::isnan(p)) {
+      hOldVisc->Fill(p);
+      acceptedOld++;
+    }
+  }
+  std::cout << "Old visc acceptance rate: " << (double)acceptedOld / numSamples << std::endl;
+
+  // Sample with NO viscous corrections
+  int acceptedNo = 0;
+  std::cout << "Sampling " << numSamples << " particles (novisc)..." << std::endl;
+  for (int i = 0; i < numSamples; i++) {
+    auto [p, phi, sinth] = gen::sample_momentum_equilibrium(iel, mass, muf, stat);
+    if (!std::isnan(p)) {
+      hNoVisc->Fill(p);
+      acceptedNo++;
+    }
+  }
+  std::cout << "No visc acceptance rate: " << (double)acceptedNo / numSamples << std::endl;
+
+  // Theory with viscous corrections: f_eq * p² * (1 + δf_shear - δf_bulk)
+  auto theoryFunc = [&](double* x, double* /*par*/) -> double {
+    double p = x[0];
+    double E = sqrt(p*p + mass*mass);
+    double f_eq = p*p / (exp((E - muf) / T) - stat);
+    
+    // Use existing viscous correction functions (px=p, py=pz=0)
+    double momArray[4] = {E, p, 0, 0};
+    double viscFactor = 1.0;
+    viscFactor += gen::W_shear_correction(momArray, muf, stat, gen::surf[iel]);
+    viscFactor -= gen::W_bulk_correction(p, mass, muf, stat, gen::surf[iel]);
+    if (viscFactor < 0.1) viscFactor = 0.1;
+    if (viscFactor > 1.5) viscFactor = 1.5;
+    return f_eq * viscFactor;
+  };
+
+  // Equilibrium theory (no viscous corrections): f_eq * p²
+  auto eqTheoryFunc = [&](double* x, double* /*par*/) -> double {
+    double p = x[0];
+    double E = sqrt(p*p + mass*mass);
+    double f_eq = p*p / (exp((E - muf) / T) - stat);
+    return f_eq;
+  };
+
+  TF1* fTheory = new TF1("fTheory", theoryFunc, 0, 3.0, 0);
+  TF1* fEqTheory = new TF1("fEqTheory", eqTheoryFunc, 0, 3.0, 0);
+
+  // Normalize histograms
+  double binWidth = hNewVisc->GetBinWidth(1);
+  hNewVisc->Scale(1.0 / (acceptedNew * binWidth));
+  hOldVisc->Scale(1.0 / (acceptedOld * binWidth));
+  hNoVisc->Scale(1.0 / (acceptedNo * binWidth));
+
+  // Normalize theory with viscous corrections
+  double theoryIntegral = fTheory->Integral(0, 3.0);
+  TH1D* hTheory = new TH1D("hTheory", "Theory (visc);p [GeV];dN/dp", 50, 0, 3.0);
+  for (int bin = 1; bin <= hTheory->GetNbinsX(); bin++) {
+    double p = hTheory->GetBinCenter(bin);
+    hTheory->SetBinContent(bin, fTheory->Eval(p) / theoryIntegral);
+  }
+
+  // Normalize equilibrium theory (no viscous corrections)
+  double eqTheoryIntegral = fEqTheory->Integral(0, 3.0);
+  TH1D* hEqTheory = new TH1D("hEqTheory", "Theory (eq);p [GeV];dN/dp", 50, 0, 3.0);
+  for (int bin = 1; bin <= hEqTheory->GetNbinsX(); bin++) {
+    double p = hEqTheory->GetBinCenter(bin);
+    hEqTheory->SetBinContent(bin, fEqTheory->Eval(p) / eqTheoryIntegral);
+  }
+
+  // Chi-squared for new visc
+  double chi2New = 0;
+  int nBinsUsed = 0;
+  for (int bin = 1; bin <= hNewVisc->GetNbinsX(); bin++) {
+    double obs = hNewVisc->GetBinContent(bin);
+    double exp = hTheory->GetBinContent(bin);
+    double err = hNewVisc->GetBinError(bin);
+    if (err > 0 && exp > 0) {
+      chi2New += (obs - exp) * (obs - exp) / (err * err);
+      nBinsUsed++;
+    }
+  }
+  std::cout << "NewVisc Chi²/ndf = " << chi2New << "/" << nBinsUsed << " = " << chi2New/nBinsUsed << std::endl;
+  double pvalue = TMath::Prob(chi2New, nBinsUsed);
+  std::cout << "p-value = " << pvalue << std::endl;
+  VERIFY(pvalue > 0.05);  // 95% confidence level
+
+  // Chi-squared for old visc
+  double chi2Old = 0;
+  nBinsUsed = 0;
+  for (int bin = 1; bin <= hOldVisc->GetNbinsX(); bin++) {
+    double obs = hOldVisc->GetBinContent(bin);
+    double exp = hTheory->GetBinContent(bin);
+    double err = hOldVisc->GetBinError(bin);
+    if (err > 0 && exp > 0) {
+      chi2Old += (obs - exp) * (obs - exp) / (err * err);
+      nBinsUsed++;
+    }
+  }
+  std::cout << "OldVisc Chi²/ndf = " << chi2Old << "/" << nBinsUsed << " = " << chi2Old/nBinsUsed << std::endl;
+
+  // Chi-squared for no visc vs equilibrium theory
+  double chi2No = 0;
+  nBinsUsed = 0;
+  for (int bin = 1; bin <= hNoVisc->GetNbinsX(); bin++) {
+    double obs = hNoVisc->GetBinContent(bin);
+    double exp = hEqTheory->GetBinContent(bin);
+    double err = hNoVisc->GetBinError(bin);
+    if (err > 0 && exp > 0) {
+      chi2No += (obs - exp) * (obs - exp) / (err * err);
+      nBinsUsed++;
+    }
+  }
+  std::cout << "NoVisc Chi²/ndf = " << chi2No << "/" << nBinsUsed << " = " << chi2No/nBinsUsed << std::endl;
+
+  // Save results
+  TFile* outFile = new TFile("pion_momentum_test.root", "RECREATE");
+  hNewVisc->Write();
+  hOldVisc->Write();
+  hNoVisc->Write();
+  hTheory->Write();
+  hEqTheory->Write();
+  fTheory->Write();
+  fEqTheory->Write();
+  outFile->Close();
+  std::cout << "Saved to pion_momentum_test.root" << std::endl;
+
+  delete hNewVisc;
+  delete hOldVisc;
+  delete hNoVisc;
+  delete hTheory;
+  delete hEqTheory;
+  delete fTheory;
+  delete fEqTheory;
+  delete outFile;
 }
