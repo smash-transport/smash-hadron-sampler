@@ -261,7 +261,6 @@ double W_bulk_correction(double p, double mass, double muf, double stat, const e
 
 double W_shear_correction(double momArray[4], double muf, double stat, const element &surf_elem) {
   double pipp = 0;
-  //double p = sqrt(momArray[1] * momArray[1] + momArray[2] * momArray[2] + momArray[3] * momArray[3]);
   double feq =
       C_Feq / (exp((momArray[0] - muf) / surf_elem.T) - stat);
   for (int i = 0; i < 4; i++)
@@ -297,7 +296,7 @@ double ffthermal(double *x, double *par) {
   return x[0] * x[0] / (exp((sqrt(x[0] * x[0] + mass * mass) - mu) / T) - stat);
 }
 
-double* calculate_particle_densities(element &surf_element, const std::vector<smash::ParticleType> *db) {
+double* calculate_particle_densities(int iel, const std::vector<smash::ParticleType> *db) {
     cumulantDensity = new double[db->size()];
     int ip = 0;
     for (auto &particle : *db) {
@@ -312,13 +311,13 @@ double* calculate_particle_densities(element &surf_element, const std::vector<sm
             const double mass = particle.mass();
             const double J = particle.spin() * 0.5;
             const double stat = static_cast<int>(round(2. * J)) & 1 ? -1. : 1.;
-            const double muf = chemical_potential(particle, surf_element);
+            const double muf = chemical_potential(particle, surf[iel]);
             for (int i = 1; i < 11; i++)
                 density += (2. * J + 1.) * pow(gevtofm, 3) /
-                            (2. * pow(TMath::Pi(), 2)) * mass * mass * surf_element.T *
+                            (2. * pow(TMath::Pi(), 2)) * mass * mass * surf[iel].T *
                             pow(stat, i + 1) *
-                            TMath::BesselK(2, i * mass / surf_element.T) *
-                            exp(i * muf / surf_element.T) / i;
+                            TMath::BesselK(2, i * mass / surf[iel].T) *
+                            exp(i * muf / surf[iel].T) / i;
         }
         if (ip > 0)
             cumulantDensity[ip] = cumulantDensity[ip - 1] + density;
@@ -330,12 +329,17 @@ double* calculate_particle_densities(element &surf_element, const std::vector<sm
     return cumulantDensity;
 }
 
-std::tuple<double, double, double> sample_momentum_equilibrium(int iel, double mass, double muf, double stat) {
-  double p=0.0, phi=0.0, sinth=0.0, rval=0.0, W=0.0; 
+// Sample momentum with equilibrium distribution (avoids oversampling)
+std::tuple<double, double, double> sample_momentum_equilibrium(int iel, double mass, double muf, double stat, bool random_angles = true) {
+  double p=0.0, phi=0.0, sinth=0.0, rval=0.0, W=0.0;
+  
+  fthermal->SetParameters(surf[iel].T, muf, mass, stat);
   do {            // fast momentum generation loop
     p = fthermal->GetRandom();
-    phi = 0.0;//2.0 * TMath::Pi() * rnd->Rndm();
-    sinth = 0.0;//-1.0 + 2.0 * rnd->Rndm();
+    if (random_angles) {
+    phi = 2.0 * TMath::Pi() * rnd->Rndm();
+    sinth = -1.0 + 2.0 * rnd->Rndm();
+    }
     mom.SetPxPyPzE(p * sqrt(1.0 - sinth * sinth) * cos(phi),
                     p * sqrt(1.0 - sinth * sinth) * sin(phi), p * sinth,
                     sqrt(p * p + mass * mass));
@@ -349,348 +353,17 @@ std::tuple<double, double, double> sample_momentum_equilibrium(int iel, double m
   return std::tuple<double, double, double>(p, phi, sinth);
 }
 
-std::tuple<double, double, double> sample_momentum_oldvisc(int iel, double mass, double muf, double stat) {
-  double p=0.0, phi=0.0, sinth=0.0, rval=0.0, W=0.0, WviscFactor=1.0; 
-  do {            // fast momentum generation loop
-    p = fthermal->GetRandom();
-    phi = 0.0;//2.0 * TMath::Pi() * rnd->Rndm();
-    sinth = 0.0;//-1.0 + 2.0 * rnd->Rndm();
-    mom.SetPxPyPzE(p * sqrt(1.0 - sinth * sinth) * cos(phi),
-                    p * sqrt(1.0 - sinth * sinth) * sin(phi), p * sinth,
-                    sqrt(p * p + mass * mass));
-    W = (surf[iel].dsigma[0] * mom.E() + surf[iel].dsigma[1] * mom.Px() +
-          surf[iel].dsigma[2] * mom.Py() +
-          surf[iel].dsigma[3] * mom.Pz()) /
-        mom.E();
-    rval = rnd->Rndm() * dsigmaMax;
-    //niter++;
-    double momArray[4] = {mom[3], mom[0], mom[1], mom[2]};
-    WviscFactor += W_shear_correction(momArray, muf, stat, surf[iel]);
-    WviscFactor -= W_bulk_correction(p, mass, muf, stat, surf[iel]);
+std::tuple<double, double, double> sample_momentum(int iel, double mass, double muf, double stat, bool random_angles = true) {
+  double p=0.0, phi=0.0, sinth=0.0, W=0.0, WviscFactor=1.0;
 
-    if (WviscFactor < 0.1) WviscFactor = 0.1;
-    if (WviscFactor > 1.5) WviscFactor = 1.5;  // test, jul17. before: 1.5 // March26: Upper limit needed to avoid large corrections )
-
-    W *= WviscFactor;
-  } while (rval > W);  // end fast momentum generation
-  return std::tuple<double, double, double>(p, phi, sinth);
-}
-
-std::tuple<double, double, double> sample_momentum_newvisc(int iel, double mass, double muf, double stat) {
-  double p=0.0, phi=0.0, sinth=0.0, rval=0.0, W=0.0, WviscFactor=1.0;
-  int iter = 0;
-  const int maxIter = 100000;
-  do {            // fast momentum generation loop
-    p = fthermal->GetRandom();
-    phi = 0.0;//2.0 * TMath::Pi() * rnd->Rndm();
-    sinth = 0.0;//-1.0 + 2.0 * rnd->Rndm();
-    mom.SetPxPyPzE(p * sqrt(1.0 - sinth * sinth) * cos(phi),
-                    p * sqrt(1.0 - sinth * sinth) * sin(phi), p * sinth,
-                    sqrt(p * p + mass * mass));
-    W = (surf[iel].dsigma[0] * mom.E() + surf[iel].dsigma[1] * mom.Px() +
-          surf[iel].dsigma[2] * mom.Py() +
-          surf[iel].dsigma[3] * mom.Pz()) /
-        mom.E();
-    rval = rnd->Rndm() * dsigmaMax;
-    iter++;
-  } while (rval > W);  // end fast momentum generation
-
-  double momArray[4] = {mom[3], mom[0], mom[1], mom[2]};
-  WviscFactor += W_shear_correction(momArray, muf, stat, surf[iel]);
-  WviscFactor -= W_bulk_correction(p, mass, muf, stat, surf[iel]);
-
-  if (WviscFactor < 0.1) WviscFactor = 0.1;
-  if (WviscFactor > 1.5) WviscFactor = 1.5;  // test, jul17. before: 1.5 // March26: Upper limit needed to avoid large corrections )
-
-  double keep_sigma = W / surf[iel].dsigma[0];  // probability to keep the particle based on the sigma factor
-  double keep_viscous = 0.5 * WviscFactor;
-  double acceptance_probability = keep_sigma * keep_viscous;
-  double random_number = rnd->Rndm();
-  if (random_number > acceptance_probability) {
-    return std::tuple<double, double, double>(
-    std::numeric_limits<double>::quiet_NaN(),
-    std::numeric_limits<double>::quiet_NaN(),
-    std::numeric_limits<double>::quiet_NaN()
-  );  // reject the particle and return nan
-  }
-
-  return std::tuple<double, double, double>(p, phi, sinth);
-}
-
-std::tuple<double, double, double> sample_momentum_newvisc_fullrejection(int iel, double mass, double muf, double stat) {
-  double p=0.0, phi=0.0, sinth=0.0, rval=0.0, W=0.0, WviscFactor=1.0;
-  p = fthermal->GetRandom();
-  phi = 0.0;//2.0 * TMath::Pi() * rnd->Rndm();
-  sinth = 0.0;//-1.0 + 2.0 * rnd->Rndm();
-  mom.SetPxPyPzE(p * sqrt(1.0 - sinth * sinth) * cos(phi),
-                  p * sqrt(1.0 - sinth * sinth) * sin(phi), p * sinth,
-                  sqrt(p * p + mass * mass));
-  W = (surf[iel].dsigma[0] * mom.E() + surf[iel].dsigma[1] * mom.Px() +
-        surf[iel].dsigma[2] * mom.Py() +
-        surf[iel].dsigma[3] * mom.Pz()) /
-      mom.E();
-
-  double momArray[4] = {mom[3], mom[0], mom[1], mom[2]};
-  WviscFactor += W_shear_correction(momArray, muf, stat, surf[iel]);
-  WviscFactor -= W_bulk_correction(p, mass, muf, stat, surf[iel]);
-
-  if (WviscFactor < 0.1) WviscFactor = 0.1;
-  if (WviscFactor > 1.5) WviscFactor = 1.5;  // test, jul17. before: 1.5 // March26: Upper limit needed to avoid large corrections )
-
-  double keep_sigma = W / surf[iel].dsigma[0];  // probability to keep the particle based on the sigma factor
-  double keep_viscous = 0.5 * WviscFactor;
-  double acceptance_probability = keep_sigma * keep_viscous;
-  double random_number = rnd->Rndm();
-  if (random_number > acceptance_probability) {
-    return std::tuple<double, double, double>(
-    std::numeric_limits<double>::quiet_NaN(),
-    std::numeric_limits<double>::quiet_NaN(),
-    std::numeric_limits<double>::quiet_NaN()
-  );  // reject the particle and return nan
-  }
-
-  return std::tuple<double, double, double>(p, phi, sinth);
-}
-
-MomentumGenerationDiagnostics run_momentum_generation_diagnostics(
-    int num_samples, bool save_root_output, const std::string &output_filename) {
-  MomentumGenerationDiagnostics diagnostics;
-
-  const bool old_shear = params::shear_viscosity_enabled;
-  const bool old_bulk = params::bulk_viscosity_enabled;
-  const double old_ecrit = params::ecrit;
-  TRandom3 *old_rnd = rnd;
-  TF1 *old_fthermal = fthermal;
-  element *old_surf = surf;
-  double old_dsigma_max = dsigmaMax;
-
-  TRandom3 local_random(0);
-  rnd = &local_random;
-
-  element local_surface[1];
-  surf = local_surface;
-
-  surf[0].four_position[0] = 1.0;
-  surf[0].four_position[1] = 0.0;
-  surf[0].four_position[2] = 0.0;
-  surf[0].four_position[3] = 0.0;
-  surf[0].u[0] = 1.0;
-  surf[0].u[1] = 0.0;
-  surf[0].u[2] = 0.0;
-  surf[0].u[3] = 0.0;
-  surf[0].dsigma[0] = 10.0;
-  surf[0].dsigma[1] = 2.0;
-  surf[0].dsigma[2] = 1.0;
-  surf[0].dsigma[3] = 0.0;
-  surf[0].T = 0.255;
-  surf[0].mub = 0.5;
-  surf[0].muq = 0.0;
-  surf[0].mus = 0.0;
-  for (int i = 0; i < 10; i++) {
-    surf[0].pi[i] = 0.0;
-  }
-  //surf[0].pi[index44(0, 3)] = -0.1;
-  //surf[0].pi[index44(0, 0)] = 0.025;
-  //surf[0].pi[index44(1, 1)] = 0.01;
-  //surf[0].pi[index44(2, 2)] = 0.01;
-  //surf[0].Pi = -0.5;
-  surf[0].pi[0] = -0.00131081571240243;
-  surf[0].pi[1] =  0.000352231021605904;
-  surf[0].pi[2] =  0.00119481115524389;
-  surf[0].pi[3] =  0.00116125594452727;
-  surf[0].pi[4] =  0.000347437873492263;
-  surf[0].pi[5] =  0.0120429012728579;
-  surf[0].pi[6] = -0.00463661683261587;
-  surf[0].pi[7] =  0.000125513463554524;
-  surf[0].pi[8] =  0.000377244836767384;
-  surf[0].pi[9] = -0.0145934742997669;
-  surf[0].Pi    =  0.1;
-
-  TF1 local_fthermal("fthermal_momentum_diag", ffthermal, 0.0, 10.0, 4);
-  fthermal = &local_fthermal;
-
-  dsigmaMax = surf[0].dsigma[0] +
-              sqrt(surf[0].dsigma[1] * surf[0].dsigma[1] +
-                   surf[0].dsigma[2] * surf[0].dsigma[2] +
-                   surf[0].dsigma[3] * surf[0].dsigma[3]);
-
-  params::shear_viscosity_enabled = true;
-  params::bulk_viscosity_enabled = true;
-  params::ecrit = 0.5;
-
-  const double mass = 0.135;
-  const double muf = 0.0;
-  const double stat = 1.0;
-  const int iel = 0;
-  const double T = surf[iel].T;
-  fthermal->SetParameters(T, muf, mass, stat);
-
-  TH1D h_new_visc("hNewViscDiag", "New Visc Sampling;p [GeV];dN/dp", 50, 0,
-                  3.0);
-  TH1D h_old_visc("hOldViscDiag", "Old Visc Sampling;p [GeV];dN/dp", 50, 0,
-                  3.0);
-  TH1D h_no_visc("hNoViscDiag", "Equilibrium Sampling;p [GeV];dN/dp", 50, 0,
-                 3.0);
-
-  int accepted_new = 0;
-  for (int i = 0; i < num_samples; i++) {
-    auto [p, phi, sinth] =
-        sample_momentum_newvisc_fullrejection(iel, mass, muf, stat);
-    (void)phi;
-    (void)sinth;
-    if (!std::isnan(p)) {
-      h_new_visc.Fill(p);
-      accepted_new++;
-    }
-  }
-
-  int accepted_old = 0;
-  for (int i = 0; i < num_samples; i++) {
-    auto [p, phi, sinth] = sample_momentum_oldvisc(iel, mass, muf, stat);
-    (void)phi;
-    (void)sinth;
-    if (!std::isnan(p)) {
-      h_old_visc.Fill(p);
-      accepted_old++;
-    }
-  }
-
-  params::shear_viscosity_enabled = false;
-  params::bulk_viscosity_enabled = false;
-  int accepted_eq = 0;
-  for (int i = 0; i < num_samples; i++) {
-    auto [p, phi, sinth] = sample_momentum_equilibrium(iel, mass, muf, stat);
-    (void)phi;
-    (void)sinth;
-    if (!std::isnan(p)) {
-      h_no_visc.Fill(p);
-      accepted_eq++;
-    }
-  }
-  params::shear_viscosity_enabled = true;
-  params::bulk_viscosity_enabled = true;
-
-  const double bin_width = h_new_visc.GetBinWidth(1);
-  if (accepted_new > 0) {
-    h_new_visc.Scale(1.0 / (accepted_new * bin_width));
-  }
-  if (accepted_old > 0) {
-    h_old_visc.Scale(1.0 / (accepted_old * bin_width));
-  }
-  if (accepted_eq > 0) {
-    h_no_visc.Scale(1.0 / (accepted_eq * bin_width));
-  }
-
-  auto theory_func = [&](double *x, double * /*par*/) -> double {
-    const double p = x[0];
-    const double E = sqrt(p * p + mass * mass);
-    const double f_eq = p * p / (exp((E - muf) / T) - stat);
-
-    double mom_array[4] = {E, p, 0.0, 0.0};
-    double visc_factor = 1.0;
-    visc_factor += W_shear_correction(mom_array, muf, stat, surf[iel]);
-    visc_factor -= W_bulk_correction(p, mass, muf, stat, surf[iel]);
-    if (visc_factor < 0.1) {
-      visc_factor = 0.1;
-    }
-    if (visc_factor > 1.5) {
-      visc_factor = 1.5;
-    }
-    return f_eq * visc_factor;
-  };
-
-  auto eq_theory_func = [&](double *x, double * /*par*/) -> double {
-    const double p = x[0];
-    const double E = sqrt(p * p + mass * mass);
-    return p * p / (exp((E - muf) / T) - stat);
-  };
-
-  TF1 f_theory("fTheoryDiag", theory_func, 0, 3.0, 0);
-  TF1 f_eq_theory("fEqTheoryDiag", eq_theory_func, 0, 3.0, 0);
-
-  const double theory_integral = f_theory.Integral(0, 3.0);
-  const double eq_theory_integral = f_eq_theory.Integral(0, 3.0);
-
-  TH1D h_theory("hTheoryDiag", "Theory (visc);p [GeV];dN/dp", 50, 0, 3.0);
-  TH1D h_eq_theory("hEqTheoryDiag", "Theory (eq);p [GeV];dN/dp", 50, 0, 3.0);
-
-  for (int bin = 1; bin <= h_theory.GetNbinsX(); bin++) {
-    const double p = h_theory.GetBinCenter(bin);
-    h_theory.SetBinContent(bin, f_theory.Eval(p) / theory_integral);
-    h_eq_theory.SetBinContent(bin, f_eq_theory.Eval(p) / eq_theory_integral);
-  }
-
-  auto chi2_against = [](const TH1D &observed, const TH1D &expected,
-                         double &chi2, int &ndf) {
-    chi2 = 0.0;
-    ndf = 0;
-    for (int bin = 1; bin <= observed.GetNbinsX(); bin++) {
-      const double obs = observed.GetBinContent(bin);
-      const double exp = expected.GetBinContent(bin);
-      const double err = observed.GetBinError(bin);
-      if (err > 0.0 && exp > 0.0) {
-        chi2 += (obs - exp) * (obs - exp) / (err * err);
-        ndf++;
-      }
-    }
-  };
-
-  chi2_against(h_new_visc, h_theory, diagnostics.chi2_newvisc,
-               diagnostics.ndf_newvisc);
-  chi2_against(h_old_visc, h_theory, diagnostics.chi2_oldvisc,
-               diagnostics.ndf_oldvisc);
-  chi2_against(h_no_visc, h_eq_theory, diagnostics.chi2_equilibrium,
-               diagnostics.ndf_equilibrium);
-
-  if (diagnostics.ndf_newvisc > 0) {
-    diagnostics.pvalue_newvisc =
-        TMath::Prob(diagnostics.chi2_newvisc, diagnostics.ndf_newvisc);
-  }
-
-  diagnostics.expected_density = theory_integral;
-  diagnostics.generated_newvisc_density =
-      static_cast<double>(accepted_new) / static_cast<double>(num_samples);
-  diagnostics.generated_oldvisc_density =
-      static_cast<double>(accepted_old) / static_cast<double>(num_samples);
-  diagnostics.generated_equilibrium_density =
-      static_cast<double>(accepted_eq) / static_cast<double>(num_samples);
-  diagnostics.acceptance_newvisc = diagnostics.generated_newvisc_density;
-  diagnostics.acceptance_oldvisc = diagnostics.generated_oldvisc_density;
-  diagnostics.acceptance_equilibrium = diagnostics.generated_equilibrium_density;
-  diagnostics.passed_newvisc_test = diagnostics.pvalue_newvisc > 0.05;
-
-  if (save_root_output) {
-    TFile out_file(output_filename.c_str(), "RECREATE");
-    h_new_visc.Write();
-    h_old_visc.Write();
-    h_no_visc.Write();
-    h_theory.Write();
-    h_eq_theory.Write();
-    f_theory.Write();
-    f_eq_theory.Write();
-    out_file.Close();
-  }
-
-  params::shear_viscosity_enabled = old_shear;
-  params::bulk_viscosity_enabled = old_bulk;
-  params::ecrit = old_ecrit;
-  rnd = old_rnd;
-  fthermal = old_fthermal;
-  surf = old_surf;
-  dsigmaMax = old_dsigma_max;
-
-  return diagnostics;
-}
-
-std::tuple<double, double, double> generate_momentum(int iel, double mass, double muf, double stat, bool random_angles = true) {
-  double p=0.0, phi=0.0, sinth=0.0, rval=0.0, W=0.0, WviscFactor=1.0;
+  fthermal->SetParameters(surf[iel].T, muf, mass, stat);
   p = fthermal->GetRandom();
   if (random_angles) {
     phi = 2.0 * TMath::Pi() * rnd->Rndm();
     sinth = -1.0 + 2.0 * rnd->Rndm();
   } else {
     // For testing, one might want to sample only in one direction to compare to the distribution function
-    // In that case, set phi and sin(theta) to zero to sample only in the x-direction
+    // In that case, sample only in x-direction
     phi = 0.0;
     sinth = 0.0;
   }
@@ -709,8 +382,8 @@ std::tuple<double, double, double> generate_momentum(int iel, double mass, doubl
   if (WviscFactor < 0.1) WviscFactor = 0.1;
   if (WviscFactor > 1.5) WviscFactor = 1.5;  // test, jul17. before: 1.5 // March26: Upper limit needed to avoid large corrections )
 
-  double keep_sigma = W / surf[iel].dsigma[0];  // probability to keep the particle based on the sigma factor
-  double keep_viscous = 0.5 * WviscFactor;
+  double keep_sigma = W / surf[iel].dsigma[0]; // acceptance probability from the sigma factor
+  double keep_viscous = 0.5 * WviscFactor; //
   double acceptance_probability = keep_sigma * keep_viscous;
   double random_number = rnd->Rndm();
   if (random_number > acceptance_probability) {
@@ -725,12 +398,14 @@ std::tuple<double, double, double> generate_momentum(int iel, double mass, doubl
 }
 
 bool generate_particle(int iel, int ievent, double dvEff) {
-  double acceptance_probability = 1.0;
   int isort = 0;
   // SMASH random number [0..1]
   double xsort = rnd->Rndm() * totalDensity;  // throw dice, particle sort
   while (cumulantDensity[isort] < xsort) isort++;
   auto &part = (*database)[isort];
+  // By definition, the spin in SMASH is defined as twice the spin of the
+  // multiplet, so that it can be stored as an integer. Hence, it needs to
+  // be multiplied by 1/2
   const double J = part.spin() * 0.5;
   const double mass = part.mass();
   const double stat = static_cast<int>(round(2. * J)) & 1 ? -1. : 1.;
@@ -742,17 +417,15 @@ bool generate_particle(int iel, int ievent, double dvEff) {
   }
   fthermal->SetParameters(surf[iel].T, muf, mass, stat);
   // const double dfMax = part->GetFMax() ;
-  int niter = 0;  // number of iterations, for debug purposes
-  double WviscFactor = 1.0, W = 0.0, rval = 0.0;
   double p=0.0, phi=0.0, sinth=0.0;
   if (params::shear_viscosity_enabled || params::bulk_viscosity_enabled) {
-    std::tie(p, phi, sinth) = generate_momentum(iel, mass, muf, stat, true);
+    std::tie(p, phi, sinth) = sample_momentum(iel, mass, muf, stat, true);
     if (std::isnan(p) || std::isnan(phi) || std::isnan(sinth)) {
-      return false;  // reject the particle and return
+      return false;  // reject the particle
     }
   }
   else {
-    std::tie(p, phi, sinth) = sample_momentum_equilibrium(iel, mass, muf, stat);
+    std::tie(p, phi, sinth) = sample_momentum_equilibrium(iel, mass, muf, stat, true);
   }
   // Position and boost
   const double x = surf[iel].four_position[1];
@@ -790,7 +463,7 @@ bool generate_particle(int iel, int ievent, double dvEff) {
   smash::ParticleData *particle_ptr =
       acceptParticle(ievent, &part, position, momentum);
 
-  if (params::spin_sampling_enabled) {
+  if (params::spin_vector_enabled) {
     spin::calculate_and_set_spin_vector(ievent, surf[iel], particle_ptr);
   }
   return true;  // accept the particle and return
@@ -808,7 +481,7 @@ void generate() {
       continue;
     }
     // Generate particle densities:
-    calculate_particle_densities(surf[iel], database);
+    calculate_particle_densities(iel, database);
 
     if (totalDensity < 0. || totalDensity > 100.) {
       ntherm_fail++;
@@ -830,9 +503,9 @@ void generate() {
       } else {
         // SMASH random number according to Poisson DF
         nToGen = rnd->Poisson(dvEff * totalDensity);
-        // Corrections to the number of particles to generate due to viscous effects
-        // requires to employ a rejection scheme where more particles are generated
-        // than in the ideal case, and then rejected with a certain probability. 
+        // Corrections to the number of particles due to viscous effects
+        // requires a rejection scheme where more particles are generated
+        // than in the equilibrium case, and then rejected with a certain probability 
         // According to "10.1016/j.cpc.2020.107604"
         if (params::bulk_viscosity_enabled || params::shear_viscosity_enabled) {
           nToGen = rnd->Poisson(2.0 * dvEff * totalDensity);

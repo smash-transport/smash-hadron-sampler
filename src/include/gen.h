@@ -33,25 +33,6 @@ struct ThetaStruct {
   std::array<double, 4> vorticity_vector;
 };
 
-// Summary produced by momentum generation diagnostics.
-struct MomentumGenerationDiagnostics {
-  double expected_density = 0.0;
-  double generated_newvisc_density = 0.0;
-  double generated_oldvisc_density = 0.0;
-  double generated_equilibrium_density = 0.0;
-  double acceptance_newvisc = 0.0;
-  double acceptance_oldvisc = 0.0;
-  double acceptance_equilibrium = 0.0;
-  double chi2_newvisc = 0.0;
-  double chi2_oldvisc = 0.0;
-  double chi2_equilibrium = 0.0;
-  int ndf_newvisc = 0;
-  int ndf_oldvisc = 0;
-  int ndf_equilibrium = 0;
-  double pvalue_newvisc = 0.0;
-  bool passed_newvisc_test = false;
-};
-
 // If vorticity_vector == 1 in the config, thetaStorage will be used to store
 // the vorticity vector for each sampled particle
 extern std::unique_ptr<std::vector<std::vector<ThetaStruct>>> thetaStorage;
@@ -80,7 +61,7 @@ extern double *cumulantDensity;
 extern double totalDensity;
 extern const smash::ParticleTypeList *database;
 extern TF1 *fthermal;
-const int NPartBuf = 2000000;  // dimension of particle buffer for each event
+const int NPartBuf = 30000;  // dimension of particle buffer for each event
 extern double dvMax, dsigmaMax;
 // Core implementation on ParticleType to calculate the full chemical potential
 // for a given particle and freezeout element
@@ -117,19 +98,11 @@ int index44(const int &i, const int &j);
 // Allocate memory for the vorticity vector for each sampled particle
 void enable_vorticity_storage();
 
-double* calculate_particle_densities(element &surf_element, const std::vector<smash::ParticleType> *db);
+double* calculate_particle_densities(int iel, const std::vector<smash::ParticleType> *db);
 bool generate_particle(int iel, int ievent, double dvEff);
 
-std::tuple<double, double, double> sample_momentum_newvisc(int iel, double mass, double muf, double stat);
-std::tuple<double, double, double> sample_momentum_equilibrium(int iel, double mass, double muf, double stat);
-std::tuple<double, double, double> sample_momentum_oldvisc(int iel, double mass, double muf, double stat);
-std::tuple<double, double, double> sample_momentum_newvisc_fullrejection(int iel, double mass, double muf, double stat);
+std::tuple<double, double, double> sample_momentum_equilibrium(int iel, double mass, double muf, double stat, bool random_angles);
 std::tuple<double, double, double> sample_momentum(int iel, double mass, double muf, double stat, bool random_angles);
-
-MomentumGenerationDiagnostics run_momentum_generation_diagnostics(
-  int num_samples = 10000, bool save_root_output = true,
-  const std::string &output_filename = "pion_momentum_test.root");
-
 
 double W_shear_correction(double momArray[4], double muf, double stat, const element &surf_elem);
 double W_bulk_correction(double p, double mass, double muf, double stat, const element &surf_elem);

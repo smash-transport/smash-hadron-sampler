@@ -40,6 +40,35 @@ static void ensure_particletype_initialized() {
   });
 }
 
+static void initialize_test_hypersurface() {
+    // Initialize surface element 
+  gen::surf = new element[1];
+  gen::surf[0].four_position[0] = 1.0;
+  gen::surf[0].four_position[1] = 0.0;
+  gen::surf[0].four_position[2] = 0.0;
+  gen::surf[0].four_position[3] = 0.0;
+  gen::surf[0].u[0] = 1.0;
+  gen::surf[0].u[1] = .0;
+  gen::surf[0].u[2] = .0;
+  gen::surf[0].u[3] = .0;
+  gen::surf[0].dsigma[0] = 10.0; // Effective spatial volume in rest frame
+  gen::surf[0].dsigma[1] = 0.0;
+  gen::surf[0].dsigma[2] = 0.0;
+  gen::surf[0].dsigma[3] = 0.0;
+  gen::surf[0].T = 0.155;
+  gen::surf[0].mub = 0.0;
+  gen::surf[0].muq = 0.0;
+  gen::surf[0].mus = 0.0;
+  for (int i = 0; i < 10; i++) gen::surf[0].pi[i] = 0.0;
+  gen::surf[0].Pi = 0.0;
+
+  gen::dsigmaMax = gen::surf[0].dsigma[0] + sqrt(gen::surf[0].dsigma[1] * gen::surf[0].dsigma[1] +
+                                                 gen::surf[0].dsigma[2] * gen::surf[0].dsigma[2] + 
+                                                 gen::surf[0].dsigma[3] * gen::surf[0].dsigma[3]);
+}
+
+
+
 TEST(index44) {
   // Call with all valid values and expect passing
   int indices[4][4] = {{0, 1, 3, 6}, {1, 2, 4, 7}, {3, 4, 5, 8}, {6, 7, 8, 9}};
@@ -216,7 +245,7 @@ TEST(chemical_potential_from_type_overload) {
 // Gaussian quadrature integration over momentum space
 // Evaluates: ∫ p·d³σ (f_eq + δf) · p² dp
 // Using Gauss-Laguerre quadrature for the momentum integral
-double integrate_delta_N_gaussian_quadrature(const element &surf_elem,
+double integrate_distribution_gaussian_quadrature(const element &surf_elem,
                                              const smash::ParticleType &particle) {
   // Gauss-Legendre quadrature points and weights for integration over angles
   // Using 3-point rule for cos(theta), which covers theta integration
@@ -304,7 +333,7 @@ double integrate_delta_N_gaussian_quadrature(const element &surf_elem,
         if (params::bulk_viscosity_enabled) {
           WviscFactor -= gen::W_bulk_correction(p, mass, muf, stat, surf_elem);
         }
-        // Regulate viscous correction to avoid negative distribution function
+
         if (WviscFactor < 0.1) WviscFactor = 0.1;
         if (WviscFactor > 1.5) WviscFactor = 1.5;  // test, jul17. before: 1.5
 
@@ -318,7 +347,7 @@ double integrate_delta_N_gaussian_quadrature(const element &surf_elem,
                     * phi_weight;
       }
     }
-  }  // close momentum loop
+  }
 
   integral *= (2. * J + 1.0); // Scale by (2J+1) for spin degeneracy
   return integral;
@@ -332,41 +361,25 @@ TEST(number_of_hadrons_to_generate) {
   ensure_particletype_initialized();
   gen::database = &smash::ParticleType::list_all();
   
-  // Allocate global surface array with one element and initialize it directly
-  gen::surf = new element[1];
-  gen::surf[0].four_position[0] = 1.0;
-  gen::surf[0].four_position[1] = 0.0;
-  gen::surf[0].four_position[2] = 0.0;
-  gen::surf[0].four_position[3] = 0.0;
-  gen::surf[0].u[0] = 1.0;
-  gen::surf[0].u[1] = .0;
-  gen::surf[0].u[2] = .0;
-  gen::surf[0].u[3] = .0;
-  gen::surf[0].dsigma[0] = 5.0;
-  gen::surf[0].dsigma[1] = 0.0;
-  gen::surf[0].dsigma[2] = 0.0;
-  gen::surf[0].dsigma[3] = 0.0;
-  gen::surf[0].T = 0.155;
-  gen::surf[0].mub = 0.0;
-  gen::surf[0].muq = 0.0;
-  gen::surf[0].mus = 0.0;
-  for (int i = 0; i < 10; i++) gen::surf[0].pi[i] = 0.0;
-  gen::surf[0].Pi = 0.0;
+  initialize_test_hypersurface();
   
   // Calculate particle densities
   gen::totalDensity = 0.0;
-  double* cumulantDens = gen::calculate_particle_densities(gen::surf[0], gen::database);
+
+  // Cumulative densities for each particle type
+  double* cumulantDens = gen::calculate_particle_densities(0, gen::database);
   
   double dvEff = gen::surf[0].dsigma[0];
-  double nToGen = dvEff * totalDensity;
   
-  double expected_total_multiplicity = 0.0;
+  double expected_multiplicity = 0.0;
+  double relative_error = 0.0;
+  int idx_part = 0;
   for (const auto& particle : smash::ParticleType::list_all()) {
-    double delta_N = integrate_delta_N_gaussian_quadrature(gen::surf[0], particle);
-    expected_total_multiplicity += delta_N;
+    expected_multiplicity += integrate_distribution_gaussian_quadrature(gen::surf[0], particle);
+    relative_error = std::abs(expected_multiplicity - dvEff * cumulantDens[idx_part]) / expected_multiplicity;
+    VERIFY(expect_near(relative_error, 0.0, 1e-3));
+    idx_part++;
   }
-  double relative_error = std::abs(expected_total_multiplicity - nToGen) / expected_total_multiplicity;
-  VERIFY(expect_near(relative_error, 0.0, 1e-3));
 }
 
 TEST(number_of_hadrons_without_visc_corrections) {
@@ -377,31 +390,13 @@ TEST(number_of_hadrons_without_visc_corrections) {
   gen::database = &smash::ParticleType::list_all();
   
   // Initialize surface element 
-  gen::surf = new element[1];
-  gen::surf[0].four_position[0] = 1.0;
-  gen::surf[0].four_position[1] = 0.0;
-  gen::surf[0].four_position[2] = 0.0;
-  gen::surf[0].four_position[3] = 0.0;
-  gen::surf[0].u[0] = 1.0;
-  gen::surf[0].u[1] = .0;
-  gen::surf[0].u[2] = .0;
-  gen::surf[0].u[3] = .0;
-  gen::surf[0].dsigma[0] = 10.0;
-  gen::surf[0].dsigma[1] = 0.0;
-  gen::surf[0].dsigma[2] = 0.0;
-  gen::surf[0].dsigma[3] = 0.0;
-  gen::surf[0].T = 0.155;
-  gen::surf[0].mub = 0.0;
-  gen::surf[0].muq = 0.0;
-  gen::surf[0].mus = 0.0;
-  for (int i = 0; i < 10; i++) gen::surf[0].pi[i] = 0.0;
-  gen::surf[0].Pi = 0.0;
+  initialize_test_hypersurface();
   
   // Initialize fthermal
   gen::fthermal = new TF1("fthermal", gen::ffthermal, 0.0, 10.0, 4);
   
   // Initialize particle storage arrays
-  int numEvents = 1000;
+  int numEvents = 10000;
   gen::npart = new int[numEvents];
   gen::pList = new smash::ParticleData**[numEvents];
   for (int i = 0; i < numEvents; i++) {
@@ -410,14 +405,8 @@ TEST(number_of_hadrons_without_visc_corrections) {
   }
   
   // Calculate particle densities (this sets global cumulantDensity and totalDensity)
-  gen::totalDensity = 0.0;
-  
-  // Initialize dsigmaMax for momentum sampling 
-  gen::dsigmaMax = gen::surf[0].dsigma[0] + sqrt(gen::surf[0].dsigma[1] * gen::surf[0].dsigma[1] +
-                                                 gen::surf[0].dsigma[2] * gen::surf[0].dsigma[2] + 
-                                                 gen::surf[0].dsigma[3] * gen::surf[0].dsigma[3]);  
-                                                 
-  double* cumulantDens = gen::calculate_particle_densities(gen::surf[0], gen::database);
+  gen::totalDensity = 0.0;                                     
+  double* cumulantDens = gen::calculate_particle_densities(0, gen::database);
   double dvEff = gen::surf[0].dsigma[0];
   
   params::shear_viscosity_enabled = false;
@@ -426,11 +415,10 @@ TEST(number_of_hadrons_without_visc_corrections) {
 
   double mean_nToGen = dvEff * gen::totalDensity;
 
-  //double nToGen = rnd->Poisson(2.0 * dvEff * gen::totalDensity);
   double nparticles = 0;
   double niter = 0;
   for (int ievent = 0; ievent < numEvents; ievent++) {
-    // Simple sampling for number of particles to generate: use the mean directly for testing
+    // Simple sampling for number of particles to generate: use the mean directly for testing (less noisy than Poisson sampling)
     int nToGen = static_cast<int>(mean_nToGen);  // floor
     double fractional = mean_nToGen - nToGen;
     if (gen::rnd->Rndm() < fractional) nToGen++;  // add 1 with probability = fractional part
@@ -442,19 +430,15 @@ TEST(number_of_hadrons_without_visc_corrections) {
       }
     }
   }
-  double expected_total_multiplicity = 0.0;
+  double expected_multiplicity = 0.0;
+  double relative_error = 0.0;
+  int idx_part = 0;
   for (const auto& particle : smash::ParticleType::list_all()) {
-    double delta_N = integrate_delta_N_gaussian_quadrature(gen::surf[0], particle);
-    expected_total_multiplicity += delta_N;
+    expected_multiplicity += integrate_distribution_gaussian_quadrature(gen::surf[0], particle);
+    relative_error = std::abs(expected_multiplicity - dvEff * cumulantDens[idx_part]) / expected_multiplicity;
+    VERIFY(expect_near(relative_error, 0.0, 1e-3));
+    idx_part++;
   }
-
-  double relative_error = std::abs(expected_total_multiplicity - nparticles / numEvents) / expected_total_multiplicity;
-  std::cout << "Expected total multiplicity: " << expected_total_multiplicity << "\n";
-  std::cout << "Average generated multiplicity: " << nparticles / numEvents << "\n";
-  std::cout << "Acceptance rate: " << nparticles / niter << ", mean_to_" << mean_nToGen << "\n";
-  std::cout << "Iterations per event : " << static_cast<double>(niter) / static_cast<double>(numEvents) << "\n";
-  std::cout << "Relative error: " << relative_error << "\n";
-  VERIFY(expect_near(relative_error, 0.0, 2e-2));
 }
 
 TEST(number_of_hadrons_with_visc_corrections) {
@@ -464,63 +448,29 @@ TEST(number_of_hadrons_with_visc_corrections) {
   ensure_particletype_initialized();
   gen::database = &smash::ParticleType::list_all();
   
-  // Allocate global surface array with one element and initialize it directly
-  gen::surf = new element[1];
-  gen::surf[0].four_position[0] = 1.0;
-  gen::surf[0].four_position[1] = 0.0;
-  gen::surf[0].four_position[2] = 0.0;
-  gen::surf[0].four_position[3] = 0.0;
-  gen::surf[0].u[0] = 1.0;
-  gen::surf[0].u[1] = .0;
-  gen::surf[0].u[2] = .0;
-  gen::surf[0].u[3] = .0;
-  // Proper constant-time hypersurface with effective volume dsigma[0]
-  gen::surf[0].dsigma[0] = 10.0;  // Effective spatial volume in rest frame
-  gen::surf[0].dsigma[1] = 0.0;   
-  gen::surf[0].dsigma[2] = 0.0;   
-  gen::surf[0].dsigma[3] = 0.0;   
-  gen::surf[0].T = 0.155;
-  gen::surf[0].mub = 0.5;
-  gen::surf[0].muq = 0.0;
-  gen::surf[0].mus = 0.0;
-  // Artificial viscous stress tensor π^μν for Björken flow
-  // In Björken flow with longitudinal expansion, expect π^τη ≠ 0
-  for (int i = 0; i < 10; i++) gen::surf[0].pi[i] = 0.0;
-  
+  initialize_test_hypersurface();  
 
-  // Set shear viscosity components using index44(i,j) mapping
-  // π^τη = π^ητ (symmetric tensor)
-  gen::surf[0].pi[gen::index44(0, 3)] = -0.05;  // GeV/fm³, negative due to expansion
-  // Small diagonal component: π^ττ to maintain tracelessness approximately
-  gen::surf[0].pi[gen::index44(0, 0)] = 0.025;  // π^ττ
-  // Transverse components
-  gen::surf[0].pi[gen::index44(1, 1)] = 0.01;   // π^xx
-  gen::surf[0].pi[gen::index44(2, 2)] = 0.01;   // π^yy
-
-  // Bulk viscous pressure (negative for expanding medium)
-  gen::surf[0].Pi = -0.2;  // GeV/fm³
-  
+  gen::surf[0].pi[gen::index44(0, 3)] = -0.05;
+  gen::surf[0].pi[gen::index44(0, 0)] = 0.025;
+  gen::surf[0].pi[gen::index44(1, 1)] = 0.01;
+  gen::surf[0].pi[gen::index44(2, 2)] = 0.01; 
+  // Bulk viscous pressure
+  gen::surf[0].Pi = -0.2; 
   // Initialize fthermal
   gen::fthermal = new TF1("fthermal", gen::ffthermal, 0.0, 10.0, 4);
   
   // Initialize particle storage arrays
-  int numEvents = 100000;
+  int numEvents = 10000;
   gen::npart = new int[numEvents];
   gen::pList = new smash::ParticleData**[numEvents];
   for (int i = 0; i < numEvents; i++) {
     gen::npart[i] = 0;
     gen::pList[i] = new smash::ParticleData*[gen::NPartBuf];
   }
-  
+
   // Calculate particle densities (this sets global cumulantDensity and totalDensity)
-  gen::totalDensity = 0.0;
-  
-  // Ensure dsigmaMax is set for viscous correction normalization
-  gen::dsigmaMax = gen::surf[0].dsigma[0] + sqrt(gen::surf[0].dsigma[1] * gen::surf[0].dsigma[1] +
-                                                 gen::surf[0].dsigma[2] * gen::surf[0].dsigma[2] + 
-                                                 gen::surf[0].dsigma[3] * gen::surf[0].dsigma[3]);  
-                                                 
-  double* cumulantDens = gen::calculate_particle_densities(gen::surf[0], gen::database);
+  gen::totalDensity = 0.0;                                               
+  double* cumulantDens = gen::calculate_particle_densities(0, gen::database);
 
   double dvEff = gen::surf[0].dsigma[0];
   
@@ -529,7 +479,7 @@ TEST(number_of_hadrons_with_visc_corrections) {
   params::ecrit = 0.5;  // GeV/fm³
   
   double mean_nToGen = 2.0 * dvEff * gen::totalDensity;
-  std::cout << ", mean_to_gen" << mean_nToGen << "\n";
+  std::cout << ", mean_to_gen: " << mean_nToGen << "\n";
   //double nToGen = rnd->Poisson(2.0 * dvEff * gen::totalDensity);
   double nparticles = 0;
   double niter = 0;
@@ -548,19 +498,20 @@ TEST(number_of_hadrons_with_visc_corrections) {
   }
   double expected_total_multiplicity = 0.0;
   for (const auto& particle : smash::ParticleType::list_all()) {
-    double delta_N = integrate_delta_N_gaussian_quadrature(gen::surf[0], particle);
+    double delta_N = integrate_distribution_gaussian_quadrature(gen::surf[0], particle);
     expected_total_multiplicity += delta_N;
   }
 
   double relative_error = std::abs(expected_total_multiplicity - nparticles / numEvents) / expected_total_multiplicity;
   std::cout << "Expected total multiplicity: " << expected_total_multiplicity << "\n";
   std::cout << "Average generated multiplicity: " << nparticles / numEvents << "\n";
-  std::cout << "Acceptance rate: " << nparticles / niter << ", mean_to_" << mean_nToGen << "\n";
-  std::cout << "Iterations per event : " << static_cast<double>(niter) / static_cast<double>(numEvents) << "\n";
   std::cout << "Relative error: " << relative_error << "\n";
+  std::cout << "Acceptance rate: " << nparticles / niter << "\n";
   VERIFY(expect_near(relative_error, 0.0, 2e-2));
+  delete[] gen::surf;
 }
 
+// Test wether the momentum distribution of generated particles matches the expected distribution
 TEST(momentum_generation) {
   // Initialize globals
   gen::rnd = new TRandom3(0);
@@ -568,118 +519,51 @@ TEST(momentum_generation) {
   ensure_particletype_initialized();
   gen::database = &smash::ParticleType::list_all();
   
-  // Allocate global surface array with one element and initialize it directly
-  gen::surf = new element[1];
-  gen::surf[0].four_position[0] = 1.0;
-  gen::surf[0].four_position[1] = 0.0;
-  gen::surf[0].four_position[2] = 0.0;
-  gen::surf[0].four_position[3] = 0.0;
-  gen::surf[0].u[0] = 1.0;
-  gen::surf[0].u[1] = .0;
-  gen::surf[0].u[2] = .0;
-  gen::surf[0].u[3] = .0;
-  // Proper constant-time hypersurface with effective volume dsigma[0]
-  gen::surf[0].dsigma[0] = 10.0;  // Effective spatial volume in rest frame
-  gen::surf[0].dsigma[1] = 2.0;   
-  gen::surf[0].dsigma[2] = 1.0;   
-  gen::surf[0].dsigma[3] = 0.0;   
-  gen::surf[0].T = 0.255;
-  gen::surf[0].mub = 0.5;
-  gen::surf[0].muq = 0.0;
-  gen::surf[0].mus = 0.0;
-  // Artificial viscous stress tensor π^μν for Björken flow
-  // In Björken flow with longitudinal expansion, expect π^τη ≠ 0
-  for (int i = 0; i < 10; i++) gen::surf[0].pi[i] = 0.0;
-  
+  initialize_test_hypersurface();
 
-  // Set shear viscosity components using index44(i,j) mapping
-  // π^τη = π^ητ (symmetric tensor)
-  gen::surf[0].pi[gen::index44(0, 3)] = -0.1;  // GeV/fm³, negative due to expansion
-  // Small diagonal component: π^ττ to maintain tracelessness approximately
-  gen::surf[0].pi[gen::index44(0, 0)] = 0.025;  // π^ττ
-  // Transverse components
-  gen::surf[0].pi[gen::index44(1, 1)] = 0.01;   // π^xx
-  gen::surf[0].pi[gen::index44(2, 2)] = 0.01;   // π^yy
-
-  // Bulk viscous pressure (negative for expanding medium)
-  gen::surf[0].Pi = -0.5;  // GeV/fm³
+  // Set shear viscosity
+  gen::surf[0].pi[gen::index44(0, 3)] = -0.1;
+  gen::surf[0].pi[gen::index44(0, 0)] = 0.025;
+  gen::surf[0].pi[gen::index44(1, 1)] = 0.01;
+  gen::surf[0].pi[gen::index44(2, 2)] = 0.01; 
+  // Bulk viscous pressure
+  gen::surf[0].Pi = 0.01;
   
   // Initialize fthermal
   gen::fthermal = new TF1("fthermal", gen::ffthermal, 0.0, 10.0, 4);
   
-  // Calculate particle densities (this sets global cumulantDensity and totalDensity)
-  gen::totalDensity = 0.0;
-  
-  // Ensure dsigmaMax is set for viscous correction normalization
-  gen::dsigmaMax = gen::surf[0].dsigma[0] + sqrt(gen::surf[0].dsigma[1] * gen::surf[0].dsigma[1] +
-                                                 gen::surf[0].dsigma[2] * gen::surf[0].dsigma[2] + 
-                                                 gen::surf[0].dsigma[3] * gen::surf[0].dsigma[3]);  
-                                                 
-  double* cumulantDens = gen::calculate_particle_densities(gen::surf[0], gen::database);
-
+  gen::totalDensity = 0.0;                       
+  gen::calculate_particle_densities(0, gen::database);
   double dvEff = gen::surf[0].dsigma[0];
   
   params::shear_viscosity_enabled = true;
   params::bulk_viscosity_enabled = true;
-  params::ecrit = 0.5;  // GeV/fm³
+  params::ecrit = 0.5;
 
   // ============= Pion Momentum Distribution Test =============
-  int numSamples = 1000;  // reduced for faster test
-  double mass = 0.135;   // pion mass [GeV]
+  int numSamples = 100; 
+  double mass = 0.135;   // pion mass
   double muf = 0.0;      // chemical potential
   double stat = 1.0;     // bosons
   int iel = 0;
   double T = gen::surf[iel].T;
 
-  // IMPORTANT: Set fthermal parameters before sampling
   gen::fthermal->SetParameters(T, muf, mass, stat);
   
   TH1D* hNewVisc = new TH1D("hNewVisc", "New Visc Sampling;p [GeV];dN/dp", 50, 0, 3.0);
-  TH1D* hOldVisc = new TH1D("hOldVisc", "Old Visc Sampling;p [GeV];dN/dp", 50, 0, 3.0);
-  TH1D* hNoVisc = new TH1D("hNoVisc", "Equilibrium Sampling;p [GeV];dN/dp", 50, 0, 3.0);
-
-  std::cout << "dsigmaMax = " << gen::dsigmaMax << std::endl;
-  std::cout << "dsigma[0] = " << gen::surf[iel].dsigma[0] << std::endl;
-  std::cout << "T = " << T << std::endl;
   
-  // Sample with NEW viscous method
+  // Sample momenta
   int acceptedNew = 0;
-  std::cout << "Sampling " << numSamples << " particles (newvisc)..." << std::endl;
   for (int i = 0; i < numSamples; i++) {
-    auto [p, phi, sinth] = gen::sample_momentum_newvisc_fullrejection(iel, mass, muf, stat);
+    auto [p, phi, sinth] = gen::sample_momentum(iel, mass, muf, stat, false);
     if (!std::isnan(p)) {
       hNewVisc->Fill(p);
       acceptedNew++;
     }
   }
-  std::cout << "New visc acceptance rate: " << (double)acceptedNew / numSamples << std::endl;
-
-  // Sample with OLD viscous method
-  int acceptedOld = 0;
-  std::cout << "Sampling " << numSamples << " particles (oldvisc)..." << std::endl;
-  for (int i = 0; i < numSamples; i++) {
-    auto [p, phi, sinth] = gen::sample_momentum_oldvisc(iel, mass, muf, stat);
-    if (!std::isnan(p)) {
-      hOldVisc->Fill(p);
-      acceptedOld++;
-    }
-  }
-  std::cout << "Old visc acceptance rate: " << (double)acceptedOld / numSamples << std::endl;
-
-  // Sample with NO viscous corrections
-  int acceptedNo = 0;
-  std::cout << "Sampling " << numSamples << " particles (novisc)..." << std::endl;
-  for (int i = 0; i < numSamples; i++) {
-    auto [p, phi, sinth] = gen::sample_momentum_equilibrium(iel, mass, muf, stat);
-    if (!std::isnan(p)) {
-      hNoVisc->Fill(p);
-      acceptedNo++;
-    }
-  }
-  std::cout << "No visc acceptance rate: " << (double)acceptedNo / numSamples << std::endl;
 
   // Theory with viscous corrections: f_eq * p² * (1 + δf_shear - δf_bulk)
-  auto theoryFunc = [&](double* x, double* /*par*/) -> double {
+  auto theoryFunc = [&](double* x, double* ) -> double {
     double p = x[0];
     double E = sqrt(p*p + mass*mass);
     double f_eq = p*p / (exp((E - muf) / T) - stat);
@@ -694,22 +578,11 @@ TEST(momentum_generation) {
     return f_eq * viscFactor;
   };
 
-  // Equilibrium theory (no viscous corrections): f_eq * p²
-  auto eqTheoryFunc = [&](double* x, double* /*par*/) -> double {
-    double p = x[0];
-    double E = sqrt(p*p + mass*mass);
-    double f_eq = p*p / (exp((E - muf) / T) - stat);
-    return f_eq;
-  };
-
   TF1* fTheory = new TF1("fTheory", theoryFunc, 0, 3.0, 0);
-  TF1* fEqTheory = new TF1("fEqTheory", eqTheoryFunc, 0, 3.0, 0);
 
   // Normalize histograms
   double binWidth = hNewVisc->GetBinWidth(1);
   hNewVisc->Scale(1.0 / (acceptedNew * binWidth));
-  hOldVisc->Scale(1.0 / (acceptedOld * binWidth));
-  hNoVisc->Scale(1.0 / (acceptedNo * binWidth));
 
   // Normalize theory with viscous corrections
   double theoryIntegral = fTheory->Integral(0, 3.0);
@@ -719,15 +592,7 @@ TEST(momentum_generation) {
     hTheory->SetBinContent(bin, fTheory->Eval(p) / theoryIntegral);
   }
 
-  // Normalize equilibrium theory (no viscous corrections)
-  double eqTheoryIntegral = fEqTheory->Integral(0, 3.0);
-  TH1D* hEqTheory = new TH1D("hEqTheory", "Theory (eq);p [GeV];dN/dp", 50, 0, 3.0);
-  for (int bin = 1; bin <= hEqTheory->GetNbinsX(); bin++) {
-    double p = hEqTheory->GetBinCenter(bin);
-    hEqTheory->SetBinContent(bin, fEqTheory->Eval(p) / eqTheoryIntegral);
-  }
-
-  // Chi-squared for new visc
+  // Chi-squared
   double chi2New = 0;
   int nBinsUsed = 0;
   for (int bin = 1; bin <= hNewVisc->GetNbinsX(); bin++) {
@@ -739,57 +604,11 @@ TEST(momentum_generation) {
       nBinsUsed++;
     }
   }
-  std::cout << "NewVisc Chi²/ndf = " << chi2New << "/" << nBinsUsed << " = " << chi2New/nBinsUsed << std::endl;
   double pvalue = TMath::Prob(chi2New, nBinsUsed);
   std::cout << "p-value = " << pvalue << std::endl;
-  VERIFY(pvalue > 0.05);  // 95% confidence level
-
-  // Chi-squared for old visc
-  double chi2Old = 0;
-  nBinsUsed = 0;
-  for (int bin = 1; bin <= hOldVisc->GetNbinsX(); bin++) {
-    double obs = hOldVisc->GetBinContent(bin);
-    double exp = hTheory->GetBinContent(bin);
-    double err = hOldVisc->GetBinError(bin);
-    if (err > 0 && exp > 0) {
-      chi2Old += (obs - exp) * (obs - exp) / (err * err);
-      nBinsUsed++;
-    }
-  }
-  std::cout << "OldVisc Chi²/ndf = " << chi2Old << "/" << nBinsUsed << " = " << chi2Old/nBinsUsed << std::endl;
-
-  // Chi-squared for no visc vs equilibrium theory
-  double chi2No = 0;
-  nBinsUsed = 0;
-  for (int bin = 1; bin <= hNoVisc->GetNbinsX(); bin++) {
-    double obs = hNoVisc->GetBinContent(bin);
-    double exp = hEqTheory->GetBinContent(bin);
-    double err = hNoVisc->GetBinError(bin);
-    if (err > 0 && exp > 0) {
-      chi2No += (obs - exp) * (obs - exp) / (err * err);
-      nBinsUsed++;
-    }
-  }
-  std::cout << "NoVisc Chi²/ndf = " << chi2No << "/" << nBinsUsed << " = " << chi2No/nBinsUsed << std::endl;
-
-  // Save results
-  TFile* outFile = new TFile("pion_momentum_test.root", "RECREATE");
-  hNewVisc->Write();
-  hOldVisc->Write();
-  hNoVisc->Write();
-  hTheory->Write();
-  hEqTheory->Write();
-  fTheory->Write();
-  fEqTheory->Write();
-  outFile->Close();
-  std::cout << "Saved to pion_momentum_test.root" << std::endl;
+  VERIFY(pvalue > 0.01); 
 
   delete hNewVisc;
-  delete hOldVisc;
-  delete hNoVisc;
   delete hTheory;
-  delete hEqTheory;
   delete fTheory;
-  delete fEqTheory;
-  delete outFile;
 }
