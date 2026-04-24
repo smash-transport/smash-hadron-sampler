@@ -1,5 +1,5 @@
 # Minimum cmake version this is tested on
-cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.28 FATAL_ERROR)
 
 # The name, version and language of the project
 project(
@@ -98,10 +98,10 @@ else()
   message(FATAL_ERROR "SMASH could not be found.")
 endif()
 
-find_package(ROOT 5.34)
+find_package(ROOT 6.06)
 if(ROOT_FOUND)
   set(SAMPLER_LIBRARIES ${SAMPLER_LIBRARIES} ${ROOT_LIBRARIES})
-  include_directories(SYSTEM "${ROOT_INCLUDE_DIR}")
+  include_directories(SYSTEM "${ROOT_INCLUDE_DIRS}")
   #target_link_libraries(sampler aws-cpp-sdk-s3 aws-cpp-sdk-core)
 endif()
 
