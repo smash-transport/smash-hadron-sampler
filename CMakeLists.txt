@@ -101,7 +101,7 @@ endif()
 find_package(ROOT 6.06)
 if(ROOT_FOUND)
   set(SAMPLER_LIBRARIES ${SAMPLER_LIBRARIES} ${ROOT_LIBRARIES})
-  include_directories(SYSTEM "${ROOT_INCLUDE_DIR}")
+  include_directories(SYSTEM "${ROOT_INCLUDE_DIRS}")
   #target_link_libraries(sampler aws-cpp-sdk-s3 aws-cpp-sdk-core)
 endif()
 
