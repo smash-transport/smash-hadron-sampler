@@ -102,10 +102,11 @@ double* calculate_particle_densities(int iel, const std::vector<smash::ParticleT
 bool generate_particle(int iel, int ievent, double dvEff);
 
 std::tuple<double, double, double> sample_momentum_equilibrium(int iel, double mass, double muf, double stat, bool random_angles);
-std::tuple<double, double, double> sample_momentum(int iel, double mass, double muf, double stat, bool random_angles);
+std::tuple<double, double, double> sample_momentum(int iel, double dvEff, double mass, double muf, double stat, bool random_angles);
 
 double W_shear_correction(double momArray[4], double muf, double stat, const element &surf_elem);
 double W_bulk_correction(double p, double mass, double muf, double stat, const element &surf_elem);
+extern std::pair<double, double> viscousCorrectionRegulation; 
 
 void generate();
 smash::ParticleData *acceptParticle(int event,

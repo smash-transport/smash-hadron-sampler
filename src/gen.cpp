@@ -43,6 +43,7 @@ int *npart;               // number of generated particles in each event
 double *cumulantDensity;  // particle densities (thermal). Seems to be
                           // redundant, but needed for fast generation
 double totalDensity;      // sum of all thermal densities
+std::pair<double, double> viscousCorrectionRegulation = {0.1, 2.0};  // lower and upper limit for the viscous correction factor to avoid large corrections
 
 std::vector<smash::PdgCode> species_to_exclude;  // species to exclude from sampling
 const smash::ParticleTypeList *database = nullptr;  // Hadron database, initialized in load()
@@ -353,7 +354,7 @@ std::tuple<double, double, double> sample_momentum_equilibrium(int iel, double m
   return std::tuple<double, double, double>(p, phi, sinth);
 }
 
-std::tuple<double, double, double> sample_momentum(int iel, double mass, double muf, double stat, bool random_angles = true) {
+std::tuple<double, double, double> sample_momentum(int iel, double dVeff, double mass, double muf, double stat, bool random_angles = true) {
   double p=0.0, phi=0.0, sinth=0.0, W=0.0, WviscFactor=1.0;
 
   fthermal->SetParameters(surf[iel].T, muf, mass, stat);
@@ -375,16 +376,20 @@ std::tuple<double, double, double> sample_momentum(int iel, double mass, double 
         surf[iel].dsigma[3] * mom.Pz()) /
       mom.E();
 
-  double momArray[4] = {mom[3], mom[0], mom[1], mom[2]};
-  WviscFactor += W_shear_correction(momArray, muf, stat, surf[iel]);
-  WviscFactor -= W_bulk_correction(p, mass, muf, stat, surf[iel]);
+  if (params::shear_viscosity_enabled) {
+    double momArray[4] = {mom[3], mom[0], mom[1], mom[2]};
+    WviscFactor += W_shear_correction(momArray, muf, stat, surf[iel]);
+  }
+  if (params::bulk_viscosity_enabled) {
+    WviscFactor -= W_bulk_correction(p, mass, muf, stat, surf[iel]);
+  }
+  if (WviscFactor < viscousCorrectionRegulation.first) WviscFactor = viscousCorrectionRegulation.first;
+  if (WviscFactor > viscousCorrectionRegulation.second) WviscFactor = viscousCorrectionRegulation.second;  // test, jul17. before: 1.5 // March26: Upper limit needed to avoid large corrections )
 
-  if (WviscFactor < 0.1) WviscFactor = 0.1;
-  if (WviscFactor > 1.5) WviscFactor = 1.5;  // test, jul17. before: 1.5 // March26: Upper limit needed to avoid large corrections )
-
-  double keep_sigma = W / surf[iel].dsigma[0]; // acceptance probability from the sigma factor
+  double keep_sigma = W / dVeff; // acceptance probability from the sigma factor
   double keep_viscous = 0.5 * WviscFactor; //
   double acceptance_probability = keep_sigma * keep_viscous;
+  if (acceptance_probability > 1.0) std::cout << "Acceptance probability > 1.0: " << acceptance_probability << std::endl;
   double random_number = rnd->Rndm();
   if (random_number > acceptance_probability) {
     return std::tuple<double, double, double>(
@@ -419,7 +424,7 @@ bool generate_particle(int iel, int ievent, double dvEff) {
   // const double dfMax = part->GetFMax() ;
   double p=0.0, phi=0.0, sinth=0.0;
   if (params::shear_viscosity_enabled || params::bulk_viscosity_enabled) {
-    std::tie(p, phi, sinth) = sample_momentum(iel, mass, muf, stat, true);
+    std::tie(p, phi, sinth) = sample_momentum(iel, dvEff, mass, muf, stat, true);
     if (std::isnan(p) || std::isnan(phi) || std::isnan(sinth)) {
       return false;  // reject the particle
     }
@@ -482,7 +487,22 @@ void generate() {
     }
     // Generate particle densities:
     calculate_particle_densities(iel, database);
+    /*
+    double expected_multiplicity = 0.0;
+    for (const auto& particle : smash::ParticleType::list_all()) {
+      const bool exclude_species =
+            std::find(species_to_exclude.begin(), species_to_exclude.end(),
+                      particle.pdgcode()) != species_to_exclude.end();
+      if (exclude_species || !particle.is_hadron() ||
+            particle.pdgcode().charmness() != 0) {
+        continue;
+      } else {
+        expected_multiplicity += integrate_distribution_gaussian_quadrature(gen::surf[iel], particle);
+      }
+    }*/
 
+    double generated_multiplicity = 0.0;
+    
     if (totalDensity < 0. || totalDensity > 100.) {
       ntherm_fail++;
       continue;
@@ -490,30 +510,43 @@ void generate() {
     // cout<<"thermal densities calculated.\n" ;
     // cout<<cumulantDensity[NPART-1]<<" = "<<totalDensity<<endl ;
     // ---< end thermal densities calc
+
     double dvEff = 0.0;
     // dvEff = dsigma_mu * u^mu
     dvEff = surf[iel].dsigma[0];
+
+    // If viscous corrections are included, the effective volume element is modified and has to be larger than dsigma_0
+    // In the rejection step, this exact volume has to go in to preserve the correct normalization of the distribution function
+    if (params::bulk_viscosity_enabled || params::shear_viscosity_enabled) {
+      dvEff = gen::surf[iel].dsigma[0] + pow(gen::surf[iel].dsigma[1] * gen::surf[iel].dsigma[1] +
+                                              gen::surf[iel].dsigma[2] * gen::surf[iel].dsigma[2] +
+                                              gen::surf[iel].dsigma[3] * gen::surf[iel].dsigma[3], 0.5); 
+    }
+
     for (int ievent = 0; ievent < params::number_of_events; ievent++) {
       // ---- number of particles to generate
-      int nToGen = 0;
-      if (dvEff * totalDensity < 0.01) {
-        // SMASH random number [0..1]
-        double x = rnd->Rndm();  // throw dice
-        if (x < dvEff * totalDensity) nToGen = 1;
-      } else {
-        // SMASH random number according to Poisson DF
-        nToGen = rnd->Poisson(dvEff * totalDensity);
+      int nToGen = 0; // the actual number of particles to be generated in this event
+      double mean_nToGen = dvEff * totalDensity; // the mean number of particles to be generated
+      if (params::bulk_viscosity_enabled || params::shear_viscosity_enabled) {
         // Corrections to the number of particles due to viscous effects
         // requires a rejection scheme where more particles are generated
         // than in the equilibrium case, and then rejected with a certain probability 
         // According to "10.1016/j.cpc.2020.107604"
-        if (params::bulk_viscosity_enabled || params::shear_viscosity_enabled) {
-          nToGen = rnd->Poisson(2.0 * dvEff * totalDensity);
-        }
+        mean_nToGen = 2 * dvEff * totalDensity;
+      }
+      if (mean_nToGen < 0.01) {
+        // SMASH random number [0..1]
+        double x = rnd->Rndm();  // throw dice
+        if (x < mean_nToGen) nToGen = 1;
+      } else {
+        // SMASH random number according to Poisson DF
+        nToGen = rnd->Poisson(mean_nToGen);
       }
       // ---- we generate a particle!
       for (int ipart = 0; ipart < nToGen; ipart++) {
-        generate_particle(iel, ievent, dvEff); 
+        if (generate_particle(iel, ievent, dvEff)) {
+          generated_multiplicity += 1.0;
+        }
       }  // end particle generation loop
     }  // events loop
     
