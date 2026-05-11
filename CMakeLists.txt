@@ -36,7 +36,6 @@ message(STATUS "CXX_FLAGS = " ${CMAKE_CXX_FLAGS})
 # ------------------------------------------------------------------------------
 # Retrieve all metadata for --version option
 # ------------------------------------------------------------------------------
-include(GetGitRevisionDescription)
 find_package(Git)
 if(GIT_FOUND)
   # message("git found: ${GIT_EXECUTABLE} in version ${GIT_VERSION_STRING}")
@@ -46,16 +45,22 @@ if(GIT_FOUND)
       COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
       OUTPUT_VARIABLE GIT_BRANCH)
+    execute_process(
+      COMMAND ${GIT_EXECUTABLE} describe
+      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+      OUTPUT_VARIABLE SAMPLER_VERSION_VERBOSE)
     string(STRIP ${GIT_BRANCH} GIT_BRANCH)
+    string(STRIP ${SAMPLER_VERSION_VERBOSE} SAMPLER_VERSION_VERBOSE)
   else()
     set(GIT_BRANCH "NOTFOUND")
   endif()
+else()
+  set(GIT_BRANCH "NOTFOUND")
 endif(GIT_FOUND)
 # The version number is already set via the project() command, since a VERSION
 # option is provided in it, and passed to the variable SAMPLER_VERSION via the
 # set() command after it. The following checks if .git information about the
 # branch and the commit hash is available.
-git_describe(SAMPLER_VERSION_VERBOSE)
 if(SAMPLER_VERSION_VERBOSE)
   set(SAMPLER_VERSION "${SAMPLER_VERSION_VERBOSE}")
 else()
