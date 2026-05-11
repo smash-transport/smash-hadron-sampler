@@ -70,47 +70,13 @@ endif()
 # Set a timestamp for the sampler compilation
 string(TIMESTAMP BUILD_DATE)
 
-include_directories("${CMAKE_CURRENT_BINARY_DIR}/src/include")
 # configure a header file to pass some of the CMake settings to the source code
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/include/build_metadata.h.in"
                "${CMAKE_CURRENT_BINARY_DIR}/src/include/build_metadata.h")
 # ------------------------------------------------------------------------------
 
-# Collect all the cpp files
-set(sampler_src src/gen.cpp src/oscaroutput.cpp src/params.cpp src/tree.cpp src/spin.cpp src/vorticity.cpp)
-
-# Create object library for the linker which contains pre-compiled cpp files
-add_library(objlib OBJECT ${sampler_src})
-set_property(TARGET objlib PROPERTY POSITION_INDEPENDENT_CODE 1)
-
-add_executable(sampler src/main.cpp $<TARGET_OBJECTS:objlib>)
-include_directories(src/include)
-
-set(SAMPLER_LIBRARIES "")
-
-find_package(SMASH)
-if(${SMASH_FOUND})
-  set(SAMPLER_LIBRARIES ${SAMPLER_LIBRARIES} ${SMASH_LIBRARIES})
-  include_directories(${SMASH_INCLUDE_DIR})
-  if(DEFINED ENV{SMASH_DIR})
-    include_directories($ENV{SMASH_DIR}/3rdparty)
-  else()
-    message(
-      FATAL_ERROR
-        "Environment variable SMASH_DIR unset. Unable to include virtest.")
-  endif()
-else()
-  message(FATAL_ERROR "SMASH could not be found.")
-endif()
-
-find_package(ROOT 6.06)
-if(ROOT_FOUND)
-  set(SAMPLER_LIBRARIES ${SAMPLER_LIBRARIES} ${ROOT_LIBRARIES})
-  include_directories(SYSTEM "${ROOT_INCLUDE_DIRS}")
-  #target_link_libraries(sampler aws-cpp-sdk-s3 aws-cpp-sdk-core)
-endif()
-
-target_link_libraries(sampler ${SAMPLER_LIBRARIES})
+# Add the subdirectory for the source code
+add_subdirectory(src)
 
 # enable standard CTest
 include(CTest)
