@@ -28,28 +28,17 @@ If the output of the sampler is expected to be fed into SMASH for particle propa
 
 ## Install instructions
 
-Before getting started with the sampler installation, please check that all prerequisites are satisfied and needed software ready to be used.
-
-To compile the project, first set the environment variable to the SMASH directory:
-
-    export SMASH_DIR=[...]/smash
-
-Copy the cmake files to the sampler directory:
-
-    cd [...]/smash-hadron-sampler
-    cp -r $SMASH_DIR/cmake ./
+Before getting started with the sampler installation, you need to have SMASH installed at some location `SMASH_INSTALL_DIR`.
 
 Execute the following commands to build the project:
 
+    cd [...]/smash-hadron-sampler
     mkdir build
     cd build
-    cmake -DPythia_CONFIG_EXECUTABLE=[...]/pythia83XX/bin/pythia8-config ..
+    cmake -DCMAKE_PREFIX_PATH=${SMASH_INSTALL_DIR} ..
     make
 
-where `[...]/pythia83XX` is the path to the Pythia directory.
-The `XX` needs to be exchanged to match the Pythia version that is used by the compiled SMASH library.
-
-In continuation, the executable `sampler` is created.
+In this way, the executable `sampler` is created inside the ***build*** folder.
 
 ## Execute the sampler
 
