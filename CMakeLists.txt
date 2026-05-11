@@ -114,30 +114,7 @@ target_link_libraries(sampler ${SAMPLER_LIBRARIES})
 
 # enable standard CTest
 include(CTest)
-
 message(STATUS "BUILD_TESTING=${BUILD_TESTING}")
-
 if(BUILD_TESTING)
-  # Create a directory for test executables
-  set(TEST_OUTPUT_DIR ${CMAKE_BINARY_DIR}/tests)
-  file(MAKE_DIRECTORY ${TEST_OUTPUT_DIR})
-
-  # Set runtime output directory for test executables
-  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${TEST_OUTPUT_DIR})
-
-  # Add the executable for the gen test
-  add_executable(gen tests/gen.cpp)
-  target_link_libraries(gen objlib ${SAMPLER_LIBRARIES})
-  add_test(NAME gen_test COMMAND gen)
-
-  # Add the executable for the vorticity test
-  add_executable(vorticity tests/vorticity.cpp)
-  target_link_libraries(vorticity objlib ${SAMPLER_LIBRARIES})
-  add_test(NAME vorticity_test COMMAND vorticity)
-
-  # Add the executable for the spin test
-  add_executable(spin tests/spin.cpp)
-  target_link_libraries(spin objlib ${SAMPLER_LIBRARIES})
-  add_test(NAME spin_test COMMAND spin)
-  #add_subdirectory(tests)
+  add_subdirectory(tests)
 endif()
