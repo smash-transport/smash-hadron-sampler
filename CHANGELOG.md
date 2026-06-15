@@ -96,7 +96,7 @@ Date: 2022-05-17
 4. If the new release is due to a new SMASH release, bump the mentioned SMASH version in the _README.md_ file section `Prerequisites`.
 5. Close the `release` branch in the git-flow sense:
   * merge it into the `main` branch;
-  * switch to `main` and tag the last commit;
+  * switch to `main` and create an annotated tag for the last commit with `git tag -a SMASH-hadron-sampler-X.Y.Z`;
   * switch to `develop` and merge the `release` branch back into it.
 6. Publish the new release by pushing the changes and the new tag on `main`.
 7. On branch `develop`:
