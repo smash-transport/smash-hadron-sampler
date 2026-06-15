@@ -25,6 +25,8 @@ Also possible, but for this project less relevant, is `Deprecated` for soon-to-b
 
 * :left_right_arrow: Changed the name of the key `sample_spin` into `compute_spin_vector` (boolean).
 * :left_right_arrow: Fixed bug in the calculation of Pauli-Lubanski vectors in spin.cpp
+* :recycle: CMake code has been modernized, in particular to take advantage from the new SMASH CMake support in projects using it as library
+* :heavy_plus_sign: The [Vir's unit test framework](https://github.com/mattkretz/virtest) has been frozen in the ***tests*** folder to avoid external dependency on this tiny header only library
 
 ## SMASH-hadron-sampler-3.3
 Date: 2025-12-15
