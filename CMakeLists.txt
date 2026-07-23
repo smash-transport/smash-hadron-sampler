@@ -36,7 +36,6 @@ message(STATUS "CXX_FLAGS = " ${CMAKE_CXX_FLAGS})
 # ------------------------------------------------------------------------------
 # Retrieve all metadata for --version option
 # ------------------------------------------------------------------------------
-include(GetGitRevisionDescription)
 find_package(Git)
 if(GIT_FOUND)
   # message("git found: ${GIT_EXECUTABLE} in version ${GIT_VERSION_STRING}")
@@ -46,16 +45,22 @@ if(GIT_FOUND)
       COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
       OUTPUT_VARIABLE GIT_BRANCH)
+    execute_process(
+      COMMAND ${GIT_EXECUTABLE} describe --tags
+      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+      OUTPUT_VARIABLE SAMPLER_VERSION_VERBOSE)
     string(STRIP ${GIT_BRANCH} GIT_BRANCH)
+    string(STRIP ${SAMPLER_VERSION_VERBOSE} SAMPLER_VERSION_VERBOSE)
   else()
     set(GIT_BRANCH "NOTFOUND")
   endif()
+else()
+  set(GIT_BRANCH "NOTFOUND")
 endif(GIT_FOUND)
 # The version number is already set via the project() command, since a VERSION
 # option is provided in it, and passed to the variable SAMPLER_VERSION via the
 # set() command after it. The following checks if .git information about the
 # branch and the commit hash is available.
-git_describe(SAMPLER_VERSION_VERBOSE)
 if(SAMPLER_VERSION_VERBOSE)
   set(SAMPLER_VERSION "${SAMPLER_VERSION_VERBOSE}")
 else()
@@ -65,74 +70,17 @@ endif()
 # Set a timestamp for the sampler compilation
 string(TIMESTAMP BUILD_DATE)
 
-include_directories("${CMAKE_CURRENT_BINARY_DIR}/src/include")
 # configure a header file to pass some of the CMake settings to the source code
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/include/build_metadata.h.in"
                "${CMAKE_CURRENT_BINARY_DIR}/src/include/build_metadata.h")
 # ------------------------------------------------------------------------------
 
-# Collect all the cpp files
-set(sampler_src src/gen.cpp src/oscaroutput.cpp src/params.cpp src/tree.cpp src/spin.cpp src/vorticity.cpp)
-
-# Create object library for the linker which contains pre-compiled cpp files
-add_library(objlib OBJECT ${sampler_src})
-set_property(TARGET objlib PROPERTY POSITION_INDEPENDENT_CODE 1)
-
-add_executable(sampler src/main.cpp $<TARGET_OBJECTS:objlib>)
-include_directories(src/include)
-
-set(SAMPLER_LIBRARIES "")
-
-find_package(SMASH)
-if(${SMASH_FOUND})
-  set(SAMPLER_LIBRARIES ${SAMPLER_LIBRARIES} ${SMASH_LIBRARIES})
-  include_directories(${SMASH_INCLUDE_DIR})
-  if(DEFINED ENV{SMASH_DIR})
-    include_directories($ENV{SMASH_DIR}/3rdparty)
-  else()
-    message(
-      FATAL_ERROR
-        "Environment variable SMASH_DIR unset. Unable to include virtest.")
-  endif()
-else()
-  message(FATAL_ERROR "SMASH could not be found.")
-endif()
-
-find_package(ROOT 6.06)
-if(ROOT_FOUND)
-  set(SAMPLER_LIBRARIES ${SAMPLER_LIBRARIES} ${ROOT_LIBRARIES})
-  include_directories(SYSTEM "${ROOT_INCLUDE_DIRS}")
-  #target_link_libraries(sampler aws-cpp-sdk-s3 aws-cpp-sdk-core)
-endif()
-
-target_link_libraries(sampler ${SAMPLER_LIBRARIES})
+# Add the subdirectory for the source code
+add_subdirectory(src)
 
 # enable standard CTest
 include(CTest)
-
 message(STATUS "BUILD_TESTING=${BUILD_TESTING}")
-
 if(BUILD_TESTING)
-  # Create a directory for test executables
-  set(TEST_OUTPUT_DIR ${CMAKE_BINARY_DIR}/tests)
-  file(MAKE_DIRECTORY ${TEST_OUTPUT_DIR})
-
-  # Set runtime output directory for test executables
-  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${TEST_OUTPUT_DIR})
-
-  # Add the executable for the gen test
-  add_executable(gen tests/gen.cpp)
-  target_link_libraries(gen objlib ${SAMPLER_LIBRARIES})
-  add_test(NAME gen_test COMMAND gen)
-
-  # Add the executable for the vorticity test
-  add_executable(vorticity tests/vorticity.cpp)
-  target_link_libraries(vorticity objlib ${SAMPLER_LIBRARIES})
-  add_test(NAME vorticity_test COMMAND vorticity)
-
-  # Add the executable for the spin test
-  add_executable(spin tests/spin.cpp)
-  target_link_libraries(spin objlib ${SAMPLER_LIBRARIES})
-  add_test(NAME spin_test COMMAND spin)
-  #add_subdirectory(tests)
+  add_subdirectory(tests)
 endif()
