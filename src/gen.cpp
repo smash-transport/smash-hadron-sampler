@@ -294,12 +294,33 @@ void generate() {
         const double stat = static_cast<int>(round(2. * J)) & 1 ? -1. : 1.;
         // SMASH quantum charges for the hadron state
         const double muf = chemical_potential(particle, surf[iel]);
-        for (int i = 1; i < 11; i++)
-          density += (2. * J + 1.) * pow(gevtofm, 3) /
-                     (2. * pow(TMath::Pi(), 2)) * mass * mass * surf[iel].T *
-                     pow(stat, i + 1) *
-                     TMath::BesselK(2, i * mass / surf[iel].T) *
-                     exp(i * muf / surf[iel].T) / i;
+        const double prefactor = (2. * J + 1.) * pow(gevtofm, 3) / (2. * pow(TMath::Pi(), 2));
+
+        double fugacity = exp(muf / surf[iel].T);
+        double z = fugacity; 
+        for (int i = 1; i < 11; i++) {
+          double BesselK2 = TMath::BesselK(2, i * mass / surf[iel].T);
+          
+          // If stat is +1: (stat)^i+1 is always 1, if stat is -1: (stat)^i+1 is 1 when i is odd and -1 when i is even
+          double sign = (stat > 0) ? 1.0 : ((i & 1) ? 1.0 : -1.0);
+          density += prefactor * mass * mass * surf[iel].T *
+                     sign *
+                     BesselK2 *
+                     z / i;
+
+          if (params::bulk_viscosity_enabled) {
+            double BesselK1 = TMath::BesselK(1, i * mass / surf[iel].T);
+            density -= prefactor /
+                        (15. * (params::ecrit + params::ecrit * params::ratio_pressure_energydensity)) *
+                        sign * mass * mass * mass *
+                        ((1.0 / 3.0 - params::speed_of_sound_squared) *
+                        (BesselK1 + 3 * surf[iel].T / (i*mass) * BesselK2) -
+                        BesselK1 / 3) *
+                        z;
+          }
+          z *= fugacity;  // Make z = exp(i * muf / T) for the next iteration
+        }
+        if (density < 0) density = 0; 
       }
       if (ip > 0)
         cumulantDensity[ip] = cumulantDensity[ip - 1] + density;
