@@ -302,7 +302,6 @@ void generate() {
                         (15. * (params::ecrit + params::ecrit * params::ratio_pressure_energydensity)) *
                         surf[iel].Pi / pow(1.0 / 3.0 - params::speed_of_sound_squared, 2);
         }
-
         double fugacity = exp(muf / surf[iel].T);
         double z = fugacity; 
 
@@ -315,7 +314,7 @@ void generate() {
 
           if (params::bulk_viscosity_enabled) {
             double BesselK1 = TMath::BesselK(1, i * mass / surf[iel].T);
-            density -= bulk_prefactor *
+            density += bulk_prefactor *
                         sign * mass * mass * mass *
                         ((1.0 / 3.0 - params::speed_of_sound_squared) *
                         (BesselK1 + 3 * surf[iel].T / (i*mass) * BesselK2) -
