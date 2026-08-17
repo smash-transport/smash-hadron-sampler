@@ -202,7 +202,7 @@ void load(const char *filename, int N) {
       for (int i = 0; i < 10; i++) surf[n].pi[i] = _pi[i];
     }  // end pi boost
   }
-  if (params::shear_viscosity_enabled)
+  if (params::shear_viscosity_enabled || params::bulk_viscosity_enabled)
     dsigmaMax *= 2.0;  // *2.0: jun17. default: *1.5
   else
     dsigmaMax *= 1.3;
@@ -415,7 +415,7 @@ void generate() {
           }
           if (WviscFactor < 0.1) WviscFactor = 0.1;
           // test, jul17; before: 0.5
-          // if(WviscFactor>1.2) WviscFactor = 1.2 ; //              before: 1.5
+          if (WviscFactor > 10.0) WviscFactor = 10.0 ; //              before: 1.5
           W *= WviscFactor;
           rval = rnd->Rndm() * dsigmaMax;
           niter++;
