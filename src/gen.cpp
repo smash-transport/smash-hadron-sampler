@@ -413,9 +413,8 @@ void generate() {
                  (params::ecrit +
                   params::ecrit * params::ratio_pressure_energydensity));
           }
-          if (WviscFactor < 0.1) WviscFactor = 0.1;
-          // test, jul17; before: 0.5
-          if (WviscFactor > 10.0) WviscFactor = 10.0 ; //              before: 1.5
+          if (WviscFactor < 0.1) WviscFactor = 0.1; // test, jul17; before: 0.5
+          if (WviscFactor > 2.0) WviscFactor = 2.0 ; // before: no upper regulation
           W *= WviscFactor;
           rval = rnd->Rndm() * dsigmaMax;
           niter++;
