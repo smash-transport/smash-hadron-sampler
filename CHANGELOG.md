@@ -23,6 +23,8 @@ Also possible, but for this project less relevant, is `Deprecated` for soon-to-b
 
 ## Unreleased
 
+* :sos: Bulk viscous corrections now contribute to the sampled particle multiplicity, and not just the momentum sampling.
+* :sos: Viscous corrections are now capped, such that 0.1 < `WviscFactor` < 2.0.
 * :left_right_arrow: Changed the name of the key `sample_spin` into `compute_spin_vector` (boolean).
 * :left_right_arrow: Fixed bug in the calculation of Pauli-Lubanski vectors in spin.cpp
 * :recycle: CMake code has been modernized, in particular to take advantage from the new SMASH CMake support in projects using it as library
