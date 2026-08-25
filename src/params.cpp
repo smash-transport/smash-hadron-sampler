@@ -11,6 +11,8 @@ namespace params {
 std::string surface_file{"unset"}, vorticity_file{"unset"},
     output_directory{"unset"}, hydro_coordinate_system{"tau-eta"};
 
+SpectralFunction spectral_function_method{SpectralFunction::PoleMass};
+
 bool bulk_viscosity_enabled{false}, create_root_output{false},
     shear_viscosity_enabled{false}, spin_vector_enabled{false},
     vorticity_output_enabled{false};
@@ -85,6 +87,8 @@ void read_configuration_file(const std::string &filename) {
       spin_vector_enabled = std::stoi(parValue);
     } else if (parName == "create_vorticity_vector_output") {
       vorticity_output_enabled = std::stoi(parValue);
+    } else if (parName == "spectral_function") {
+      spectral_function_method = parse_spectral_function(parValue);
     } else if (parName[0] == '!') {
       comments_in_config_file.push_back(line);
     } else {
@@ -134,6 +138,19 @@ void print_config_parameters() {
             << "create_root_output:           " << create_root_output << "\n"
             << "hydro_coordinate_system:      " << hydro_coordinate_system
             << "\n"
+            << "spectral_function:            ";
+  switch (spectral_function_method) {
+    case SpectralFunction::PoleMass:
+      std::cout << "pole-mass";
+      break;
+    case SpectralFunction::BreitWigner:
+      std::cout << "breit-wigner";
+      break;
+    case SpectralFunction::FullVacuum:
+      std::cout << "full-vacuum";
+      break;
+  }
+  std::cout << "\n"
             << "# -------------------------------------------------------"
                "-----------------------"
             << "\n\n";
