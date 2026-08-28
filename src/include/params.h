@@ -23,6 +23,8 @@ extern double ecrit, speed_of_sound_squared, ratio_pressure_energydensity;
 // extern double Temp, mu_b, mu_q, mu_s;
 extern std::vector<std::string> comments_in_config_file,
     unknown_parameters_in_config_file;
+    
+extern SpectralFunction spectral_function_method;
 
 /**
  * Helper function to get the directory part of a file path.

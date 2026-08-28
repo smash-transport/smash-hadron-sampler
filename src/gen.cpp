@@ -15,6 +15,7 @@
 #include <string>
 
 #include "const.h"
+#include "mass_integration.h"
 #include "params.h"
 #include "spin.h"
 #include "vorticity.h"
@@ -277,53 +278,56 @@ void generate() {
 
     const smash::ParticleTypeList &database = smash::ParticleType::list_all();
     int ip = 0;
-    for (auto &particle : database) {
+    for (auto &type : database) {
       double density = 0.;
       const bool exclude_species =
           std::find(species_to_exclude.begin(), species_to_exclude.end(),
-                    particle.pdgcode()) != species_to_exclude.end();
-      if (exclude_species || !particle.is_hadron() ||
-          particle.pdgcode().charmness() != 0) {
+                    type.pdgcode()) != species_to_exclude.end();
+      if (exclude_species || !type.is_hadron() ||
+          type.pdgcode().charmness() != 0) {
         density = 0;
       } else {
-        const double mass = particle.mass();
+        const double mass = type.mass();
         // By definition, the spin in SMASH is defined as twice the spin of the
         // multiplet, so that it can be stored as an integer. Hence, it needs to
         // be multiplied by 1/2
-        const double J = particle.spin() * 0.5;
+        const double J = type.spin() * 0.5;
         const double stat = static_cast<int>(round(2. * J)) & 1 ? -1. : 1.;
         // SMASH quantum charges for the hadron state
-        const double muf = chemical_potential(particle, surf[iel]);
-        const double prefactor = (2. * J + 1.) * pow(gevtofm, 3) / (2. * pow(TMath::Pi(), 2));
+        const double muf = chemical_potential(type, surf[iel]);
+        const double density_prefactor = gevtofm3_2pi2 * (2. * J + 1.) * surf[iel].T;
         
         double bulk_prefactor = 1.0;
         if (params::bulk_viscosity_enabled) {
-          bulk_prefactor = prefactor /
+          bulk_prefactor = 1. /
                         (15. * (params::ecrit + params::ecrit * params::ratio_pressure_energydensity)) *
                         surf[iel].Pi / pow(1.0 / 3.0 - params::speed_of_sound_squared, 2);
         }
         double fugacity = exp(muf / surf[iel].T);
         double z = fugacity; 
 
-        for (int i = 1; i < 11; i++) {
-          double BesselK2 = TMath::BesselK(2, i * mass / surf[iel].T);
+        for (int k = 1; k < 11; k++) {
+          const double mass_term = MassIntegration::fugacity_expansion_coefficient(k, type, surf[iel].T);
           
-          // If stat is +1: (stat)^i+1 is always 1, if stat is -1: (stat)^i+1 is 1 when i is odd and -1 when i is even
-          double sign = (stat > 0) ? 1.0 : ((i & 1) ? 1.0 : -1.0);
-          density += prefactor * mass * mass * surf[iel].T * sign * BesselK2 * z / i;
+          // If stat is +1: (stat)^k+1 is always 1, if stat is -1: (stat)^k+1 is 1 when k is odd and -1 when k is even
+          double sign = (stat > 0) ? 1.0 : ((k & 1) ? 1.0 : -1.0);
+          density += (sign/k) * mass_term * z;
 
           if (params::bulk_viscosity_enabled) {
-            double BesselK1 = TMath::BesselK(1, i * mass / surf[iel].T);
+            double BesselK1 = TMath::BesselK(1, k * mass / surf[iel].T);
+            double BesselK2 = TMath::BesselK(2, k * mass / surf[iel].T);
             density += bulk_prefactor *
                         sign * mass * mass * mass *
                         ((1.0 / 3.0 - params::speed_of_sound_squared) *
-                        (BesselK1 + 3 * surf[iel].T / (i*mass) * BesselK2) -
+                        (BesselK1 + 3 * surf[iel].T / (k*mass) * BesselK2) -
                         BesselK1 / 3) * z;
           }
           z *= fugacity;  // Make z = exp(i * muf / T) for the next iteration
         }
         if (density < 0) density = 0; 
+        density *= density_prefactor;
       }
+
       if (ip > 0)
         cumulantDensity[ip] = cumulantDensity[ip - 1] + density;
       else
