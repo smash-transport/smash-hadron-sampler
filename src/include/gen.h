@@ -84,13 +84,13 @@ void fillBoostMatrix(double vx, double vy, double vz, double boostMatrix[4][4]);
 // Matrix relation:  Λ_cov = g * Λ_contra * g,  with g = diag(+1,-1,-1,-1)
 FourMatrix create_covariant_boost_matrix(
     const double boost_contravariant[4][4]);
-void generate();
+
 void load(const char *filename, int N);
 double ffthermal(double *x, double *par);
 int index44(const int &i, const int &j);
 // Allocate memory for the vorticity vector for each sampled particle
 void enable_vorticity_storage();
-
+void accumulate_densities(const element &surface_element);
 void generate();
 smash::ParticleData *acceptParticle(int event,
                                     const smash::ParticleTypePtr &ldef,
