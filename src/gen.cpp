@@ -366,7 +366,7 @@ void generate() {
         while (cumulantDensity[isort] < xsort) isort++;
         auto &part = database[isort];
         const double J = part.spin() * 0.5;
-        const double mass = part.mass();
+        const double mass = MassIntegration::sample_mass(part);
         const double stat = static_cast<int>(round(2. * J)) & 1 ? -1. : 1.;
         // SMASH quantum charges for the hadron state
         const double muf = chemical_potential(part, surf[iel]);
