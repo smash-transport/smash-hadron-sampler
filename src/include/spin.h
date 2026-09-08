@@ -12,8 +12,7 @@ namespace spin {
 /* The following definitions correspond to the conventions used in Eq. (60)
  * of the paper "Exact spin polarization of massive and massless particles in
  * relativistic fluids at global equilibrium" by A. Palermo and F. Becattini
- * (arXiv:2304.02276v2).
- */
+ * (arXiv:2304.02276v2). */
 
 // Calculate the square of a four-vector in Minkowski space
 inline double four_vector_square(const std::array<double, 4> &four_vector) {

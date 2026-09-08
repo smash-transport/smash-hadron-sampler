@@ -30,6 +30,7 @@ Also possible, but for this project less relevant, is `Deprecated` for soon-to-b
 * :recycle: CMake code has been modernized, in particular to take advantage from the new SMASH CMake support in projects using it as library
 * :heavy_plus_sign: The [Vir's unit test framework](https://github.com/mattkretz/virtest) has been frozen in the ***tests*** folder to avoid external dependency on this tiny header only library
 
+
 ## SMASH-hadron-sampler-3.3
 Date: 2025-12-15
 
