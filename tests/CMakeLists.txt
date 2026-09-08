@@ -14,6 +14,11 @@ add_executable(gen gen.cpp)
 target_link_libraries(gen PRIVATE objlib vir-test)
 add_test(NAME gen_test COMMAND gen)
 
+# Add the executable for the mass integration test
+#add_executable(mass_integration mass_integration.cpp)
+#target_link_libraries(mass_integration PRIVATE objlib vir-test)
+#add_test(NAME mass_integration_test COMMAND mass_integration)
+
 # Add the executable for the vorticity test
 add_executable(vorticity vorticity.cpp)
 target_link_libraries(vorticity PRIVATE objlib vir-test)

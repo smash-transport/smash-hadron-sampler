@@ -11,8 +11,8 @@ find_package(ROOT 6.06 REQUIRED CONFIG COMPONENTS Hist Physics Tree)
 target_link_libraries(sampler PRIVATE ROOT::Hist ROOT::Physics ROOT::Tree)
 
 # Create object library for the linker which contains pre-compiled cpp files
-target_sources(objlib PRIVATE gen.cpp oscaroutput.cpp params.cpp
-                              tree.cpp spin.cpp vorticity.cpp)
+target_sources(objlib PRIVATE gen.cpp mass_integration.cpp oscaroutput.cpp 
+                              params.cpp tree.cpp spin.cpp vorticity.cpp)
 set_property(TARGET objlib PROPERTY POSITION_INDEPENDENT_CODE 1)
 target_link_libraries(objlib PUBLIC SMASH::smash ROOT::Hist ROOT::Physics ROOT::Tree)
 

@@ -7,10 +7,11 @@
 
 // some general constants etc
 
-const double gevtofm = 5.067728853;
-const double hbarC = 1. / gevtofm;
-const double C_Feq = (pow(0.5 / M_PI / hbarC, 3));
-const double small_value = 1.e-10;
+constexpr double gevtofm = 5.067728853;
+constexpr double hbarC = 1. / gevtofm;
+constexpr double C_Feq = (std::pow(0.5 / M_PI / hbarC, 3));
+constexpr double small_value = 1.e-10;
+constexpr double gevtofm3_2pi2 = std::pow(gevtofm, 3) / (2. * M_PI * M_PI);
 
 // Non zero components of the metric tensor
 const std::array<int, 4> metric = {1, -1, -1, -1};

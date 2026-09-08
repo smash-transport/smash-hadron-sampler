@@ -15,6 +15,7 @@
 #include <string>
 
 #include "const.h"
+#include "mass_integration.h"
 #include "params.h"
 #include "spin.h"
 #include "vorticity.h"
@@ -30,7 +31,7 @@ using namespace std;
 namespace gen {
 
 int Nelem;
-int NPART;
+int NTYPE;
 double *ntherm, dvMax, dsigmaMax;
 TRandom3 *rnd;
 smash::ParticleData ***pList;  // particle arrays
@@ -223,11 +224,11 @@ void load(const char *filename, int N) {
   //   std::cout << HadronState << '\n';
   // }
 
-  // NPART = total number of hadron states
-  NPART = database.size();
-  std::cout << "NPART=" << NPART << std::endl;
+  // NTYPE = total number of hadron states
+  NTYPE = database.size();
+  std::cout << "NTYPE=" << NTYPE << std::endl;
   std::cout << "dsigmaMax=" << dsigmaMax << "\n\n";
-  cumulantDensity = new double[NPART];
+  cumulantDensity = new double[NTYPE];
 }
 
 void enable_vorticity_storage() {
@@ -253,6 +254,11 @@ double ffthermal(double *x, double *par) {
   return x[0] * x[0] / (exp((sqrt(x[0] * x[0] + mass * mass) - mu) / T) - stat);
 }
 
+static const double one_third_minus_cs2 = 1.0 / 3.0 - params::speed_of_sound_squared;
+static const double bulk_prefactor_constant = 1. /
+                        (15. * params::ecrit * (1 + params::ratio_pressure_energydensity) *
+                         one_third_minus_cs2 * one_third_minus_cs2);
+
 void generate() {
   ROOT::EnableThreadSafety();
   const double gmumu[4] = {1., -1., -1., -1.};
@@ -276,61 +282,53 @@ void generate() {
     }
 
     const smash::ParticleTypeList &database = smash::ParticleType::list_all();
-    int ip = 0;
-    for (auto &particle : database) {
+    int itype = 0;
+    for (auto &type : database) {
       double density = 0.;
       const bool exclude_species =
           std::find(species_to_exclude.begin(), species_to_exclude.end(),
-                    particle.pdgcode()) != species_to_exclude.end();
-      if (exclude_species || !particle.is_hadron() ||
-          particle.pdgcode().charmness() != 0) {
+                    type.pdgcode()) != species_to_exclude.end();
+      if (exclude_species || !type.is_hadron() ||
+          type.pdgcode().charmness() != 0) {
         density = 0;
       } else {
-        const double mass = particle.mass();
         // By definition, the spin in SMASH is defined as twice the spin of the
         // multiplet, so that it can be stored as an integer. Hence, it needs to
         // be multiplied by 1/2
-        const double J = particle.spin() * 0.5;
+        const double J = type.spin() * 0.5;
         const double stat = static_cast<int>(round(2. * J)) & 1 ? -1. : 1.;
         // SMASH quantum charges for the hadron state
-        const double muf = chemical_potential(particle, surf[iel]);
-        const double prefactor = (2. * J + 1.) * pow(gevtofm, 3) / (2. * pow(TMath::Pi(), 2));
+        const double muf = chemical_potential(type, surf[iel]);
         
         double bulk_prefactor = 1.0;
         if (params::bulk_viscosity_enabled) {
-          bulk_prefactor = prefactor /
-                        (15. * (params::ecrit + params::ecrit * params::ratio_pressure_energydensity)) *
-                        surf[iel].Pi / pow(1.0 / 3.0 - params::speed_of_sound_squared, 2);
+          bulk_prefactor = bulk_prefactor_constant * surf[iel].Pi;
         }
-        double fugacity = exp(muf / surf[iel].T);
-        double z = fugacity; 
-
-        for (int i = 1; i < 11; i++) {
-          double BesselK2 = TMath::BesselK(2, i * mass / surf[iel].T);
-          
-          // If stat is +1: (stat)^i+1 is always 1, if stat is -1: (stat)^i+1 is 1 when i is odd and -1 when i is even
-          double sign = (stat > 0) ? 1.0 : ((i & 1) ? 1.0 : -1.0);
-          density += prefactor * mass * mass * surf[iel].T * sign * BesselK2 * z / i;
+        const double fugacity = exp(muf / surf[iel].T);
+        double z_to_k = fugacity; 
+        for (int k = 1; k < 11; k++) {
+          // If stat is +1: (stat)^k+1 is always 1, if stat is -1: (stat)^k+1 is 1 when k is odd and -1 when k is even
+          double sign = (stat > 0) ? 1.0 : ((k & 1) ? 1.0 : -1.0);
+                                              // m^2 K_2(jm/T) / j, integrated over mass with spectral function if needed
+          density += sign * surf[iel].T * z_to_k * MassIntegration::fugacity_expansion_coefficient(false, k, type, surf[iel].T);
 
           if (params::bulk_viscosity_enabled) {
-            double BesselK1 = TMath::BesselK(1, i * mass / surf[iel].T);
             density += bulk_prefactor *
-                        sign * mass * mass * mass *
-                        ((1.0 / 3.0 - params::speed_of_sound_squared) *
-                        (BesselK1 + 3 * surf[iel].T / (i*mass) * BesselK2) -
-                        BesselK1 / 3) * z;
+                        sign * z_to_k * MassIntegration::fugacity_expansion_coefficient(true, k, type, surf[iel].T);
           }
-          z *= fugacity;  // Make z = exp(i * muf / T) for the next iteration
+          z_to_k *= fugacity;  // Make z_to_k = exp(i * muf / T) for the next iteration
         }
         if (density < 0) density = 0; 
+        density *= gevtofm3_2pi2 * (2. * J + 1.);
       }
-      if (ip > 0)
-        cumulantDensity[ip] = cumulantDensity[ip - 1] + density;
-      else
-        cumulantDensity[ip] = density;
-      totalDensity += density;
 
-      ip += 1;
+      if (itype > 0)
+        cumulantDensity[itype] = cumulantDensity[itype - 1] + density;
+      else
+        cumulantDensity[itype] = density;
+      totalDensity += density;
+      
+      itype++;
     }
 
     if (totalDensity < 0. || totalDensity > 100.) {
@@ -338,7 +336,7 @@ void generate() {
       continue;
     }
     // cout<<"thermal densities calculated.\n" ;
-    // cout<<cumulantDensity[NPART-1]<<" = "<<totalDensity<<endl ;
+    // cout<<cumulantDensity[NTYPE-1]<<" = "<<totalDensity<<endl ;
     // ---< end thermal densities calc
     double rval, dvEff = 0., W;
     // dvEff = dsigma_mu * u^mu
@@ -360,17 +358,17 @@ void generate() {
         // SMASH random number [0..1]
         double xsort = rnd->Rndm() * totalDensity;  // throw dice, particle sort
         while (cumulantDensity[isort] < xsort) isort++;
-        auto &part = database[isort];
-        const double J = part.spin() * 0.5;
-        const double mass = part.mass();
+        auto &type = database[isort];
+        const double J = type.spin() * 0.5;
+        const double mass = MassIntegration::sample_mass(type);
         const double stat = static_cast<int>(round(2. * J)) & 1 ? -1. : 1.;
         // SMASH quantum charges for the hadron state
-        const double muf = chemical_potential(part, surf[iel]);
+        const double muf = chemical_potential(type, surf[iel]);
         if (muf >= mass)
-          std::cout << " ^^ muf = " << muf << "  " << part.pdgcode()
+          std::cout << " ^^ muf = " << muf << "  " << type.pdgcode()
                     << std::endl;
         fthermal->SetParameters(surf[iel].T, muf, mass, stat);
-        // const double dfMax = part->GetFMax() ;
+        // const double dfMax = type->GetFMax() ;
         int niter = 0;  // number of iterations, for debug purposes
         do {            // fast momentum generation loop
           const double p = fthermal->GetRandom();
@@ -396,9 +394,8 @@ void generate() {
                         surf[iel].pi[index44(i, j)];
             WviscFactor +=
                 (1.0 + stat * feq) * pipp /
-                (2. * surf[iel].T * surf[iel].T *
-                 (params::ecrit +
-                  params::ecrit * params::ratio_pressure_energydensity));
+                (2. * surf[iel].T * surf[iel].T * params::ecrit *
+                  (1 + params::ratio_pressure_energydensity));
           }
           if (params::bulk_viscosity_enabled) {
             const double feq =
@@ -407,11 +404,9 @@ void generate() {
             WviscFactor -=
                 (1.0 + stat * feq) * surf[iel].Pi *
                 (mass * mass / (3 * mom.E()) -
-                 mom.E() * (1.0 / 3.0 - params::speed_of_sound_squared)) /
-                (15 * (1.0 / 3.0 - params::speed_of_sound_squared) *
-                 (1.0 / 3.0 - params::speed_of_sound_squared) * surf[iel].T *
-                 (params::ecrit +
-                  params::ecrit * params::ratio_pressure_energydensity));
+                 mom.E() * one_third_minus_cs2) /
+                (15 * one_third_minus_cs2 * one_third_minus_cs2 * surf[iel].T *
+                params::ecrit * (1 + params::ratio_pressure_energydensity));
           }
           if (WviscFactor < 0.1) WviscFactor = 0.1; // test, jul17; before: 0.5
           if (WviscFactor > 2.0) WviscFactor = 2.0 ; // before: no upper regulation
@@ -457,7 +452,7 @@ void generate() {
         smash::FourVector momentum(mom.E(), mom.Px(), mom.Py(), mom.Pz());
         smash::FourVector position(t, x, y, z);
         smash::ParticleData *particle_ptr =
-            acceptParticle(ievent, &part, position, momentum);
+            acceptParticle(ievent, &type, position, momentum);
 
         // Calculate and set the spin vector if spin sampling is enabled
         if (params::spin_vector_enabled) {
