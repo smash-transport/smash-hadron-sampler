@@ -70,8 +70,6 @@ void reset_params() {
   params::vorticity_output_enabled = false;
 
   params::number_of_events = 0;
-  params::dx = 0;
-  params::dy = 0;
   params::deta_dz = 0.05;
   params::ecrit = 0;
   params::speed_of_sound_squared = 0.15;

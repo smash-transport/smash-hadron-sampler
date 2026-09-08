@@ -9,7 +9,7 @@ extern std::string surface_file, vorticity_file, output_directory, hydro_coordin
 extern bool bulk_viscosity_enabled, create_root_output, shear_viscosity_enabled,
     spin_vector_enabled, vorticity_output_enabled;
 extern int number_of_events;
-extern double dx, dy, deta_dz;
+extern double deta_dz;
 extern double ecrit, speed_of_sound_squared, ratio_pressure_energydensity;
 // extern double Temp, mu_b, mu_q, mu_s;
 extern std::vector<std::string> comments_in_config_file,
