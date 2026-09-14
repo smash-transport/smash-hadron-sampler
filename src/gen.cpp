@@ -295,7 +295,7 @@ void generate() {
         // SMASH quantum charges for the hadron state
         const double muf = chemical_potential(particle, surf[iel]);
         const double prefactor = (2. * J + 1.) * pow(gevtofm, 3) / (2. * pow(TMath::Pi(), 2));
-        
+
         double bulk_prefactor = 1.0;
         if (params::bulk_viscosity_enabled) {
           bulk_prefactor = prefactor /
@@ -303,11 +303,11 @@ void generate() {
                         surf[iel].Pi / pow(1.0 / 3.0 - params::speed_of_sound_squared, 2);
         }
         double fugacity = exp(muf / surf[iel].T);
-        double z = fugacity; 
+        double z = fugacity;
 
         for (int i = 1; i < 11; i++) {
           double BesselK2 = TMath::BesselK(2, i * mass / surf[iel].T);
-          
+
           // If stat is +1: (stat)^i+1 is always 1, if stat is -1: (stat)^i+1 is 1 when i is odd and -1 when i is even
           double sign = (stat > 0) ? 1.0 : ((i & 1) ? 1.0 : -1.0);
           density += prefactor * mass * mass * surf[iel].T * sign * BesselK2 * z / i;
@@ -322,7 +322,7 @@ void generate() {
           }
           z *= fugacity;  // Make z = exp(i * muf / T) for the next iteration
         }
-        if (density < 0) density = 0; 
+        if (density < 0) density = 0;
       }
       if (ip > 0)
         cumulantDensity[ip] = cumulantDensity[ip - 1] + density;
@@ -427,8 +427,7 @@ void generate() {
          * the respective freezeout hypersurface element which is used as a
          * smearing parameter in eta or z direction (depending on the hydro
          * coordinate system).
-         * Note: No smearing in x and y direction implemented at the moment.
-         */
+         * Note: No smearing in x and y direction implemented at the moment. */
         params::deta_dz = std::cbrt(dvEff);
         double smearing_eta_z = params::deta_dz * (-0.5 + rnd->Rndm());
         if (params::hydro_coordinate_system == "tau-eta") {

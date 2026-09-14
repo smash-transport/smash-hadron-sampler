@@ -15,10 +15,8 @@ bool bulk_viscosity_enabled{false}, create_root_output{false},
     shear_viscosity_enabled{false}, spin_vector_enabled{false},
     vorticity_output_enabled{false};
 int number_of_events;
-/* Smearing parameters dx, dy, and deta_dz
- * No smearing in x and y direction implemented at the moment
- */
-double dx{0}, dy{0}, deta_dz{0.05};
+// Spatial smearing parameter deta_dz (no smearing in x and y implemented)
+double deta_dz{0.05};
 double ecrit, speed_of_sound_squared{0.15}, ratio_pressure_energydensity{0.15};
 // double Temp, mu_b, mu_q, mu_s ;
 std::vector<std::string> comments_in_config_file,
