@@ -21,7 +21,8 @@ The major categories to group changes in this log are:
 Also possible, but for this project less relevant, is `Deprecated` for soon-to-be removed features.
 
 
-## Unreleased
+## SMASH-hadron-sampler-3.4
+Date: 2026-11-16
 
 * :sos: Bulk viscous corrections now contribute to the sampled particle multiplicity, and not just the momentum sampling.
 * :sos: Viscous corrections are now capped, such that 0.1 < `WviscFactor` < 2.0.
@@ -30,6 +31,7 @@ Also possible, but for this project less relevant, is `Deprecated` for soon-to-b
 * :recycle: CMake code has been modernized, in particular to take advantage from the new SMASH CMake support in projects using it as library
 * :heavy_plus_sign: The [Vir's unit test framework](https://github.com/mattkretz/virtest) has been frozen in the ***tests*** folder to avoid external dependency on this tiny header only library
 
+[Link to diff from previous version](https://github.com/smash-transport/smash-hadron-sampler/compare/SMASH-hadron-sampler-3.3...SMASH-hadron-sampler-3.4)
 
 ## SMASH-hadron-sampler-3.3
 Date: 2025-12-15
